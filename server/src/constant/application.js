@@ -16,5 +16,6 @@ export const EVendorType = Object.freeze({
 
 export const EAuthProvider = Object.freeze({
     LOCAL: "LOCAL",
-    GOOGLE: "GOOGLE"
+    GOOGLE: "GOOGLE",
+    FACEBOOK: "FACEBOOK"
 })

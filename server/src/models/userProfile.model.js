@@ -39,10 +39,6 @@ const userProfileSchema = new mongoose.Schema(
                 default: false
             }
         }],
-        activeSubscriptions: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Subscription'
-        }],
         preferences: {
             dietary: [{
                 type: String,
@@ -63,11 +59,17 @@ const userProfileSchema = new mongoose.Schema(
         //     type: mongoose.Schema.Types.ObjectId,
         //     ref: 'User'
         // }],
-        walletBalance: {
+        activeSubscriptions: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Subscription'
+        }],
+        credits: {
             type: Number,
             default: 0,
             min: 0
-        }
+        },
+
+
     },
     { timestamps: true }
 )
@@ -79,22 +81,19 @@ userProfileSchema.index({ 'addresses.zipCode': 1 })
 userProfileSchema.index({ 'addresses.city': 1 })
 userProfileSchema.index({ 'preferences.dietary': 1 })
 userProfileSchema.index({ 'preferences.cuisineTypes': 1 })
-userProfileSchema.index({ walletBalance: 1 })
+userProfileSchema.index({ credits: 1 })
 userProfileSchema.index({ createdAt: 1 })
 
-// Pre-save hook to ensure only one default address
 userProfileSchema.pre('save', function (next) {
     if (this.addresses && this.addresses.length > 0) {
         const defaultAddresses = this.addresses.filter(addr => addr.isDefault)
         if (defaultAddresses.length > 1) {
-            // Keep only the first default address
             this.addresses.forEach((addr, index) => {
                 if (index > 0 && addr.isDefault) {
                     addr.isDefault = false
                 }
             })
         }
-        // If no default address, make the first one default
         if (defaultAddresses.length === 0) {
             this.addresses[0].isDefault = true
         }
@@ -117,24 +116,23 @@ userProfileSchema.methods.addAddress = function (addressData) {
     return this.save()
 }
 
-userProfileSchema.methods.canAfford = function (amount) {
-    return this.walletBalance >= amount
+userProfileSchema.methods.canAfford = function (credit) {
+    return this.credits >= credit
 }
 
-userProfileSchema.methods.deductFromWallet = function (amount) {
-    if (!this.canAfford(amount)) {
-        throw new Error('Insufficient wallet balance')
+userProfileSchema.methods.deductFromCredit = function (credit) {
+    if (!this.canAfford(credit)) {
+        throw new Error('Insufficient MealCredit balance')
     }
-    this.walletBalance -= amount
+    this.credits -= credit
     return this.save()
 }
 
-userProfileSchema.methods.addToWallet = function (amount) {
-    this.walletBalance += amount
+userProfileSchema.methods.addToMealCredit = function (credit) {
+    this.credits += credit
     return this.save()
 }
 
-// Static methods
 userProfileSchema.statics.findByUserId = function (userId) {
     return this.findOne({ userId }).populate('userId', 'name emailAddress')
 }

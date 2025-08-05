@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { EVendorType } from '../constant/application'
+import { EVendorType } from '../constant/application.js'
 
 const vendorProfileSchema = new mongoose.Schema(
     {
@@ -129,9 +129,9 @@ vendorProfileSchema.methods.isOpenNow = function () {
     const now = new Date()
     const currentDay = now.toLocaleLowerCase().substr(0, 3) + now.toLocaleLowerCase().substr(3)
     const daySchedule = this.operatingHours.find(schedule => schedule.day === currentDay)
-    
+
     if (!daySchedule || !daySchedule.isOpen) return false
-    
+
     const currentTime = now.toTimeString().substr(0, 5)
     return currentTime >= daySchedule.openTime && currentTime <= daySchedule.closeTime
 }
@@ -219,11 +219,11 @@ vendorProfileSchema.statics.findAvailableVendors = function (coordinates, cuisin
         isAvailable: true,
         'capacity.currentLoad': { $lt: this.schema.path('capacity.dailyOrders') }
     }
-    
+
     if (cuisineTypes.length > 0) {
         query['businessInfo.cuisineTypes'] = { $in: cuisineTypes }
     }
-    
+
     return this.find(query).sort({ 'rating.average': -1 })
 }
 

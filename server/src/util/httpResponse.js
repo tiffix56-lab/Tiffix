@@ -19,7 +19,7 @@ export default (req, res, responseStatusCode, responseMessage, data = null) => {
         meta: response,
     });
 
-    if (config.ENV === EApplicationEnvironment.PRODUCTION) {
+    if (config.env === EApplicationEnvironment.PRODUCTION) {
         delete response.request.ip;
     }
 

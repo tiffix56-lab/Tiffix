@@ -3,7 +3,7 @@ import UserProfile from './userProfile.model.js'
 import VendorProfile from './vendorProfile.model.js'
 import Menu from './menu.model.js'
 import Subscription from './subscription.model.js'
-import VendorAssignment from './vendorAssignment.model.js'
+import LocationZone from './locationZone.model.js'
 
 export {
     User,
@@ -11,7 +11,7 @@ export {
     VendorProfile,
     Menu,
     Subscription,
-    VendorAssignment
+    LocationZone
 }
 
 export default {
@@ -20,5 +20,5 @@ export default {
     VendorProfile,
     Menu,
     Subscription,
-    VendorAssignment
+    LocationZone
 }

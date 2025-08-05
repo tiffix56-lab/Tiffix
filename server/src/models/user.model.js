@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcrypt'
-import { EAuthProvider, EUserRole } from '../constant/application'
+import { EAuthProvider, EUserRole } from '../constant/application.js'
 
 const userSchema = new mongoose.Schema(
     {
@@ -55,6 +55,10 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: null
         },
+        facebookId: {
+            type: String,
+            default: null
+        },
         provider: {
             type: String,
             enum: [...Object.values(EAuthProvider)],
@@ -70,8 +74,7 @@ const userSchema = new mongoose.Schema(
             otp: {
                 type: String,
                 required: true,
-                minlength: 6,
-                maxlength: 6
+
             },
             timestamp: {
                 type: Date,
@@ -83,8 +86,7 @@ const userSchema = new mongoose.Schema(
             otp: {
                 type: String,
                 default: null,
-                minlength: 6,
-                maxlength: 6
+
             },
             expiry: {
                 type: Number,
@@ -128,11 +130,19 @@ const userSchema = new mongoose.Schema(
                 type: String,
                 default: null
             },
-            discountUsed: {
+            isReferralUsed: {
                 type: Boolean,
                 default: false
             },
-            discountAmount: {
+            userReferralCode: {
+                type: String,
+                default: null
+            },
+            totalreferralCredits: {
+                type: Number,
+                default: 0
+            },
+            referralCreditsUsed: {
                 type: Number,
                 default: 0
             }
@@ -155,7 +165,7 @@ userSchema.pre('save', async function (next) {
     if (!this.isModified('password') || !this.password) {
         return next()
     }
-    
+
     try {
         const saltRounds = 12
         this.password = await bcrypt.hash(this.password, saltRounds)
@@ -191,18 +201,6 @@ userSchema.statics.findByGoogleId = function (googleId) {
     return this.findOne({ googleId })
 }
 
-userSchema.methods.hasReferralDiscount = function () {
-    return this.referral.referredBy && !this.referral.discountUsed
-}
-
-userSchema.methods.useReferralDiscount = function (amount = 30) {
-    if (this.hasReferralDiscount()) {
-        this.referral.discountUsed = true
-        this.referral.discountAmount = amount
-        return this.save()
-    }
-    return false
-}
 
 userSchema.statics.findReferredUsers = function (userId) {
     return this.find({ 'referral.referredBy': userId })
@@ -211,8 +209,12 @@ userSchema.statics.findReferredUsers = function (userId) {
 userSchema.methods.toJSON = function () {
     const user = this.toObject()
     delete user.password
-    delete user.accountConfirmation.otp
-    delete user.passwordReset.otp
+    if (user.accountConfirmation && user.accountConfirmation.otp) {
+        delete user.accountConfirmation.otp
+    }
+    if (user.passwordReset && user.passwordReset.otp) {
+        delete user.passwordReset.otp
+    }
     return user
 }
 

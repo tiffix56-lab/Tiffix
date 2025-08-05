@@ -18,16 +18,18 @@ export default async (request, _res, next) => {
         if (!accessToken) {
             const authHeader = req.headers.authorization
             if (authHeader?.startsWith('Bearer ')) {
-                accessToken = authHeader.substring(7)
+                accessToken = authHeader.split(' ')[1]
             }
         }
+
+
 
         if (!accessToken) {
             return httpError(next, new Error(responseMessage.AUTH.UNAUTHORIZED), req, 401)
         }
 
         try {
-            const { userId } = quicker.verifyToken(accessToken, config.auth.jwtSecret)
+            const { userId } = await quicker.verifyToken(accessToken, config.auth.jwtSecret)
 
             const user = await userModel.findOne({ _id: userId }).select('-password')
 
@@ -36,6 +38,8 @@ export default async (request, _res, next) => {
             }
 
             req.authenticatedUser = user
+            req.authenticatedUser.userId = user?._id
+
             return next()
         } catch (tokenError) {
             return httpError(next, new Error(responseMessage.AUTH.UNAUTHORIZED), req, 401)

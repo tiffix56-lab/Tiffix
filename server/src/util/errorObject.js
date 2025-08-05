@@ -1,7 +1,6 @@
 import responseMessage from '../constant/responseMessage.js';
 import config from '../config/config.js';
 import { EApplicationEnvironment } from '../constant/application.js';
-// import logger from './logger';
 
 export default (err, req, errorStatusCode = 500) => {
     const errorObj = {
@@ -17,13 +16,9 @@ export default (err, req, errorStatusCode = 500) => {
         trace: err instanceof Error ? { error: err.stack } : null,
     };
 
-    // Log
-    // logger.error('CONTROLLER_ERROR', {
-    //     meta: errorObj,
-    // });
 
     // Production Env check
-    if (config.ENV === EApplicationEnvironment.PRODUCTION) {
+    if (config.env === EApplicationEnvironment.PRODUCTION) {
         delete errorObj.request.ip;
         delete errorObj.trace;
     }

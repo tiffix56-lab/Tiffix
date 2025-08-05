@@ -1,0 +1,123 @@
+### User Profile API Testing
+
+@baseURL = http://localhost:4000/v1
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6InVzZXIiLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NDM5NjgzOSwiZXhwIjoxNzU0NDgzMjM5fQ.nf4UVsCXS0RmLhduEHdOQLySkQdUSUdauxU3KFxPPcs
+
+### Get User Profile
+GET {{baseURL}}/user-profiles
+Authorization: Bearer {{accessToken}}
+
+### Update User Profile (Preferences Only)
+PUT {{baseURL}}/user-profiles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "preferences": {
+    "dietary": ["vegetarian", "gluten-free"],
+    "spiceLevel": "medium",
+    "cuisineTypes": ["italian", "indian", "chinese"]
+  }
+}
+
+### Update User Profile (User Fields + Preferences)
+PUT {{baseURL}}/user-profiles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated User Name",
+  "avatar": "https://example.com/avatar.jpg",
+  "phoneNumber": "919876543210",
+  "isActive": true,
+  "preferences": {
+    "dietary": ["vegan"],
+    "spiceLevel": "hot",
+    "cuisineTypes": ["italian", "thai"]
+  }
+}
+
+### Update User Profile (Only User Fields)
+PUT {{baseURL}}/user-profiles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "New Name Only",
+  "avatar": "https://example.com/new-avatar.jpg"
+}
+
+### Add Address
+POST {{baseURL}}/user-profiles/addresses
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "label": "Home",
+  "street": "123 Main Street, Apartment 4B",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "zipCode": "400001",
+  "coordinates": {
+    "lat": 19.0760,
+    "lng": 72.8777
+  },
+  "isDefault": true
+}
+
+### Add Another Address
+POST {{baseURL}}/user-profiles/addresses
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "label": "Work",
+  "street": "456 Business Park, Floor 5",
+  "city": "Mumbai",
+  "state": "Maharashtra", 
+  "zipCode": "400051",
+  "coordinates": {
+    "lat": 19.1136,
+    "lng": 72.8697
+  },
+  "isDefault": false
+}
+
+### Get All Addresses
+GET {{baseURL}}/user-profiles/addresses
+Authorization: Bearer {{accessToken}}
+
+### Update Address (Update address at index 0)
+PUT {{baseURL}}/user-profiles/addresses/0
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "label": "Home - Updated",
+  "street": "123 Main Street, Apartment 4B - Updated",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "zipCode": "400001",
+  "coordinates": {
+    "lat": 19.1136,
+    "lng": 72.8697
+  },
+  "isDefault": true
+}
+
+### Delete Address (Delete address at index 1)
+DELETE {{baseURL}}/user-profiles/addresses/1
+Authorization: Bearer {{accessToken}}
+
+### Update User Preferences
+PATCH {{baseURL}}/user-profiles/preferences
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "preferences": {
+    "dietary": ["vegan", "nut-free"],
+    "spiceLevel": "hot",
+    "cuisineTypes": ["thai", "mexican", "mediterranean"]
+  }
+}
