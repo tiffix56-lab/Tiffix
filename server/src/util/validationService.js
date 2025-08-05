@@ -94,44 +94,68 @@ export const ValidateLocationQuery = Joi.object({
  * ************ SUBSCRIPTION VALIDATION ***********************
  */
 export const ValidateCreateSubscription = Joi.object({
-    name: Joi.string().min(3).max(100).trim().required(),
-    description: Joi.string().min(10).max(500).trim().required(),
-    price: Joi.number().positive().required(),
-    discountedPrice: Joi.number().positive().optional(),
-    duration: Joi.number().positive().required(),
-    category: Joi.string().valid('basic', 'premium', 'enterprise').required(),
-    features: Joi.array().items(Joi.string()).min(1).required(),
-    maxPurchases: Joi.number().positive().optional(),
-    validFrom: Joi.date().optional(),
-    validTo: Joi.date().greater(Joi.ref('validFrom')).optional(),
+    planName: Joi.string().min(3).max(100).trim().required(),
+    duration: Joi.string().valid('daily', 'weekly', 'monthly', 'custom').required(),
+    customDurationDays: Joi.number().min(1).when('duration', {
+        is: 'custom',
+        then: Joi.required(),
+        otherwise: Joi.optional()
+    }),
+    mealsPerPlan: Joi.number().min(1).required(),
+    originalPrice: Joi.number().min(0).required(),
+    discountedPrice: Joi.number().min(0).required().custom((value, helpers) => {
+        const { originalPrice } = helpers.state.ancestors[0];
+        if (value > originalPrice) {
+            return helpers.error('any.custom', { message: 'Discounted price cannot be greater than original price' });
+        }
+        return value;
+    }),
+    category: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').required(),
+    freeDelivery: Joi.boolean().optional(),
+    description: Joi.string().max(500).trim().optional(),
+    features: Joi.array().items(Joi.string()).optional(),
+    terms: Joi.string().max(1000).optional(),
     isActive: Joi.boolean().optional(),
-    priority: Joi.number().min(1).max(10).optional()
+    currentPurchases: Joi.number().min(0).optional(),
+    tags: Joi.array().items(Joi.string()).optional()
 });
 
 export const ValidateUpdateSubscription = Joi.object({
-    name: Joi.string().min(3).max(100).trim().optional(),
-    description: Joi.string().min(10).max(500).trim().optional(),
-    price: Joi.number().positive().optional(),
-    discountedPrice: Joi.number().positive().optional(),
-    duration: Joi.number().positive().optional(),
-    category: Joi.string().valid('basic', 'premium', 'enterprise').optional(),
-    features: Joi.array().items(Joi.string()).min(1).optional(),
-    maxPurchases: Joi.number().positive().optional(),
-    validFrom: Joi.date().optional(),
-    validTo: Joi.date().greater(Joi.ref('validFrom')).optional(),
+    planName: Joi.string().min(3).max(100).trim().optional(),
+    duration: Joi.string().valid('daily', 'weekly', 'monthly', 'custom').optional(),
+    customDurationDays: Joi.number().min(1).when('duration', {
+        is: 'custom',
+        then: Joi.optional(),
+        otherwise: Joi.optional()
+    }),
+    mealsPerPlan: Joi.number().min(1).optional(),
+    originalPrice: Joi.number().min(0).optional(),
+    discountedPrice: Joi.number().min(0).optional().custom((value, helpers) => {
+        const { originalPrice } = helpers.state.ancestors[0];
+        if (originalPrice && value > originalPrice) {
+            return helpers.error('any.custom', { message: 'Discounted price cannot be greater than original price' });
+        }
+        return value;
+    }),
+    category: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').optional(),
+    freeDelivery: Joi.boolean().optional(),
+    description: Joi.string().max(500).trim().optional(),
+    features: Joi.array().items(Joi.string()).optional(),
+    terms: Joi.string().max(1000).optional(),
     isActive: Joi.boolean().optional(),
-    priority: Joi.number().min(1).max(10).optional()
+    currentPurchases: Joi.number().min(0).optional(),
+    tags: Joi.array().items(Joi.string()).optional()
 });
 
 export const ValidateSubscriptionQuery = Joi.object({
     page: Joi.number().positive().optional(),
     limit: Joi.number().positive().max(100).optional(),
-    category: Joi.string().valid('basic', 'premium', 'enterprise').optional(),
-    duration: Joi.number().positive().optional(),
+    category: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').optional(),
+    duration: Joi.string().valid('daily', 'weekly', 'monthly', 'custom').optional(),
     minPrice: Joi.number().positive().optional(),
     maxPrice: Joi.number().positive().optional(),
     isActive: Joi.string().valid('true', 'false').optional(),
-    sortBy: Joi.string().valid('price', 'discountedPrice', 'duration', 'priority', 'createdAt').optional(),
+    sortBy: Joi.string().valid('originalPrice', 'discountedPrice', 'duration', 'priority', 'createdAt', 'planName', 'mealsPerPlan').optional(),
     sortOrder: Joi.string().valid('asc', 'desc').optional(),
     search: Joi.string().trim().optional()
 });
@@ -221,17 +245,108 @@ export const ValidateUpdateMenu = Joi.object({
 export const ValidateMenuQuery = Joi.object({
     page: Joi.number().positive().optional(),
     limit: Joi.number().positive().max(100).optional(),
-    category: Joi.string().valid('home_chef', 'food_vendor').optional(),
+    vendorCategory: Joi.string().valid('home_chef', 'food_vendor').optional(),
     cuisine: Joi.string().optional(),
     minPrice: Joi.number().positive().optional(),
     maxPrice: Joi.number().positive().optional(),
-    dietaryOptions: Joi.array().items(
-        Joi.string().valid('vegetarian', 'vegan', 'gluten-free', 'non-vegetarian', 'dairy-free', 'halal', 'kosher', 'nut-free')
-    ).optional(),
+    minCalories: Joi.number().positive().optional(),
+    maxCalories: Joi.number().positive().optional(),
+    minPrepTime: Joi.number().positive().optional(),
+    maxPrepTime: Joi.number().positive().optional(),
+    minRating: Joi.number().min(0).max(5).optional(),
+    dietaryOptions: Joi.string().optional(), // comma-separated string
+    tags: Joi.string().optional(), // comma-separated string
+    allergens: Joi.string().optional(), // comma-separated string
     isAvailable: Joi.string().valid('true', 'false').optional(),
-    sortBy: Joi.string().valid('price', 'rating', 'prepTime', 'calories', 'createdAt').optional(),
+    hasCreditsRequired: Joi.string().valid('true', 'false').optional(),
+    minCredits: Joi.number().min(0).optional(),
+    maxCredits: Joi.number().min(0).optional(),
+    sortBy: Joi.string().valid('price', 'rating.average', 'prepTime', 'calories', 'createdAt', 'soldToday', 'availableQuantity').optional(),
     sortOrder: Joi.string().valid('asc', 'desc').optional(),
     search: Joi.string().trim().optional()
+});
+
+/**
+ * ************ VENDOR PROFILE VALIDATION ***********************
+ */
+export const ValidateCreateVendorWithUser = Joi.object({
+    user: Joi.object({
+        name: Joi.string().min(2).max(72).trim().required(),
+        emailAddress: Joi.string().email().trim().required(),
+        phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).required(),
+        password: Joi.string().min(8).max(24).trim().required(),
+        timezone: Joi.string().optional()
+    }).required(),
+    vendorProfile: Joi.object({
+        vendorType: Joi.string().valid('home_chef', 'food_vendor').required(),
+        businessInfo: Joi.object({
+            businessName: Joi.string().required(),
+            description: Joi.string().max(500).optional(),
+            cuisineTypes: Joi.array().items(Joi.string()).optional(),
+            serviceArea: Joi.object({
+                radius: Joi.number().positive().max(50).optional(),
+                coordinates: Joi.object({
+                    lat: Joi.number().min(-90).max(90).required(),
+                    lng: Joi.number().min(-180).max(180).required()
+                }).required()
+            }).required()
+        }).required(),
+        operatingHours: Joi.array().items(
+            Joi.object({
+                day: Joi.string().valid('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday').required(),
+                isOpen: Joi.boolean().optional(),
+                openTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
+                closeTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional()
+            })
+        ).optional(),
+        capacity: Joi.object({
+            dailyOrders: Joi.number().positive().optional()
+        }).optional(),
+        documents: Joi.object({
+            businessLicense: Joi.string().optional(),
+            foodSafetyLicense: Joi.string().optional(),
+            taxId: Joi.string().optional()
+        }).optional()
+    }).required()
+});
+
+export const ValidateUpdateVendorWithUserInfo = Joi.object({
+    user: Joi.object({
+        name: Joi.string().min(2).max(72).trim().optional(),
+        emailAddress: Joi.string().email().trim().optional()
+    }).optional(),
+    vendorProfile: Joi.object({
+        vendorType: Joi.string().valid('home_chef', 'food_vendor').optional(),
+        businessInfo: Joi.object({
+            businessName: Joi.string().optional(),
+            description: Joi.string().max(500).optional(),
+            cuisineTypes: Joi.array().items(Joi.string()).optional(),
+            serviceArea: Joi.object({
+                radius: Joi.number().positive().max(50).optional(),
+                coordinates: Joi.object({
+                    lat: Joi.number().min(-90).max(90).optional(),
+                    lng: Joi.number().min(-180).max(180).optional()
+                }).optional()
+            }).optional()
+        }).optional(),
+        operatingHours: Joi.array().items(
+            Joi.object({
+                day: Joi.string().valid('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday').required(),
+                isOpen: Joi.boolean().optional(),
+                openTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
+                closeTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional()
+            })
+        ).optional(),
+        capacity: Joi.object({
+            dailyOrders: Joi.number().positive().optional()
+        }).optional(),
+        documents: Joi.object({
+            businessLicense: Joi.string().optional(),
+            foodSafetyLicense: Joi.string().optional(),
+            taxId: Joi.string().optional()
+        }).optional(),
+        isAvailable: Joi.boolean().optional()
+    }).optional()
 });
 
 /**

@@ -1,122 +1,9 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateReferralCode, ValidateUseCredits } from '../../util/validationService.js';
 import referralService from '../../service/referralService.js';
 
 export default {
-    /**
-     * Apply referral code for a new user
-     */
-    applyReferralCode: async (req, res, next) => {
-        try {
-            const { body } = req;
-            const { userId } = req.user;
-
-            const { error, value } = validateJoiSchema(ValidateReferralCode, body);
-            if (error) {
-                return httpError(next, error, req, 422);
-            }
-
-            const { referralCode } = value;
-
-            const result = await referralService.validateAndLinkReferral(referralCode, userId);
-
-            if (!result.success) {
-                return httpError(next, new Error(result.message), req, 400);
-            }
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: result.message,
-                referrerName: result.referrerName
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    },
-
-    /**
-     * Get referral statistics for the authenticated user
-     */
-    getReferralStats: async (req, res, next) => {
-        try {
-            const { userId } = req.user; // From auth middleware
-
-            const stats = await referralService.getReferralStats(userId);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                referralStats: stats
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    },
-
-    /**
-     * Get referral leaderboard
-     */
-    getReferralLeaderboard: async (req, res, next) => {
-        try {
-            const { limit = 10 } = req.query;
-
-            const leaderboard = await referralService.getReferralLeaderboard(parseInt(limit));
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                leaderboard
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    },
-
-    /**
-     * Use referral credits for purchase
-     */
-    useReferralCredits: async (req, res, next) => {
-        try {
-            const { body } = req;
-            const { userId } = req.user; // From auth middleware
-
-            const { error, value } = validateJoiSchema(ValidateUseCredits, body);
-            if (error) {
-                return httpError(next, error, req, 422);
-            }
-
-            const { creditsToUse } = value;
-
-            const result = await referralService.useReferralCredits(userId, creditsToUse);
-
-            if (!result.success) {
-                return httpError(next, new Error(result.message), req, 400);
-            }
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: result.message,
-                creditsUsed: result.creditsUsed,
-                remainingReferralCredits: result.remainingReferralCredits,
-                newTotalCredits: result.newTotalCredits
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    },
-
-    /**
-     * Generate referral link and sharing content
-     */
-    generateReferralLink: async (req, res, next) => {
-        try {
-            const { userId } = req.user; // From auth middleware
-
-            const referralData = await referralService.generateReferralLink(userId);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                referralData
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    },
 
     /**
      * Validate referral code (public endpoint for registration form)
@@ -150,7 +37,58 @@ export default {
     },
 
     /**
-     * Admin: Get referral analytics and reports
+     * Generate referral link and sharing content
+     */
+    generateReferralLink: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser; // From auth middleware
+
+            const referralData = await referralService.generateReferralLink(userId);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                referralData
+            });
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+
+    /**
+     * Get referral statistics for the authenticated user
+     */
+    getReferralStats: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser; // From auth middleware
+
+            const stats = await referralService.getReferralStats(userId);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                referralStats: stats
+            });
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+
+    /**
+     * Get referral leaderboard
+     */
+    getReferralLeaderboard: async (req, res, next) => {
+        try {
+            const { limit = 10 } = req.query;
+
+            const leaderboard = await referralService.getReferralLeaderboard(parseInt(limit));
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                leaderboard
+            });
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+
+    /**
+     * Admin: Get comprehensive referral analytics with advanced statistics
      */
     getReferralAnalytics: async (req, res, next) => {
         try {
@@ -248,10 +186,41 @@ export default {
                         totalCreditsUsed: { $sum: '$referral.referralCreditsUsed' },
                         totalReferrals: {
                             $sum: { $cond: [{ $ne: ['$referral.referredBy', null] }, 1, 0] }
+                        },
+                        avgCreditsPerReferrer: { $avg: '$referral.totalreferralCredits' },
+                        avgReferralsPerUser: { $avg: { $cond: [{ $gt: ['$referral.totalreferralCredits', 0] }, '$referral.totalreferralCredits', 0] } }
+                    }
+                }
+            ]);
+
+            // Get time-based statistics (last 30 days)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            const recentStats = await User.aggregate([
+                {
+                    $match: {
+                        createdAt: { $gte: thirtyDaysAgo }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        newUsersLast30Days: { $sum: 1 },
+                        newReferralsLast30Days: {
+                            $sum: { $cond: [{ $ne: ['$referral.referredBy', null] }, 1, 0] }
                         }
                     }
                 }
             ]);
+
+            // Get top referrers
+            const topReferrers = await User.find({
+                'referral.totalreferralCredits': { $gt: 0 }
+            })
+                .select('name emailAddress referral.totalreferralCredits referral.userReferralCode')
+                .sort({ 'referral.totalreferralCredits': -1 })
+                .limit(5);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 analytics,
@@ -259,14 +228,29 @@ export default {
                     currentPage: parseInt(page),
                     totalPages: Math.ceil(totalCount / limit),
                     totalItems: totalCount,
-                    itemsPerPage: parseInt(limit)
+                    itemsPerPage: parseInt(limit),
+                    hasNextPage: page < Math.ceil(totalCount / limit),
+                    hasPrevPage: page > 1
                 },
                 overallStats: overallStats[0] || {
                     totalUsers: 0,
                     totalReferrers: 0,
                     totalCreditsAwarded: 0,
                     totalCreditsUsed: 0,
-                    totalReferrals: 0
+                    totalReferrals: 0,
+                    avgCreditsPerReferrer: 0,
+                    avgReferralsPerUser: 0
+                },
+                recentStats: recentStats[0] || {
+                    newUsersLast30Days: 0,
+                    newReferralsLast30Days: 0
+                },
+                topReferrers,
+                filters: {
+                    startDate,
+                    endDate,
+                    sortBy,
+                    sortOrder
                 }
             });
         } catch (err) {

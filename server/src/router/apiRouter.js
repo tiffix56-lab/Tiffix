@@ -11,6 +11,7 @@ import { uploadFiles } from '../middleware/multerHandler.js'
 import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
 import passport from '../config/passport.js'
+import { EUserRole } from '../constant/application.js'
 
 const router = Router()
 
@@ -61,93 +62,73 @@ router.route('/user-profiles/addresses').get(authentication, userProfileControll
 router.route('/user-profiles/preferences').patch(authentication, userProfileController.updatePreferences)
 
 
+// ############### REFERRAL ROUTES ####################
+router.route('/referral/validate/:referralCode').get(referralController.validateReferralCode)
+
+// User referral routes
+router.route('/referral/generate-link').get(authentication, referralController.generateReferralLink)
+router.route('/referral/stats').get(authentication, referralController.getReferralStats)
+
+// Admin referral routes
+router.route('/admin/referral/analytics').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralAnalytics)
+router.route('/admin/referral/leaderboard').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralLeaderboard)
+
 
 // ############### MENU ROUTES ####################
-// Public menu routes
-router.route('/menus').get(menuController.getAllMenus)
-router.route('/menus/available').get(menuController.getAvailableMenus)
-router.route('/menus/search').get(menuController.searchMenus)
-router.route('/menus/category/:category').get(menuController.getMenusByCategory)
-router.route('/menus/cuisine/:cuisine').get(menuController.getMenusByCuisine)
-router.route('/menus/:id').get(menuController.getMenuById)
+// Public menu routes - Simplified (use query parameters for filtering)
+router.route('/menus').get(authentication, menuController.getAllMenus)
+router.route('/menus/:id').get(authentication, menuController.getMenuById)
 
 // Admin menu routes
-router.route('/admin/menus').post(authentication, authorization(['ADMIN']), menuController.createMenu)
-router.route('/admin/menus/:id').put(authentication, authorization(['ADMIN']), menuController.updateMenu)
-router.route('/admin/menus/:id').delete(authentication, authorization(['ADMIN']), menuController.deleteMenu)
-router.route('/admin/menus/:id/toggle-availability').patch(authentication, authorization(['ADMIN']), menuController.toggleAvailability)
-router.route('/admin/menus/:id/rating').patch(authentication, authorization(['ADMIN']), menuController.updateRating)
+router.route('/admin/menus').post(authentication, authorization([EUserRole.ADMIN]), menuController.createMenu)
+router.route('/admin/menus/:id').put(authentication, authorization([EUserRole.ADMIN]), menuController.updateMenu)
+router.route('/admin/menus/:id').delete(authentication, authorization([EUserRole.ADMIN]), menuController.deleteMenu)
+router.route('/admin/menus/:id/toggle-availability').patch(authentication, authorization([EUserRole.ADMIN]), menuController.toggleAvailability)
+router.route('/admin/menus/:id/rating').patch(authentication, authorization([EUserRole.ADMIN]), menuController.updateRating)
+router.route('/admin/menus/bulk-availability').patch(authentication, authorization([EUserRole.ADMIN]), menuController.bulkUpdateAvailability)
 
 // ############### SUBSCRIPTION ROUTES ####################
 
-router.route('/subscriptions').get(subscriptionController.getAllSubscriptions)
-router.route('/subscriptions/:id').get(subscriptionController.getSubscriptionById)
-router.route('/subscriptions/:id/validate').get(subscriptionController.validateSubscription)
-
-// Legacy routes (deprecated - use query params instead)
-router.route('/subscriptions/active').get(subscriptionController.getActiveSubscriptions)
-router.route('/subscriptions/category/:category').get(subscriptionController.getSubscriptionsByCategory)
-router.route('/subscriptions/price-range').get(subscriptionController.getSubscriptionsByPriceRange)
-
-// User subscription routes
-router.route('/subscriptions/:id/purchase').post(authentication, subscriptionController.purchaseSubscription)
+router.route('/subscriptions').get(authentication, subscriptionController.getAllSubscriptions)
+router.route('/subscriptions/:id').get(authentication, subscriptionController.getSubscriptionById)
 
 // Admin subscription routes
-router.route('/admin/subscriptions').post(authentication, authorization(['ADMIN']), subscriptionController.createSubscription)
-router.route('/admin/subscriptions/:id').put(authentication, authorization(['ADMIN']), subscriptionController.updateSubscription)
-router.route('/admin/subscriptions/:id').delete(authentication, authorization(['ADMIN']), subscriptionController.deleteSubscription)
-router.route('/admin/subscriptions/:id/toggle-status').patch(authentication, authorization(['ADMIN']), subscriptionController.toggleSubscriptionStatus)
-router.route('/admin/subscriptions/stats').get(authentication, authorization(['ADMIN']), subscriptionController.getSubscriptionStats)
+router.route('/admin/subscriptions').post(authentication, authorization([EUserRole.ADMIN]), subscriptionController.createSubscription)
+router.route('/admin/subscriptions/:id').put(authentication, authorization([EUserRole.ADMIN]), subscriptionController.updateSubscription)
+router.route('/admin/subscriptions/:id').delete(authentication, authorization([EUserRole.ADMIN]), subscriptionController.deleteSubscription)
+router.route('/admin/subscriptions/:id/toggle-status').patch(authentication, authorization([EUserRole.ADMIN]), subscriptionController.toggleSubscriptionStatus)
+
 
 // ############### LOCATION ZONE ROUTES ####################
-// Public location zone routes (consolidated - use query params for filtering)
+router.route('/zones').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.getAllLocationZones)
+router.route('/zones/:id').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.getLocationZoneById)
+router.route('/zones/check-service/:pincode').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.checkServiceAvailability)
+router.route('/zones/:zoneId/delivery-fee').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.calculateDeliveryFee)
 
-router.route('/zones').get(locationZoneController.getAllLocationZones)
-router.route('/zones/:id').get(locationZoneController.getLocationZoneById)
-router.route('/zones/check-service/:pincode').get(locationZoneController.checkServiceAvailability)
-router.route('/zones/:zoneId/delivery-fee').get(locationZoneController.calculateDeliveryFee)
 
-// Admin location zone routes
-router.route('/admin/zones').post(authentication, authorization(['ADMIN']), locationZoneController.createLocationZone)
-router.route('/admin/zones/:id').put(authentication, authorization(['ADMIN']), locationZoneController.updateLocationZone)
-router.route('/admin/zones/:id').delete(authentication, authorization(['ADMIN']), locationZoneController.deleteLocationZone)
-router.route('/admin/zones/:id/toggle-status').patch(authentication, authorization(['ADMIN']), locationZoneController.toggleZoneStatus)
-router.route('/admin/zones/stats').get(authentication, authorization(['ADMIN']), locationZoneController.getZoneStats)
+router.route('/admin/zones').post(authentication, authorization([EUserRole.ADMIN]), locationZoneController.createLocationZone)
+router.route('/admin/zones/:id').put(authentication, authorization([EUserRole.ADMIN]), locationZoneController.updateLocationZone)
+router.route('/admin/zones/:id').delete(authentication, authorization([EUserRole.ADMIN]), locationZoneController.deleteLocationZone)
+router.route('/admin/zones/:id/toggle-status').patch(authentication, authorization([EUserRole.ADMIN]), locationZoneController.toggleZoneStatus)
 
 // ############### VENDOR PROFILE ROUTES ####################
-// Public vendor routes (consolidated - use query params for filtering)
-router.route('/vendors').get(vendorProfileController.getAllVendorProfiles)
-router.route('/vendors/:id').get(vendorProfileController.getVendorProfileById)
-router.route('/vendors/user/:userId').get(vendorProfileController.getVendorProfileByUserId)
 
-// Vendor routes
-router.route('/vendors/:id/toggle-availability').patch(authentication, authorization(['VENDOR', 'ADMIN']), vendorProfileController.toggleAvailability)
-router.route('/vendors/:id/capacity').patch(authentication, authorization(['VENDOR', 'ADMIN']), vendorProfileController.updateCapacity)
-router.route('/vendors/:id/rating').patch(authentication, authorization(['VENDOR', 'ADMIN']), vendorProfileController.updateRating)
+// Vendor self-management routes
+router.route('/vendors/me').get(authentication, authorization([EUserRole.VENDOR]), vendorProfileController.me)
+router.route('/vendors/me/profile').put(authentication, authorization([EUserRole.VENDOR]), vendorProfileController.updateMyProfile)
+router.route('/vendors/:id/toggle-availability').patch(authentication, authorization([EUserRole.VENDOR, EUserRole.ADMIN]), vendorProfileController.toggleAvailability)
+router.route('/vendors/:id/capacity').patch(authentication, authorization([EUserRole.VENDOR, EUserRole.ADMIN]), vendorProfileController.updateCapacity)
+router.route('/vendors/:id/rating').patch(authentication, authorization([EUserRole.VENDOR, EUserRole.ADMIN]), vendorProfileController.updateRating)
 
 // Admin vendor routes
-router.route('/admin/vendors').post(authentication, authorization(['ADMIN']), vendorProfileController.createVendorProfile)
-router.route('/admin/vendors/:id').put(authentication, authorization(['ADMIN']), vendorProfileController.updateVendorProfile)
-router.route('/admin/vendors/:id').delete(authentication, authorization(['ADMIN']), vendorProfileController.deleteVendorProfile)
-router.route('/admin/vendors/:id/verify').patch(authentication, authorization(['ADMIN']), vendorProfileController.verifyVendor)
-router.route('/admin/vendors/:id/reset-capacity').patch(authentication, authorization(['ADMIN']), vendorProfileController.resetDailyCapacity)
-router.route('/admin/vendors/stats').get(authentication, authorization(['ADMIN']), vendorProfileController.getVendorStats)
+router.route('/admin/vendors').get(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.getAllVendorProfiles)
+router.route('/admin/vendors').post(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.createVendorWithUser)
+router.route('/admin/vendors/:id').put(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.updateVendorProfile)
+router.route('/admin/vendors/:id').delete(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.deleteVendorProfile)
+router.route('/admin/vendors/:id/verify').patch(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.verifyVendor)
+router.route('/admin/vendors/:id/reset-capacity').patch(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.resetDailyCapacity)
 
 
-// ############### REFERRAL ROUTES ####################
-// Public referral routes
-router.route('/referral/validate/:referralCode').get(referralController.validateReferralCode)
-router.route('/referral/leaderboard').get(referralController.getReferralLeaderboard)
 
-// User referral routes
-router.route('/referral/apply').post(authentication, referralController.applyReferralCode)
-router.route('/referral/stats').get(authentication, referralController.getReferralStats)
-router.route('/referral/generate-link').get(authentication, referralController.generateReferralLink)
-router.route('/referral/use-credits').post(authentication, referralController.useReferralCredits)
-
-// Admin referral routes
-router.route('/admin/referral/analytics').get(authentication, authorization(['ADMIN']), referralController.getReferralAnalytics)
-
-// ############### PUBLIC ROUTES END ####################
 
 export default router

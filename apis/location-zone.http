@@ -1,0 +1,106 @@
+
+@baseURL = http://localhost:4000/v1
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6InVzZXIiLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NDM5NjgzOSwiZXhwIjoxNzU0NDgzMjM5fQ.nf4UVsCXS0RmLhduEHdOQLySkQdUSUdauxU3KFxPPcs
+@zoneId = 68925b790ce61c9a9bbf7880
+@pincode = 416788
+## Create a new location zone
+POST {{baseURL}}/admin/zones
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+    "zoneName": "Downtown Zone",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "country": "India",
+    "pincodes": ["400001", "400002"],
+    "serviceType": "both_vendor_home_chef",
+    "serviceRadius": 10,
+    "coordinates": {
+        "center": {
+            "lat": 19.0760,
+            "lng": 72.8777
+        },
+        "boundaries": [
+            { "lat": 19.0660, "lng": 72.8677 },
+            { "lat": 19.0860, "lng": 72.8877 }
+        ]
+    },
+    "deliveryFee": {
+        "baseCharge": 50,
+        "perKmCharge": 5,
+        "freeDeliveryAbove": 500
+    },
+    "operatingHours": {
+        "start": "08:00",
+        "end": "22:00"
+    },
+    "restrictions": {
+        "maxOrdersPerDay": 100,
+        "minOrderValue": 100,
+        "maxOrderValue": 5000
+    },
+    "priority": 1,
+    "notes": "Primary delivery zone for downtown Mumbai"
+}
+
+###
+
+## Get all location zones with filters
+GET {{baseURL}}/zones?page=1&limit=10&city=Mumbai&serviceType=both_vendor_home_chef&isActive=true
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Get specific location zone by ID
+GET {{baseURL}}/zones/{{zoneId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Check service availability by pincode
+GET {{baseURL}}/zones/check-service/{{pincode}}?vendorType=vendor
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Calculate delivery fee for a zone
+GET {{baseURL}}/zones/{{zoneId}}/delivery-fee?distance=5&orderValue=300
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Update location zone
+PUT {{baseURL}}/admin/zones/{{zoneId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+    "zoneName": "Updated Downtown Zone",
+    "serviceRadius": 15,
+    "deliveryFee": {
+        "baseCharge": 60,
+        "perKmCharge": 6
+    }
+}
+
+###
+
+## Toggle zone status
+PATCH {{baseURL}}/admin/zones/{{zoneId}}/toggle-status
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Delete location zone
+DELETE {{baseURL}}/admin/zones/{{zoneId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+

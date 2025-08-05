@@ -1,0 +1,104 @@
+### Referral System API Tests
+
+# Base URL
+@baseUrl = http://localhost:4000/v1
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
+@referralCode = JXAZIHTO
+
+### ========================================
+### PUBLIC REFERRAL ROUTES
+### ========================================
+
+# Validate referral code (for registration form)
+GET {{baseUrl}}/referral/validate/{{referralCode}}
+Content-Type: application/json
+
+###
+
+
+### ========================================
+### USER REFERRAL ROUTES
+### ========================================
+
+# Generate referral link
+GET {{baseUrl}}/referral/generate-link
+Authorization: Bearer {{userToken}}
+
+###
+
+# Get my referral statistics
+GET {{baseUrl}}/referral/stats
+Authorization: Bearer {{userToken}}
+
+
+### ========================================
+### ADMIN REFERRAL ROUTES
+### ========================================
+
+# Get referral leaderboard (Admin)
+GET {{baseUrl}}/admin/referral/leaderboard
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get referral leaderboard with custom limit
+GET {{baseUrl}}/admin/referral/leaderboard?limit=20
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get comprehensive referral analytics (Admin)
+GET {{baseUrl}}/admin/referral/analytics
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get referral analytics with pagination
+GET {{baseUrl}}/admin/referral/analytics?page=1&limit=10&sortBy=totalreferralCredits&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get referral analytics with date range
+GET {{baseUrl}}/admin/referral/analytics?startDate=2024-01-01&endDate=2024-12-31&page=1&limit=20
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get referral analytics sorted by different criteria
+GET {{baseUrl}}/admin/referral/analytics?sortBy=referralCreditsUsed&sortOrder=asc&limit=15
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get recent referral analytics (last 30 days)
+GET {{baseUrl}}/admin/referral/analytics?startDate=2024-07-01&sortBy=totalreferralCredits&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+### ========================================
+### REFERRAL ANALYTICS QUERY EXAMPLES
+### ========================================
+
+# Basic analytics (all time)
+# GET {{baseUrl}}/admin/referral/analytics
+
+# With pagination
+# GET {{baseUrl}}/admin/referral/analytics?page=2&limit=10
+
+# Filter by date range
+# GET {{baseUrl}}/admin/referral/analytics?startDate=2024-01-01&endDate=2024-06-30
+
+# Sort by total credits earned
+# GET {{baseUrl}}/admin/referral/analytics?sortBy=totalreferralCredits&sortOrder=desc
+
+# Sort by credits used
+# GET {{baseUrl}}/admin/referral/analytics?sortBy=referralCreditsUsed&sortOrder=desc
+
+# Sort by registration date
+# GET {{baseUrl}}/admin/referral/analytics?sortBy=createdAt&sortOrder=desc
+
+# Get top performers (high limit, sorted by credits)
+# GET {{baseUrl}}/admin/referral/analytics?limit=50&sortBy=totalreferralCredits&sortOrder=desc

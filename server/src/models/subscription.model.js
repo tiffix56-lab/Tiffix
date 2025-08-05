@@ -33,13 +33,7 @@ const subscriptionSchema = new mongoose.Schema(
         discountedPrice: {
             type: Number,
             required: true,
-            min: 0,
-            validate: {
-                validator: function (value) {
-                    return value <= this.originalPrice
-                },
-                message: 'Discounted price cannot be greater than original price'
-            }
+            min: 0
         },
         category: {
             type: String,
@@ -69,43 +63,28 @@ const subscriptionSchema = new mongoose.Schema(
             default: 0
         },
         tags: [String],
-        priority: {
-            type: Number,
-            default: 0
-        }
+
     },
     { timestamps: true }
 )
 
 subscriptionSchema.index({ category: 1 })
-subscriptionSchema.index({ vendorType: 1 })
 subscriptionSchema.index({ isActive: 1 })
-subscriptionSchema.index({ validFrom: 1, validUntil: 1 })
 subscriptionSchema.index({ discountedPrice: 1 })
-subscriptionSchema.index({ priority: -1 })
 subscriptionSchema.index({ createdAt: -1 })
+subscriptionSchema.index({ duration: 1 })
+subscriptionSchema.index({ planName: 'text', description: 'text' })
 
-subscriptionSchema.index({ category: 1, isActive: 1, validFrom: 1, validUntil: 1 })
-subscriptionSchema.index({ vendorType: 1, isActive: 1 })
+subscriptionSchema.index({ category: 1, isActive: 1 })
+subscriptionSchema.index({ category: 1, duration: 1 })
+subscriptionSchema.index({ isActive: 1, discountedPrice: 1 })
 
 subscriptionSchema.pre('save', function (next) {
-    if (this.maxPurchases && this.currentPurchases >= this.maxPurchases) {
-        this.isActive = false
-    }
-
-    if (this.validUntil && this.validUntil < new Date()) {
-        this.isActive = false
-    }
-
     next()
 })
 
 subscriptionSchema.methods.isValidNow = function () {
-    const now = new Date()
-    return this.isActive &&
-        (!this.validFrom || this.validFrom <= now) &&
-        (!this.validUntil || this.validUntil >= now) &&
-        (!this.maxPurchases || this.currentPurchases < this.maxPurchases)
+    return this.isActive
 }
 
 subscriptionSchema.methods.canPurchase = function () {
@@ -114,9 +93,6 @@ subscriptionSchema.methods.canPurchase = function () {
 
 subscriptionSchema.methods.incrementPurchases = function () {
     this.currentPurchases += 1
-    if (this.maxPurchases && this.currentPurchases >= this.maxPurchases) {
-        this.isActive = false
-    }
     return this.save()
 }
 
@@ -134,30 +110,25 @@ subscriptionSchema.methods.calculateCredits = function () {
 }
 
 subscriptionSchema.statics.findActive = function () {
-    const now = new Date()
     return this.find({
-        isActive: true,
-        $or: [
-            { validFrom: { $lte: now }, validUntil: { $gte: now } },
-            { validFrom: { $lte: now }, validUntil: null }
-        ]
-    }).sort({ priority: -1, createdAt: -1 })
+        isActive: true
+    }).sort({ createdAt: -1 })
 }
 
 subscriptionSchema.statics.findByCategory = function (category) {
     return this.find({ category, isActive: true })
-        .sort({ priority: -1, discountedPrice: 1 })
+        .sort({ discountedPrice: 1 })
 }
 
-subscriptionSchema.statics.findForVendor = function (vendorId, vendorType) {
+subscriptionSchema.statics.findForVendor = function (vendorType) {
     return this.find({
         $or: [
             { category: 'universal' },
             { category: 'both_options' },
-            { category: `${vendorType}_specific`, specificVendor: vendorId }
+            { category: `${vendorType}_specific` }
         ],
         isActive: true
-    }).sort({ priority: -1, discountedPrice: 1 })
+    }).sort({ discountedPrice: 1 })
 }
 
 subscriptionSchema.statics.findByPriceRange = function (minPrice, maxPrice) {

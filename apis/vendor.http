@@ -1,0 +1,505 @@
+### Vendor Management API Tests
+
+# Base URL
+@baseUrl = http://localhost:4000/v1
+@token = YOUR_USER_TOKEN_HERE
+@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTNmZTcwMTU1MzVkODE0MmQ1ZWUiLCJlbWFpbCI6ImpvaG4uY2hlZkBleGFtcGxlLmNvbSIsInVzZXJUeXBlIjoidmVuZG9yIiwicm9sZSI6InZlbmRvciIsImlhdCI6MTc1NDQyMDI1NCwiZXhwIjoxNzU0NTA2NjU0fQ.8q7x4egOS7r7vtQRBV7lAxTSA9SPe8_7hpp27Svp_DM
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
+@vendorId = 689254b67015535d8142d61d
+@userId = USER_ID_HERE
+
+### ========================================
+### VENDOR SELF-MANAGEMENT ROUTES
+### ========================================
+
+# Get my vendor profile
+GET {{baseUrl}}/vendors/me
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Update my vendor profile (including user info)
+PUT {{baseUrl}}/vendors/me/profile
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "user": {
+        "name": "Updated Vendor Name",
+        "emailAddress": "updated.vendor@example.com"
+    },
+    "vendorProfile": {
+        "businessInfo": {
+            "businessName": "Updated Chef Kitchen",
+            "description": "Premium home-cooked meals with authentic flavors",
+            "cuisineTypes": ["indian", "continental", "chinese"],
+            "serviceArea": {
+                "radius": 8,
+                "coordinates": {
+                    "lat": 28.6139,
+                    "lng": 77.2090
+                }
+            }
+        },
+        "operatingHours": [
+            {
+                "day": "monday",
+                "isOpen": true,
+                "openTime": "09:00",
+                "closeTime": "21:00"
+            },
+            {
+                "day": "tuesday",
+                "isOpen": true,
+                "openTime": "09:00",
+                "closeTime": "21:00"
+            },
+            {
+                "day": "wednesday",
+                "isOpen": true,
+                "openTime": "09:00",
+                "closeTime": "21:00"
+            },
+            {
+                "day": "thursday",
+                "isOpen": true,
+                "openTime": "09:00",
+                "closeTime": "21:00"
+            },
+            {
+                "day": "friday",
+                "isOpen": true,
+                "openTime": "09:00",
+                "closeTime": "22:00"
+            },
+            {
+                "day": "saturday",
+                "isOpen": true,
+                "openTime": "08:00",
+                "closeTime": "22:00"
+            },
+            {
+                "day": "sunday",
+                "isOpen": false
+            }
+        ],
+        "capacity": {
+            "dailyOrders": 25
+        }
+    }
+}
+
+###
+
+# Update only user info
+PUT {{baseUrl}}/vendors/me/profile
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "user": {
+        "name": "New Display Name"
+    }
+}
+
+###
+
+# Update only vendor profile info
+PUT {{baseUrl}}/vendors/me/profile
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "vendorProfile": {
+        "businessInfo": {
+            "businessName": "New Business Name",
+            "description": "Updated business description"
+        },
+        "capacity": {
+            "dailyOrders": 30
+        }
+    }
+}
+
+###
+
+# Toggle my availability
+PATCH {{baseUrl}}/vendors/{{vendorId}}/toggle-availability
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Update my capacity
+PATCH {{baseUrl}}/vendors/{{vendorId}}/capacity
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "orderCount": 3
+}
+
+###
+
+### ========================================
+### ADMIN VENDOR ROUTES
+### ========================================
+
+# Get all vendors (Admin) - Basic listing
+GET {{baseUrl}}/admin/vendors
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get all vendors with pagination
+GET {{baseUrl}}/admin/vendors?page=1&limit=20&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Filter vendors by type - Home Chefs only
+GET {{baseUrl}}/admin/vendors?vendorType=home_chef&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Filter vendors by type - Food Vendors only
+GET {{baseUrl}}/admin/vendors?vendorType=food_vendor&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Filter verified vendors only
+GET {{baseUrl}}/admin/vendors?isVerified=true&sortBy=rating.average&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Filter available vendors only
+GET {{baseUrl}}/admin/vendors?isAvailable=true&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Filter vendors by cuisine types
+GET {{baseUrl}}/admin/vendors?cuisineTypes=indian,chinese,continental&isVerified=true
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Filter vendors by minimum rating
+GET {{baseUrl}}/admin/vendors?minRating=4.0&sortBy=rating.average&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Advanced search - Search by business name, description, or cuisine
+GET {{baseUrl}}/admin/vendors?search=kitchen&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Complex filtering - Verified Indian home chefs with high ratings
+GET {{baseUrl}}/admin/vendors?vendorType=home_chef&isVerified=true&isAvailable=true&cuisineTypes=indian&minRating=4.0&sortBy=rating.average&sortOrder=desc&page=1&limit=5
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Pagination test - Get second page with 5 vendors per page
+GET {{baseUrl}}/admin/vendors?page=2&limit=5&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Sort by business name alphabetically
+GET {{baseUrl}}/admin/vendors?sortBy=businessInfo.businessName&sortOrder=asc&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Sort by rating (highest first)
+GET {{baseUrl}}/admin/vendors?sortBy=rating.average&sortOrder=desc&isVerified=true
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get unverified vendors for admin review
+GET {{baseUrl}}/admin/vendors?isVerified=false&sortBy=createdAt&sortOrder=asc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get unavailable vendors
+GET {{baseUrl}}/admin/vendors?isAvailable=false&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Create vendor with user account (Complete vendor creation)
+POST {{baseUrl}}/admin/vendors
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "user": {
+        "name": "John Doe Chef",
+        "emailAddress": "john.chef@example.com",
+        "phoneNumber": "919876543210",
+        "password": "SecurePass123!",
+        "timezone": "Asia/Kolkata"
+    },
+    "vendorProfile": {
+        "vendorType": "home_chef",
+        "businessInfo": {
+            "businessName": "John's Home Kitchen",
+            "description": "Authentic home-cooked meals with love and care",
+            "cuisineTypes": ["indian", "punjabi", "south_indian"],
+            "serviceArea": {
+                "radius": 5,
+                "coordinates": {
+                    "lat": 28.6139,
+                    "lng": 77.2090
+                }
+            }
+        },
+        "operatingHours": [
+            {
+                "day": "monday",
+                "isOpen": true,
+                "openTime": "10:00",
+                "closeTime": "20:00"
+            },
+            {
+                "day": "tuesday",
+                "isOpen": true,
+                "openTime": "10:00",
+                "closeTime": "20:00"
+            },
+            {
+                "day": "wednesday",
+                "isOpen": true,
+                "openTime": "10:00",
+                "closeTime": "20:00"
+            },
+            {
+                "day": "thursday",
+                "isOpen": true,
+                "openTime": "10:00",
+                "closeTime": "20:00"
+            },
+            {
+                "day": "friday",
+                "isOpen": true,
+                "openTime": "10:00",
+                "closeTime": "21:00"
+            },
+            {
+                "day": "saturday",
+                "isOpen": true,
+                "openTime": "09:00",
+                "closeTime": "21:00"
+            },
+            {
+                "day": "sunday",
+                "isOpen": false
+            }
+        ],
+        "capacity": {
+            "dailyOrders": 20
+        },
+        "documents": {
+            "businessLicense": "BL123456789",
+            "foodSafetyLicense": "FSL987654321",
+            "taxId": "TAX456789123"
+        }
+    }
+}
+
+###
+
+# Create food vendor with user account
+POST {{baseUrl}}/admin/vendors
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "user": {
+        "name": "Spice Restaurant Owner",
+        "emailAddress": "spice.restaurant@example.com",
+        "phoneNumber": "919876543211",
+        "password": "RestaurantPass123!",
+        "timezone": "Asia/Kolkata"
+    },
+    "vendorProfile": {
+        "vendorType": "food_vendor",
+        "businessInfo": {
+            "businessName": "Spice Garden Restaurant",
+            "description": "Premium restaurant serving multi-cuisine dishes",
+            "cuisineTypes": ["indian", "chinese", "continental", "italian"],
+            "serviceArea": {
+                "radius": 10,
+                "coordinates": {
+                    "lat": 28.6300,
+                    "lng": 77.2200
+                }
+            }
+        },
+        "operatingHours": [
+            {
+                "day": "monday",
+                "isOpen": true,
+                "openTime": "11:00",
+                "closeTime": "23:00"
+            },
+            {
+                "day": "tuesday",
+                "isOpen": true,
+                "openTime": "11:00",
+                "closeTime": "23:00"
+            },
+            {
+                "day": "wednesday", 
+                "isOpen": true,
+                "openTime": "11:00",
+                "closeTime": "23:00"
+            },
+            {
+                "day": "thursday",
+                "isOpen": true,
+                "openTime": "11:00",
+                "closeTime": "23:00"
+            },
+            {
+                "day": "friday",
+                "isOpen": true,
+                "openTime": "11:00",
+                "closeTime": "23:30"
+            },
+            {
+                "day": "saturday",
+                "isOpen": true,
+                "openTime": "11:00",
+                "closeTime": "23:30"
+            },
+            {
+                "day": "sunday",
+                "isOpen": true,
+                "openTime": "12:00",
+                "closeTime": "22:00"
+            }
+        ],
+        "capacity": {
+            "dailyOrders": 100
+        },
+        "documents": {
+            "businessLicense": "BL987654321",
+            "foodSafetyLicense": "FSL123456789",
+            "taxId": "TAX987654321"
+        }
+    }
+}
+
+###
+
+
+# Update vendor profile
+PUT {{baseUrl}}/admin/vendors/{{vendorId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "businessInfo": {
+        "businessName": "Updated Restaurant Name",
+        "description": "Updated description with new offerings"
+    },
+    "capacity": {
+        "dailyOrders": 75
+    },
+    "isAvailable": true
+}
+
+###
+
+# Verify vendor
+PATCH {{baseUrl}}/admin/vendors/{{vendorId}}/verify
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "isVerified": true
+}
+
+###
+
+# Unverify vendor
+PATCH {{baseUrl}}/admin/vendors/{{vendorId}}/verify
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "isVerified": false
+}
+
+###
+
+# Update vendor rating (Admin)
+PATCH {{baseUrl}}/vendors/{{vendorId}}/rating
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "rating": 4.5
+}
+
+###
+
+# Reset vendor daily capacity
+PATCH {{baseUrl}}/admin/vendors/{{vendorId}}/reset-capacity
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Delete vendor profile
+DELETE {{baseUrl}}/admin/vendors/{{vendorId}}
+Authorization: Bearer {{adminToken}}
+
+###
+
+### ========================================
+### ADMIN VENDOR LISTING QUERY EXAMPLES
+### ========================================
+
+# # Basic listing (all vendors)
+# GET {{baseUrl}}/admin/vendors
+
+# # With pagination
+# GET {{baseUrl}}/admin/vendors?page=2&limit=5
+
+# # Filter by vendor type
+# GET {{baseUrl}}/admin/vendors?vendorType=home_chef
+# GET {{baseUrl}}/admin/vendors?vendorType=food_vendor
+
+# # Filter by verification status
+# GET {{baseUrl}}/admin/vendors?isVerified=true
+# GET {{baseUrl}}/admin/vendors?isVerified=false
+
+# # Filter by availability
+# GET {{baseUrl}}/admin/vendors?isAvailable=true
+# GET {{baseUrl}}/admin/vendors?isAvailable=false
+
+# # Filter by cuisine types (comma-separated)
+# GET {{baseUrl}}/admin/vendors?cuisineTypes=indian,chinese,continental
+
+# # Filter by minimum rating
+# GET {{baseUrl}}/admin/vendors?minRating=4.0
+
+# # Search functionality (searches business name, description, cuisine)
+# GET {{baseUrl}}/admin/vendors?search=kitchen
+# GET {{baseUrl}}/admin/vendors?search=restaurant
+
+# # Sorting options
+# GET {{baseUrl}}/admin/vendors?sortBy=createdAt&sortOrder=desc
+# GET {{baseUrl}}/admin/vendors?sortBy=rating.average&sortOrder=desc
+# GET {{baseUrl}}/admin/vendors?sortBy=businessInfo.businessName&sortOrder=asc
+
+# # Complex queries (combine multiple filters)
+# GET {{baseUrl}}/admin/vendors?vendorType=home_chef&isVerified=true&cuisineTypes=indian&minRating=4&sortBy=rating.average&sortOrder=desc&page=1&limit=5

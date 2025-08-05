@@ -1,0 +1,203 @@
+### Subscription Management API Tests
+
+# Base URL
+@baseUrl = http://localhost:4000/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
+@subscriptionId = 689247be21ca814950b20383
+
+### ========================================
+### PUBLIC SUBSCRIPTION ROUTES (User Access)
+### ========================================
+
+# Get all subscriptions with pagination and filters
+GET {{baseUrl}}/subscriptions
+Authorization: Bearer {{token}}
+
+###
+
+# Get all subscriptions with query parameters
+GET {{baseUrl}}/subscriptions?page=1&limit=10&category=universal&duration=monthly&isActive=true&sortBy=discountedPrice&sortOrder=asc
+Authorization: Bearer {{token}}
+
+###
+
+# Get subscription by ID
+GET {{baseUrl}}/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{token}}
+
+###
+
+# Search subscriptions
+GET {{baseUrl}}/subscriptions?search=premium&category=universal
+Authorization: Bearer {{token}}
+
+###
+
+# Filter subscriptions by price range
+GET {{baseUrl}}/subscriptions?minPrice=100&maxPrice=500
+Authorization: Bearer {{token}}
+
+###
+
+### ========================================
+### ADMIN SUBSCRIPTION ROUTES
+### ========================================
+
+# Create new subscription plan
+POST {{baseUrl}}/admin/subscriptions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "planName": "Premium Monthly Plan",
+    "duration": "monthly",
+    "mealsPerPlan": 30,
+    "originalPrice": 999,
+    "discountedPrice": 799,
+    "category": "universal",
+    "freeDelivery": true,
+    "description": "Premium monthly subscription with 30 meals and free delivery",
+    "features": [
+        "30 meals included",
+        "Free delivery",
+        "Priority customer support",
+        "Access to premium recipes"
+    ],
+    "terms": "Valid for 30 days from purchase date. Non-refundable after 24 hours.",
+    "tags": ["premium", "monthly", "popular"],
+    "isActive": true
+}
+
+###
+
+# Create custom duration subscription
+POST {{baseUrl}}/admin/subscriptions
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "planName": "Custom 15-Day Trial",
+    "duration": "custom",
+    "customDurationDays": 15,
+    "mealsPerPlan": 15,
+    "originalPrice": 500,
+    "discountedPrice": 399,
+    "category": "food_vendor_specific",
+    "freeDelivery": false,
+    "description": "15-day trial plan for food vendors",
+    "features": [
+        "15 meals included",
+        "Vendor-specific options",
+        "Trial period benefits"
+    ],
+    "terms": "Trial period of 15 days. Cancellable anytime.",
+    "tags": ["trial", "vendor", "custom"],
+    "isActive": true
+}
+
+###
+
+# Update subscription by ID
+PUT {{baseUrl}}/admin/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "planName": "Updated Premium Plan",
+    "originalPrice": 1099,
+    "discountedPrice": 899,
+    "description": "Updated premium plan with enhanced features",
+    "features": [
+        "35 meals included",
+        "Free delivery",
+        "24/7 customer support",
+        "Access to exclusive recipes",
+        "Meal customization"
+    ],
+    "freeDelivery": true
+}
+
+###
+
+# Toggle subscription status (activate/deactivate)
+PATCH {{baseUrl}}/admin/subscriptions/{{subscriptionId}}/toggle-status
+Authorization: Bearer {{adminToken}}
+
+###
+
+#  delete subscription 
+DELETE {{baseUrl}}/admin/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{adminToken}}
+
+###
+
+### ========================================
+### SUBSCRIPTION FILTERING & SEARCH TESTS
+### ========================================
+
+# Filter by category - Universal plans
+GET {{baseUrl}}/subscriptions?category=universal&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Filter by category - Food vendor specific
+GET {{baseUrl}}/subscriptions?category=food_vendor_specific&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Filter by category - Home chef specific
+GET {{baseUrl}}/subscriptions?category=home_chef_specific&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Filter by category - Both options
+GET {{baseUrl}}/subscriptions?category=both_options&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Filter by duration - Daily plans
+GET {{baseUrl}}/subscriptions?duration=daily&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Filter by duration - Weekly plans
+GET {{baseUrl}}/subscriptions?duration=weekly&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Filter by duration - Monthly plans
+GET {{baseUrl}}/subscriptions?duration=monthly&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Filter by duration - Custom plans
+GET {{baseUrl}}/subscriptions?duration=custom&isActive=true
+Authorization: Bearer {{token}}
+
+###
+
+# Complex filtering with multiple parameters
+GET {{baseUrl}}/subscriptions?category=universal&duration=monthly&minPrice=500&maxPrice=1000&isActive=true&sortBy=discountedPrice&sortOrder=asc
+Authorization: Bearer {{token}}
+
+###
+
+# Search by plan name and description
+GET {{baseUrl}}/subscriptions?search=premium&sortBy=discountedPrice&sortOrder=desc
+Authorization: Bearer {{token}}
+
+###
+
+# Pagination test - Page 2 with 5 items per page
+GET {{baseUrl}}/subscriptions?page=2&limit=5&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{token}}
+
+###

@@ -37,7 +37,7 @@ app.use('/v1', router);
 
 app.use((req, res, next) => {
     try {
-        throw new Error(responseMessage.NOT_FOUND('route'));
+        throw new Error(responseMessage.ERROR.NOT_FOUND('route'));
     } catch (err) {
         httpError(next, err, req, 404);
     }

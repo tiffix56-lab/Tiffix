@@ -1,0 +1,203 @@
+### Variables
+@baseUrl = http://localhost:4000/v1
+@adminToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
+@menuId = 6892400f954519f4afc7f251
+
+### ============== PUBLIC MENU ROUTES ==============
+
+### 1. Get All Menus (Basic)
+GET {{baseUrl}}/menus
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 2. Get All Menus with Pagination
+GET {{baseUrl}}/menus?page=1&limit=5
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 3. Filter by Vendor Category
+GET {{baseUrl}}/menus?vendorCategory=home_chef
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 4. Filter by Cuisine
+GET {{baseUrl}}/menus?cuisine=indian
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 5. Filter by Price Range
+GET {{baseUrl}}/menus?minPrice=100&maxPrice=500
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 6. Filter by Calories Range
+GET {{baseUrl}}/menus?minCalories=200&maxCalories=800
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 7. Filter by Prep Time
+GET {{baseUrl}}/menus?minPrepTime=10&maxPrepTime=30
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 8. Filter by Rating
+GET {{baseUrl}}/menus?minRating=4.0
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 9. Filter by Dietary Options
+GET {{baseUrl}}/menus?dietaryOptions=vegetarian,vegan
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 10. Filter by Tags
+GET {{baseUrl}}/menus?tags=healthy,organic
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 11. Exclude Allergens
+GET {{baseUrl}}/menus?allergens=nuts,dairy
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 12. Filter by Availability
+GET {{baseUrl}}/menus?isAvailable=true
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 13. Filter by Credits Required
+GET {{baseUrl}}/menus?hasCreditsRequired=true
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 14. Filter by Credits Range
+GET {{baseUrl}}/menus?minCredits=5&maxCredits=20
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 15. Search Menus
+GET {{baseUrl}}/menus?search=chicken curry
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 16. Sort by Price (Ascending)
+GET {{baseUrl}}/menus?sortBy=price&sortOrder=asc
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 17. Sort by Rating (Descending)
+GET {{baseUrl}}/menus?sortBy=rating.average&sortOrder=desc
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 18. Sort by Prep Time
+GET {{baseUrl}}/menus?sortBy=prepTime&sortOrder=asc
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 19. Sort by Calories
+GET {{baseUrl}}/menus?sortBy=calories&sortOrder=desc
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 20. Sort by Available Quantity
+GET {{baseUrl}}/menus?sortBy=availableQuantity&sortOrder=desc
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 21. Complex Filter Example
+GET {{baseUrl}}/menus?vendorCategory=home_chef&cuisine=indian&minPrice=200&maxPrice=600&dietaryOptions=vegetarian&minRating=3.5&isAvailable=true&sortBy=rating.average&sortOrder=desc&page=1&limit=10
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### 22. Get Menu by ID
+GET {{baseUrl}}/menus/{{menuId}}
+Content-Type: application/json
+Authorization: {{adminToken}}
+
+### ============== ADMIN MENU ROUTES ==============
+
+### 23. Create New Menu
+POST {{baseUrl}}/admin/menus
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+{
+  "foodImage": "https://example.com/food-image.jpg",
+  "foodSubImages": [
+    "https://example.com/sub-image1.jpg",
+    "https://example.com/sub-image2.jpg"
+  ],
+  "foodTitle": "Delicious Chicken Biryani Primium",
+  "price": 299,
+  "creditsRequired": 10,
+  "description": {
+    "short": "Aromatic basmati rice cooked with tender chicken pieces and exotic spices",
+    "long": "A traditional recipe passed down through generations, featuring premium basmati rice, succulent chicken pieces marinated in yogurt and spices, slow-cooked to perfection with saffron, caramelized onions, and fresh herbs."
+  },
+  "detailedItemList": "Basmati Rice, Chicken (500g), Yogurt, Onions, Ginger-Garlic Paste, Biryani Masala, Saffron, Mint Leaves, Coriander Leaves, Ghee",
+  "vendorCategory": "home_chef",
+  "cuisine": "Indian",
+  "prepTime": 45,
+  "calories": 650,
+  "dietaryOptions": ["non-vegetarian", "dairy-free"],
+  "tags": ["spicy", "traditional", "aromatic"],
+  "allergens": ["dairy"],
+  "nutritionalInfo": {
+    "protein": 35,
+    "carbs": 75,
+    "fat": 20,
+    "fiber": 3,
+    "sugar": 8,
+    "sodium": 890
+  },
+  "servingSize": "1 full plate",
+  "availableQuantity": 20,
+  "maxOrdersPerDay": 25
+}
+
+### 24. Update Menu
+PUT {{baseUrl}}/admin/menus/{{menuId}}
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+{
+  "price": 349,
+  "description": {
+    "short": "Premium Chicken Biryani with extra saffron and nuts"
+  },
+  "availableQuantity": 15
+}
+
+### 25. Delete Menu
+DELETE {{baseUrl}}/admin/menus/{{menuId}}
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+### 26. Toggle Menu Availability
+PATCH {{baseUrl}}/admin/menus/{{menuId}}/toggle-availability
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+### 27. Update Menu Rating
+PATCH {{baseUrl}}/admin/menus/{{menuId}}/rating
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+{
+  "rating": 4.5
+}
+
+### 28. Bulk Update Menu Availability
+PATCH {{baseUrl}}/admin/menus/bulk-availability
+Authorization: {{adminToken}}
+Content-Type: application/json
+
+{
+  "menuIds": [
+    "67892abcdef123456789abcd",
+    "67892abcdef123456789abce",
+    "67892abcdef123456789abcf"
+  ],
+  "isAvailable": true
+}

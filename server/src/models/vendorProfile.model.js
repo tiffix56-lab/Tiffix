@@ -75,10 +75,7 @@ const vendorProfileSchema = new mongoose.Schema(
             type: Boolean,
             default: true
         },
-        // assignedSubscriptions: [{
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: 'Subscription'
-        // }],
+
         capacity: {
             dailyOrders: {
                 type: Number,

@@ -6,7 +6,6 @@ import LocationZone from '../../models/locationZone.model.js';
 import quicker from '../../util/quicker.js';
 
 export default {
-    // Create new location zone (Admin only)
     createLocationZone: async (req, res, next) => {
         try {
             const { body } = req;
@@ -25,7 +24,6 @@ export default {
         }
     },
 
-    // Get all location zones with comprehensive filters and search
     getAllLocationZones: async (req, res, next) => {
         try {
             const { query } = req;
@@ -129,7 +127,7 @@ export default {
                 zones = zones.map(zone => {
                     const zoneObj = zone.toObject ? zone.toObject() : zone;
                     if (zone.coordinates && zone.coordinates.center) {
-                        zoneObj.distance = calculateDistance(
+                        zoneObj.distance = quicker.calculateDistance(
                             { lat: parseFloat(lat), lng: parseFloat(lng) },
                             zone.coordinates.center
                         );
@@ -207,7 +205,7 @@ export default {
         try {
             const { id } = req.params;
 
-            const deletedZone = await LocationZone.findByIdAndUpdate(id, { isActive: false }, { new: true });
+            const deletedZone = await LocationZone.findByIdAndDelete(id);
             if (!deletedZone) {
                 return httpError(next, new Error('Location zone not found'), req, 404);
             }
@@ -305,31 +303,4 @@ export default {
         }
     },
 
-    // Get zone statistics (Admin only)
-    getZoneStats: async (req, res, next) => {
-        try {
-            const totalZones = await LocationZone.countDocuments();
-            const activeZones = await LocationZone.countDocuments({ isActive: true });
-            const inactiveZones = totalZones - activeZones;
-
-            const cityStats = await LocationZone.aggregate([
-                { $group: { _id: '$city', count: { $sum: 1 } } },
-                { $sort: { count: -1 } }
-            ]);
-
-            const serviceTypeStats = await LocationZone.aggregate([
-                { $group: { _id: '$serviceType', count: { $sum: 1 } } }
-            ]);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                totalZones,
-                activeZones,
-                inactiveZones,
-                cityStats,
-                serviceTypeStats
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    }
 };
