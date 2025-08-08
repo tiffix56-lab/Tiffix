@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateLogin, ValidateRegister, ValidateChangePassword, ValidateForgotPassword } from '../../util/validationService.js';
+import { validateJoiSchema, ValidateLogin, ValidateRegister, ValidateChangePassword, ValidateForgotPassword } from '../../service/validationService.js';
 import config from '../../config/config.js';
 import { EApplicationEnvironment, EAuthProvider, EUserRole } from '../../constant/application.js';
 import userModel from '../../models/user.model.js';

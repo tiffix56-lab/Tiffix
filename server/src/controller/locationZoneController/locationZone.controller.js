@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateCreateLocationZone, ValidateUpdateLocationZone, ValidateLocationZoneQuery } from '../../util/validationService.js';
+import { validateJoiSchema, ValidateCreateLocationZone, ValidateUpdateLocationZone, ValidateLocationZoneQuery } from '../../service/validationService.js';
 import LocationZone from '../../models/locationZone.model.js';
 import quicker from '../../util/quicker.js';
 

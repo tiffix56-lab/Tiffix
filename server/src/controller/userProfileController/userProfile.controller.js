@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateAddAddress, ValidateUserPreferences, ValidateUserIdParam, ValidateUpdateUserProfile } from '../../util/validationService.js';
+import { validateJoiSchema, ValidateAddAddress, ValidateUserPreferences, ValidateUserIdParam, ValidateUpdateUserProfile } from '../../service/validationService.js';
 import UserProfile from '../../models/userProfile.model.js';
 import User from '../../models/user.model.js';
 import quicker from '../../util/quicker.js';
