@@ -115,6 +115,71 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false
         },
+        isBanned: {
+            type: Boolean,
+            default: false
+        },
+        banDetails: {
+            _id: false,
+            bannedAt: {
+                type: Date,
+                default: null
+            },
+            bannedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+                default: null
+            },
+            banReason: {
+                type: String,
+                default: null
+            },
+            unbannedAt: {
+                type: Date,
+                default: null
+            },
+            unbannedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+                default: null
+            }
+        },
+        location: {
+            _id: false,
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: 'Point'
+            },
+            coordinates: {
+                type: [Number],
+                default: [0, 0]
+            },
+            address: {
+                type: String,
+                default: null
+            },
+            city: {
+                type: String,
+                default: null
+            },
+            state: {
+                type: String,
+                default: null
+            },
+            country: {
+                type: String,
+                default: null
+            },
+            pincode: {
+                type: String,
+                default: null
+            },
+            lastUpdated: {
+                type: Date,
+                default: null
+            }
+        },
         lastLogin: {
             type: Date,
             default: null
@@ -157,9 +222,13 @@ userSchema.index({ googleId: 1 })
 userSchema.index({ role: 1 })
 userSchema.index({ provider: 1 })
 userSchema.index({ isActive: 1 })
+userSchema.index({ isBanned: 1 })
+userSchema.index({ 'location.coordinates': '2dsphere' })
 userSchema.index({ createdAt: 1 })
 userSchema.index({ 'referral.referredBy': 1 })
 userSchema.index({ 'referral.usedReferralCode': 1 })
+userSchema.index({ role: 1, isActive: 1 })
+userSchema.index({ role: 1, isBanned: 1 })
 
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password') || !this.password) {
@@ -204,6 +273,223 @@ userSchema.statics.findByGoogleId = function (googleId) {
 
 userSchema.statics.findReferredUsers = function (userId) {
     return this.find({ 'referral.referredBy': userId })
+}
+
+userSchema.methods.banUser = function (bannedBy, reason) {
+    this.isBanned = true
+    this.banDetails = {
+        bannedAt: new Date(),
+        bannedBy: bannedBy,
+        banReason: reason,
+        unbannedAt: null,
+        unbannedBy: null
+    }
+    return this.save()
+}
+
+userSchema.methods.unbanUser = function (unbannedBy) {
+    this.isBanned = false
+    this.banDetails.unbannedAt = new Date()
+    this.banDetails.unbannedBy = unbannedBy
+    return this.save()
+}
+
+userSchema.methods.updateLocation = function (locationData) {
+    this.location = {
+        ...this.location,
+        ...locationData,
+        lastUpdated: new Date()
+    }
+    return this.save()
+}
+
+userSchema.statics.getUserStats = function () {
+    return this.aggregate([
+        {
+            $group: {
+                _id: null,
+                totalUsers: { $sum: 1 },
+                totalActiveUsers: {
+                    $sum: {
+                        $cond: [{ $eq: ['$isActive', true] }, 1, 0]
+                    }
+                },
+                totalBannedUsers: {
+                    $sum: {
+                        $cond: [{ $eq: ['$isBanned', true] }, 1, 0]
+                    }
+                },
+                totalVendors: {
+                    $sum: {
+                        $cond: [{ $eq: ['$role', 'VENDOR'] }, 1, 0]
+                    }
+                },
+                totalAdmins: {
+                    $sum: {
+                        $cond: [{ $eq: ['$role', 'ADMIN'] }, 1, 0]
+                    }
+                }
+            }
+        }
+    ])
+}
+
+userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
+    const {
+        role,
+        status,
+        search,
+        userType,
+        hasSubscription
+    } = filters
+    
+    const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+    } = options
+    
+    const matchQuery = {}
+    
+    if (role) matchQuery.role = role
+    
+    if (status) {
+        switch (status) {
+            case 'active':
+                matchQuery.isActive = true
+                matchQuery.isBanned = false
+                break
+            case 'inactive':
+                matchQuery.isActive = false
+                break
+            case 'banned':
+                matchQuery.isBanned = true
+                break
+        }
+    }
+    
+    if (search) {
+        matchQuery.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { emailAddress: { $regex: search, $options: 'i' } },
+            { 'phoneNumber.internationalNumber': { $regex: search, $options: 'i' } }
+        ]
+    }
+    
+    const pipeline = [{ $match: matchQuery }]
+    
+    if (hasSubscription === 'true') {
+        pipeline.push({
+            $lookup: {
+                from: 'usersubscriptions',
+                localField: '_id',
+                foreignField: 'userId',
+                as: 'subscriptions'
+            }
+        })
+        pipeline.push({
+            $match: {
+                'subscriptions.0': { $exists: true }
+            }
+        })
+    }
+    
+    pipeline.push({
+        $lookup: {
+            from: 'usersubscriptions',
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'subscriptions'
+        }
+    })
+    
+    pipeline.push({
+        $addFields: {
+            subscriptionCount: { $size: '$subscriptions' },
+            hasActiveSubscription: {
+                $gt: [
+                    {
+                        $size: {
+                            $filter: {
+                                input: '$subscriptions',
+                                cond: { $eq: ['$$this.status', 'active'] }
+                            }
+                        }
+                    },
+                    0
+                ]
+            }
+        }
+    })
+    
+    const sortObj = {}
+    sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1
+    pipeline.push({ $sort: sortObj })
+    
+    const skip = (page - 1) * limit
+    pipeline.push({ $skip: skip })
+    pipeline.push({ $limit: parseInt(limit) })
+    
+    return this.aggregate(pipeline)
+}
+
+userSchema.statics.countWithFilters = function (filters = {}) {
+    const {
+        role,
+        status,
+        search,
+        hasSubscription
+    } = filters
+    
+    const matchQuery = {}
+    
+    if (role) matchQuery.role = role
+    
+    if (status) {
+        switch (status) {
+            case 'active':
+                matchQuery.isActive = true
+                matchQuery.isBanned = false
+                break
+            case 'inactive':
+                matchQuery.isActive = false
+                break
+            case 'banned':
+                matchQuery.isBanned = true
+                break
+        }
+    }
+    
+    if (search) {
+        matchQuery.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { emailAddress: { $regex: search, $options: 'i' } },
+            { 'phoneNumber.internationalNumber': { $regex: search, $options: 'i' } }
+        ]
+    }
+    
+    const pipeline = [{ $match: matchQuery }]
+    
+    if (hasSubscription === 'true') {
+        pipeline.push({
+            $lookup: {
+                from: 'usersubscriptions',
+                localField: '_id',
+                foreignField: 'userId',
+                as: 'subscriptions'
+            }
+        })
+        pipeline.push({
+            $match: {
+                'subscriptions.0': { $exists: true }
+            }
+        })
+    }
+    
+    pipeline.push({ $count: 'total' })
+    
+    return this.aggregate(pipeline)
 }
 
 userSchema.methods.toJSON = function () {

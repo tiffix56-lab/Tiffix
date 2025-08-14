@@ -7,6 +7,10 @@ import locationZoneController from '../controller/locationZoneController/locatio
 import vendorProfileController from '../controller/vendorProfileController/vendorProfile.controller.js'
 import userProfileController from '../controller/userProfileController/userProfile.controller.js'
 import referralController from '../controller/referralController/referral.controller.js'
+import promoCodeController from '../controller/promoCodeController/promoCode.controller.js'
+import subscriptionPurchaseController from '../controller/subscriptionPurchaseController/subscriptionPurchase.controller.js'
+import transactionController from '../controller/transactionController/transaction.controller.js'
+import userAdminController from '../controller/AdminController/user.admincontroller.js'
 import { uploadFiles } from '../middleware/multerHandler.js'
 import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
@@ -32,6 +36,8 @@ router.route('/auth/forgot-password').post(authController.forgotPassword)
 router.route('/auth/reset-password').post(authController.resetPassword)
 router.route('/auth/me').get(authentication, authController.me)
 router.route('/auth/init-profile-fill').post(authentication, authController.updatePhoneNumber)
+router.route('/auth/location').put(authentication, authController.updateLocation)
+router.route('/auth/location').get(authentication, authController.getUserLocation)
 
 // OAuth routes
 router.route('/auth/google').get(passport.authenticate('google', { scope: ['profile', 'email'] }))
@@ -60,6 +66,8 @@ router.route('/user-profiles/addresses').get(authentication, userProfileControll
 
 // Preferences and credits
 router.route('/user-profiles/preferences').patch(authentication, userProfileController.updatePreferences)
+router.route('/user-profiles/credits').get(authentication, userProfileController.getCreditsBalance)
+router.route('/user-profiles/credits/use').post(authentication, userProfileController.useCredits)
 
 
 // ############### REFERRAL ROUTES ####################
@@ -128,7 +136,58 @@ router.route('/admin/vendors/:id').delete(authentication, authorization([EUserRo
 router.route('/admin/vendors/:id/verify').patch(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.verifyVendor)
 router.route('/admin/vendors/:id/reset-capacity').patch(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.resetDailyCapacity)
 
+// ############### PROMO CODE ROUTES ####################
+// Public promo code routes
+router.route('/promo-codes/validate').post(authentication, promoCodeController.validatePromoCode)
 
+// Admin promo code routes
+router.route('/admin/promo-codes').get(authentication, authorization([EUserRole.ADMIN]), promoCodeController.getAllPromoCodes)
+router.route('/admin/promo-codes').post(authentication, authorization([EUserRole.ADMIN]), promoCodeController.createPromoCode)
+router.route('/admin/promo-codes/expiring').get(authentication, authorization([EUserRole.ADMIN]), promoCodeController.getExpiringPromoCodes)
+router.route('/admin/promo-codes/bulk-create').post(authentication, authorization([EUserRole.ADMIN]), promoCodeController.bulkCreatePromoCodes)
+router.route('/admin/promo-codes/:id').get(authentication, authorization([EUserRole.ADMIN]), promoCodeController.getPromoCodeById)
+router.route('/admin/promo-codes/:id').put(authentication, authorization([EUserRole.ADMIN]), promoCodeController.updatePromoCode)
+router.route('/admin/promo-codes/:id').delete(authentication, authorization([EUserRole.ADMIN]), promoCodeController.deletePromoCode)
+router.route('/admin/promo-codes/:id/toggle-status').patch(authentication, authorization([EUserRole.ADMIN]), promoCodeController.togglePromoCodeStatus)
+router.route('/admin/promo-codes/:id/stats').get(authentication, authorization([EUserRole.ADMIN]), promoCodeController.getPromoCodeStats)
 
+// ############### SUBSCRIPTION PURCHASE ROUTES ####################
+// User subscription purchase routes
+router.route('/purchase/initiate').post(authentication, subscriptionPurchaseController.initiatePurchase)
+router.route('/purchase/verify').post(authentication, subscriptionPurchaseController.verifyPayment)
+router.route('/purchase/webhook').post(subscriptionPurchaseController.processWebhook) // No auth for webhook
+
+// User subscription management
+router.route('/user-subscriptions').get(authentication, subscriptionPurchaseController.getUserSubscriptions)
+router.route('/user-subscriptions/active').get(authentication, subscriptionPurchaseController.getActiveSubscriptions)
+router.route('/user-subscriptions/:id').get(authentication, subscriptionPurchaseController.getSubscriptionById)
+
+// Transaction status
+router.route('/transactions/:transactionId/status').get(authentication, subscriptionPurchaseController.getTransactionStatus)
+
+// ############### TRANSACTION & ANALYTICS ROUTES ####################
+// User transaction routes
+router.route('/my-transactions').get(authentication, transactionController.getUserTransactions)
+
+// Admin transaction routes
+router.route('/admin/transactions').get(authentication, authorization([EUserRole.ADMIN]), transactionController.getAllTransactions)
+router.route('/admin/transactions/failed').get(authentication, authorization([EUserRole.ADMIN]), transactionController.getFailedTransactions)
+router.route('/admin/transactions/stats').get(authentication, authorization([EUserRole.ADMIN]), transactionController.getTransactionStats)
+router.route('/admin/transactions/export').get(authentication, authorization([EUserRole.ADMIN]), transactionController.exportTransactions)
+router.route('/admin/transactions/:id').get(authentication, authorization([EUserRole.ADMIN]), transactionController.getTransactionById)
+router.route('/admin/transactions/:id/refund').post(authentication, authorization([EUserRole.ADMIN]), transactionController.processRefund)
+
+// ############### ADMIN USER MANAGEMENT ROUTES ####################
+// Admin user overview and statistics
+router.route('/admin/users/overview').get(authentication, authorization([EUserRole.ADMIN]), userAdminController.getUserOverview)
+router.route('/admin/users/activity-stats').get(authentication, authorization([EUserRole.ADMIN]), userAdminController.getUserActivityStats)
+
+// Admin user management
+router.route('/admin/users').get(authentication, authorization([EUserRole.ADMIN]), userAdminController.getAllUsers)
+router.route('/admin/users/:id').get(authentication, authorization([EUserRole.ADMIN]), userAdminController.getUserById)
+router.route('/admin/users/:id').delete(authentication, authorization([EUserRole.ADMIN]), userAdminController.deleteUser)
+router.route('/admin/users/:id/ban').post(authentication, authorization([EUserRole.ADMIN]), userAdminController.banUser)
+router.route('/admin/users/:id/unban').post(authentication, authorization([EUserRole.ADMIN]), userAdminController.unbanUser)
+router.route('/admin/users/:id/toggle-status').put(authentication, authorization([EUserRole.ADMIN]), userAdminController.toggleUserStatus)
 
 export default router
