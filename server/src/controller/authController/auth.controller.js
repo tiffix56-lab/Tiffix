@@ -600,6 +600,39 @@ export default {
 
             await user.updateLocation(locationData);
 
+            // Check if user has profile and handle default address
+            let userProfile = await userProfileModel.findOne({ userId });
+            if (userProfile) {
+                // Check if user has no default address or no addresses at all
+                const hasDefaultAddress = userProfile.addresses && userProfile.addresses.some(addr => addr.isDefault);
+                
+                if (!hasDefaultAddress || userProfile.addresses.length === 0) {
+                    // Create a new address from location data and mark as default
+                    const newAddress = {
+                        label: 'Default Address',
+                        street: address || 'Not specified',
+                        city: city || 'Not specified',
+                        state: state || 'Not specified',
+                        zipCode: pincode || '000000',
+                        coordinates: {
+                            type: 'Point',
+                            coordinates: [lng, lat]
+                        },
+                        isDefault: true
+                    };
+
+                    // If there are existing addresses, mark them as non-default
+                    if (userProfile.addresses && userProfile.addresses.length > 0) {
+                        userProfile.addresses.forEach(addr => {
+                            addr.isDefault = false;
+                        });
+                    }
+
+                    userProfile.addresses.push(newAddress);
+                    await userProfile.save();
+                }
+            }
+
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 message: 'Location updated successfully',
                 location: {

@@ -3,6 +3,8 @@ import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
 import { validateJoiSchema, ValidateCreateLocationZone, ValidateUpdateLocationZone, ValidateLocationZoneQuery } from '../../service/validationService.js';
 import LocationZone from '../../models/locationZone.model.js';
+import User from '../../models/user.model.js';
+import VendorProfile from '../../models/vendorProfile.model.js';
 import quicker from '../../util/quicker.js';
 
 export default {
@@ -136,8 +138,203 @@ export default {
                 });
             }
 
+            // Add zone-specific statistics for each zone
+            const zonesWithStats = await Promise.all(zones.map(async (zone) => {
+                const zoneObj = zone.toObject ? zone.toObject() : zone;
+                
+                // Get statistics for this specific zone
+                const zoneStats = await Promise.all([
+                    // Users in this zone (based on location pincode)
+                    User.aggregate([
+                        {
+                            $match: {
+                                'location.pincode': { $in: zoneObj.pincodes || [] },
+                                role: 'USER'
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: null,
+                                totalUsers: { $sum: 1 },
+                                activeUsers: {
+                                    $sum: {
+                                        $cond: [{ $eq: ['$isActive', true] }, 1, 0]
+                                    }
+                                },
+                                recentlyActiveUsers: {
+                                    $sum: {
+                                        $cond: [{
+                                            $and: [
+                                                { $eq: ['$isActive', true] },
+                                                { $gte: ['$lastLogin', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] }
+                                            ]
+                                        }, 1, 0]
+                                    }
+                                }
+                            }
+                        }
+                    ]),
+
+                    // Vendors in this zone
+                    VendorProfile.aggregate([
+                        {
+                            $lookup: {
+                                from: 'users',
+                                localField: 'userId',
+                                foreignField: '_id',
+                                as: 'user'
+                            }
+                        },
+                        {
+                            $match: {
+                                'user.location.pincode': { $in: zoneObj.pincodes || [] }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: null,
+                                totalVendors: { $sum: 1 },
+                                totalChefs: {
+                                    $sum: {
+                                        $cond: [{ $eq: ['$vendorType', 'home_chef'] }, 1, 0]
+                                    }
+                                },
+                                totalFoodVendors: {
+                                    $sum: {
+                                        $cond: [{ $eq: ['$vendorType', 'food_vendor'] }, 1, 0]
+                                    }
+                                },
+                                verifiedVendors: {
+                                    $sum: {
+                                        $cond: [{ $eq: ['$isVerified', true] }, 1, 0]
+                                    }
+                                },
+                                availableVendors: {
+                                    $sum: {
+                                        $cond: [{ $eq: ['$isAvailable', true] }, 1, 0]
+                                    }
+                                }
+                            }
+                        }
+                    ])
+                ]);
+
+                // Add stats to zone object
+                zoneObj.stats = {
+                    users: {
+                        totalUsers: zoneStats[0][0]?.totalUsers || 0,
+                        activeUsers: zoneStats[0][0]?.activeUsers || 0,
+                        recentlyActiveUsers: zoneStats[0][0]?.recentlyActiveUsers || 0
+                    },
+                    vendors: {
+                        totalVendors: zoneStats[1][0]?.totalVendors || 0,
+                        totalChefs: zoneStats[1][0]?.totalChefs || 0,
+                        totalFoodVendors: zoneStats[1][0]?.totalFoodVendors || 0,
+                        verifiedVendors: zoneStats[1][0]?.verifiedVendors || 0,
+                        availableVendors: zoneStats[1][0]?.availableVendors || 0
+                    }
+                };
+
+                return zoneObj;
+            }));
+
+            // Add global aggregated stats for all zones and users/vendors in the system
+            const stats = await Promise.all([
+                // Total zones
+                LocationZone.countDocuments(),
+                LocationZone.countDocuments({ isActive: true }),
+                
+                // Global user statistics
+                User.aggregate([
+                    {
+                        $match: {
+                            role: 'USER'
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalUsers: { $sum: 1 },
+                            activeUsers: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$isActive', true] }, 1, 0]
+                                }
+                            },
+                            recentlyActiveUsers: {
+                                $sum: {
+                                    $cond: [{
+                                        $and: [
+                                            { $eq: ['$isActive', true] },
+                                            { $gte: ['$lastLogin', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] }
+                                        ]
+                                    }, 1, 0]
+                                }
+                            }
+                        }
+                    }
+                ]),
+
+                // Global vendor statistics
+                VendorProfile.aggregate([
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'user'
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalVendors: { $sum: 1 },
+                            totalChefs: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$vendorType', 'home_chef'] }, 1, 0]
+                                }
+                            },
+                            totalFoodVendors: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$vendorType', 'food_vendor'] }, 1, 0]
+                                }
+                            },
+                            verifiedVendors: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$isVerified', true] }, 1, 0]
+                                }
+                            },
+                            availableVendors: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$isAvailable', true] }, 1, 0]
+                                }
+                            }
+                        }
+                    }
+                ])
+            ]);
+
+            const globalStats = {
+                zones: {
+                    totalZones: stats[0],
+                    activeZones: stats[1]
+                },
+                users: {
+                    totalUsers: stats[2][0]?.totalUsers || 0,
+                    activeUsers: stats[2][0]?.activeUsers || 0,
+                    recentlyActiveUsers: stats[2][0]?.recentlyActiveUsers || 0
+                },
+                vendors: {
+                    totalVendors: stats[3][0]?.totalVendors || 0,
+                    totalChefs: stats[3][0]?.totalChefs || 0,
+                    totalFoodVendors: stats[3][0]?.totalFoodVendors || 0,
+                    verifiedVendors: stats[3][0]?.verifiedVendors || 0,
+                    availableVendors: stats[3][0]?.availableVendors || 0
+                }
+            };
+
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                zones,
+                zones: zonesWithStats,
+                globalStats: globalStats,
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: Math.ceil(total / parseInt(limit)),
@@ -170,7 +367,81 @@ export default {
                 return httpError(next, new Error('Location zone not found'), req, 404);
             }
 
-            httpResponse(req, res, 200, responseMessage.SUCCESS, { zone });
+            // Get aggregated stats for this specific zone
+            const stats = await Promise.all([
+                // Users in this zone (based on location pincode)
+                User.aggregate([
+                    {
+                        $match: {
+                            'location.pincode': { $in: zone.pincodes || [] },
+                            role: 'USER'
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalUsers: { $sum: 1 },
+                            activeUsers: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$isActive', true] }, 1, 0]
+                                }
+                            }
+                        }
+                    }
+                ]),
+
+                // Vendors in this zone
+                VendorProfile.aggregate([
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'user'
+                        }
+                    },
+                    {
+                        $match: {
+                            'user.location.pincode': { $in: zone.pincodes || [] }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalVendors: { $sum: 1 },
+                            totalChefs: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$vendorType', 'home_chef'] }, 1, 0]
+                                }
+                            },
+                            verifiedVendors: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$isVerified', true] }, 1, 0]
+                                }
+                            },
+                            availableVendors: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$isAvailable', true] }, 1, 0]
+                                }
+                            }
+                        }
+                    }
+                ])
+            ]);
+
+            const zoneStats = {
+                totalUsers: stats[0][0]?.totalUsers || 0,
+                activeUsers: stats[0][0]?.activeUsers || 0,
+                totalVendors: stats[1][0]?.totalVendors || 0,
+                totalChefs: stats[1][0]?.totalChefs || 0,
+                verifiedVendors: stats[1][0]?.verifiedVendors || 0,
+                availableVendors: stats[1][0]?.availableVendors || 0
+            };
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, { 
+                zone: zone.toObject(),
+                stats: zoneStats
+            });
         } catch (err) {
             httpError(next, err, req, 500);
         }

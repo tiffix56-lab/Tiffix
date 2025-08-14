@@ -3,7 +3,7 @@
 # Base URL
 @baseUrl = http://localhost:4000/v1
 @token = YOUR_USER_TOKEN_HERE
-@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTNmZTcwMTU1MzVkODE0MmQ1ZWUiLCJlbWFpbCI6ImpvaG4uY2hlZkBleGFtcGxlLmNvbSIsInVzZXJUeXBlIjoidmVuZG9yIiwicm9sZSI6InZlbmRvciIsImlhdCI6MTc1NDQyMDI1NCwiZXhwIjoxNzU0NTA2NjU0fQ.8q7x4egOS7r7vtQRBV7lAxTSA9SPe8_7hpp27Svp_DM
+@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTNmZTcwMTU1MzVkODE0MmQ1ZWUiLCJlbWFpbCI6InZlbmRvckBnbWFpbC5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTUxOTU3OTEsImV4cCI6MTc1NTI4MjE5MX0.kWk0q4KBcFutToA0jatDFtaHAXmvNrzBQmI2xieKxHs
 @adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
 @vendorId = 689254b67015535d8142d61d
 @userId = USER_ID_HERE
@@ -136,6 +136,23 @@ Content-Type: application/json
 
 {
     "orderCount": 3
+}
+
+###
+
+# Update my address (Vendor self-management)
+PUT {{baseUrl}}/vendors/me/address
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "street": "123 Business Street, Unit 5",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "country": "India",
+    "zipCode": "400001",
+    "latitude": 19.0760,
+    "longitude": 72.8777
 }
 
 ###
@@ -455,6 +472,23 @@ Content-Type: application/json
 # Reset vendor daily capacity
 PATCH {{baseUrl}}/admin/vendors/{{vendorId}}/reset-capacity
 Authorization: Bearer {{adminToken}}
+
+###
+
+# Update vendor address (Admin)
+PUT {{baseUrl}}/admin/vendors/{{vendorId}}/address
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "street": "456 Commercial Plaza, Shop 10",
+    "city": "Delhi",
+    "state": "Delhi",
+    "country": "India",
+    "zipCode": "110001",
+    "latitude": 28.6139,
+    "longitude": 77.2090
+}
 
 ###
 

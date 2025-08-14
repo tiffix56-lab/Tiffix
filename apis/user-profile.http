@@ -1,7 +1,7 @@
 ### User Profile API Testing
 
 @baseURL = http://localhost:4000/v1
-@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6InVzZXIiLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NDM5NjgzOSwiZXhwIjoxNzU0NDgzMjM5fQ.nf4UVsCXS0RmLhduEHdOQLySkQdUSUdauxU3KFxPPcs
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODllMmE1ZTI2NzQyODAwODMyMjA0NGMiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxOTYwMDYsImV4cCI6MTc1NTI4MjQwNn0.eqaXScMU4e1Yvso5qobenLfGgLlbUuUfcaDKeq381qw
 
 ### Get User Profile
 GET {{baseURL}}/user-profiles
@@ -59,8 +59,8 @@ Content-Type: application/json
   "state": "Maharashtra",
   "zipCode": "400001",
   "coordinates": {
-    "lat": 19.0760,
-    "lng": 72.8777
+    "type": "Point",
+    "coordinates": [72.8777, 19.0760]
   },
   "isDefault": true
 }
@@ -77,8 +77,8 @@ Content-Type: application/json
   "state": "Maharashtra", 
   "zipCode": "400051",
   "coordinates": {
-    "lat": 19.1136,
-    "lng": 72.8697
+    "type": "Point",
+    "coordinates": [72.8697, 19.1136]
   },
   "isDefault": false
 }
@@ -99,8 +99,8 @@ Content-Type: application/json
   "state": "Maharashtra",
   "zipCode": "400001",
   "coordinates": {
-    "lat": 19.1136,
-    "lng": 72.8697
+    "type": "Point", 
+    "coordinates": [72.8697, 19.1136]
   },
   "isDefault": true
 }

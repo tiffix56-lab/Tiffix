@@ -68,10 +68,23 @@ export const ValidateAddAddress = Joi.object({
     state: Joi.string().min(2).max(50).trim().required(),
     zipCode: Joi.string().pattern(/^[0-9]{6}$/).required(),
     coordinates: Joi.object({
-        lat: Joi.number().min(-90).max(90).optional(),
-        lng: Joi.number().min(-180).max(180).optional()
-    }).optional(),
+        type: Joi.string().valid('Point').default('Point'),
+        coordinates: Joi.array().items(
+            Joi.number().min(-180).max(180), // longitude
+            Joi.number().min(-90).max(90)    // latitude
+        ).length(2).required()
+    }).required(),
     isDefault: Joi.boolean().optional()
+});
+
+export const ValidateVendorAddress = Joi.object({
+    street: Joi.string().min(5).max(200).trim().required(),
+    city: Joi.string().min(2).max(50).trim().required(),
+    state: Joi.string().min(2).max(50).trim().required(),
+    country: Joi.string().min(2).max(50).trim().optional(),
+    zipCode: Joi.string().pattern(/^[0-9]{6}$/).required(),
+    latitude: Joi.number().min(-90).max(90).optional(),
+    longitude: Joi.number().min(-180).max(180).optional()
 });
 
 export const ValidateUserPreferences = Joi.object({

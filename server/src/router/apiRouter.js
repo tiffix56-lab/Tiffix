@@ -124,6 +124,7 @@ router.route('/admin/zones/:id/toggle-status').patch(authentication, authorizati
 // Vendor self-management routes
 router.route('/vendors/me').get(authentication, authorization([EUserRole.VENDOR]), vendorProfileController.me)
 router.route('/vendors/me/profile').put(authentication, authorization([EUserRole.VENDOR]), vendorProfileController.updateMyProfile)
+router.route('/vendors/me/address').put(authentication, authorization([EUserRole.VENDOR]), vendorProfileController.updateMyAddress)
 router.route('/vendors/:id/toggle-availability').patch(authentication, authorization([EUserRole.VENDOR, EUserRole.ADMIN]), vendorProfileController.toggleAvailability)
 router.route('/vendors/:id/capacity').patch(authentication, authorization([EUserRole.VENDOR, EUserRole.ADMIN]), vendorProfileController.updateCapacity)
 router.route('/vendors/:id/rating').patch(authentication, authorization([EUserRole.VENDOR, EUserRole.ADMIN]), vendorProfileController.updateRating)
@@ -133,6 +134,7 @@ router.route('/admin/vendors').get(authentication, authorization([EUserRole.ADMI
 router.route('/admin/vendors').post(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.createVendorWithUser)
 router.route('/admin/vendors/:id').put(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.updateVendorProfile)
 router.route('/admin/vendors/:id').delete(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.deleteVendorProfile)
+router.route('/admin/vendors/:id/address').put(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.updateVendorAddress)
 router.route('/admin/vendors/:id/verify').patch(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.verifyVendor)
 router.route('/admin/vendors/:id/reset-capacity').patch(authentication, authorization([EUserRole.ADMIN]), vendorProfileController.resetDailyCapacity)
 

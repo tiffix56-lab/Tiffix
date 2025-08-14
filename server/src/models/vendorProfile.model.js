@@ -39,6 +39,39 @@ const vendorProfileSchema = new mongoose.Schema(
                         required: true
                     }
                 }
+            },
+            address: {
+                street: {
+                    type: String,
+                    default: null
+                },
+                city: {
+                    type: String,
+                    default: null
+                },
+                state: {
+                    type: String,
+                    default: null
+                },
+                country: {
+                    type: String,
+                    default: null
+                },
+                zipCode: {
+                    type: String,
+                    default: null
+                },
+                coordinates: {
+                    type: {
+                        type: String,
+                        enum: ['Point'],
+                        default: 'Point'
+                    },
+                    coordinates: {
+                        type: [Number],
+                        default: [0, 0]
+                    }
+                }
             }
         },
         operatingHours: [{
@@ -99,6 +132,7 @@ const vendorProfileSchema = new mongoose.Schema(
 vendorProfileSchema.index({ userId: 1 }, { unique: true })
 vendorProfileSchema.index({ vendorType: 1 })
 vendorProfileSchema.index({ 'businessInfo.serviceArea.coordinates': '2dsphere' })
+vendorProfileSchema.index({ 'businessInfo.address.coordinates': '2dsphere' })
 vendorProfileSchema.index({ 'businessInfo.cuisineTypes': 1 })
 vendorProfileSchema.index({ 'rating.average': -1 })
 vendorProfileSchema.index({ isVerified: 1 })
@@ -175,6 +209,32 @@ vendorProfileSchema.methods.calculateDistance = function (coord1, coord2) {
         Math.sin(dLon / 2) * Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
+}
+
+vendorProfileSchema.methods.updateAddress = function (addressData) {
+    const { street, city, state, country, zipCode, lat, lng } = addressData
+    
+    this.businessInfo.address = {
+        street: street || null,
+        city: city || null,
+        state: state || null,
+        country: country || null,
+        zipCode: zipCode || null,
+        coordinates: {
+            type: 'Point',
+            coordinates: [lng || 0, lat || 0]
+        }
+    }
+
+    // Also update service area coordinates if provided
+    if (lat && lng) {
+        this.businessInfo.serviceArea.coordinates = {
+            lat: parseFloat(lat),
+            lng: parseFloat(lng)
+        }
+    }
+
+    return this.save()
 }
 
 // Static methods

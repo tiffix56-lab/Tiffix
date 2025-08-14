@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import TimezoneUtil from "../util/timezone.js"
+import { EVendorType } from '../constant/application.js'
 const userProfileSchema = new mongoose.Schema(
     {
         userId: {
@@ -8,7 +9,8 @@ const userProfileSchema = new mongoose.Schema(
             required: true,
             unique: true
         },
-        addresses: [{
+        addresses: {
+            type: [{
             _id: false,
             label: {
                 type: String,
@@ -31,14 +33,23 @@ const userProfileSchema = new mongoose.Schema(
                 required: true
             },
             coordinates: {
-                lat: Number,
-                lng: Number
+                type: {
+                    type: String,
+                    enum: ['Point'],
+                    default: 'Point'
+                },
+                coordinates: {
+                    type: [Number],
+                    default: [0, 0]
+                }
             },
             isDefault: {
                 type: Boolean,
                 default: false
             }
         }],
+            default: []
+        },
         preferences: {
             dietary: [{
                 type: String,
@@ -51,50 +62,84 @@ const userProfileSchema = new mongoose.Schema(
                 default: 'medium'
             }
         },
-        // orderHistory: [{
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: 'Order'
-        // }],
+        orderDetails: {
+            orderVendorType: {
+                type: String,
+                enum: [...Object.values(EVendorType)]
+            },
+            mealsDetailsDayWise: [
+                {
+                    day: {
+                        type: String,
+                        enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+                        required: true
+                    },
+                    menu: {
+                        type: mongoose.Schema.Types.ObjectId,
+                        ref: 'Menu',
+                    }
+                }
+            ],
+            orderStartDate: {
+                type: Date,
+                default: null
+            },
+            lunchTime: {
+                type: Date,
+                require: true
+            },
+            dinnerTime: {
+                type: Date,
+                require: true
+            }
+        },
+
         // favoriteVendors: [{
         //     type: mongoose.Schema.Types.ObjectId,
         //     ref: 'User'
         // }],
-        activeSubscriptions: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Subscription'
-        }],
-        credits: [{
-            _id: false,
-            subscriptionType: {
-                type: String,
-                enum: ['universal', 'food_vendor_specific', 'home_chef_specific', 'both_options'],
-                required: true
-            },
-            subscriptionId: {
+        activeSubscriptions: {
+            type: [{
                 type: mongoose.Schema.Types.ObjectId,
-                ref: 'Subscription',
-                required: true
-            },
-            totalCredits: {
-                type: Number,
-                required: true,
-                min: 0
-            },
-            usedCredits: {
-                type: Number,
-                default: 0,
-                min: 0
-            },
-            purchasedAt: {
-                type: Date,
-                required: true
-            },
-            transactionId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Transaction',
-                required: true
-            }
-        }],
+                ref: 'Subscription'
+            }],
+            default: []
+        },
+        credits: {
+            type: [{
+                _id: false,
+                subscriptionType: {
+                    type: String,
+                    enum: ['universal', 'food_vendor_specific', 'home_chef_specific', 'both_options'],
+                    required: true
+                },
+                subscriptionId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Subscription',
+                    required: true
+                },
+                totalCredits: {
+                    type: Number,
+                    required: true,
+                    min: 0
+                },
+                usedCredits: {
+                    type: Number,
+                    default: 0,
+                    min: 0
+                },
+                purchasedAt: {
+                    type: Date,
+                    required: true
+                },
+                transactionId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Transaction',
+                    required: true
+                }
+            }],
+            default: []
+        },
 
 
     },
@@ -112,6 +157,18 @@ userProfileSchema.index({ credits: 1 })
 userProfileSchema.index({ createdAt: 1 })
 
 userProfileSchema.pre('save', function (next) {
+    // Ensure arrays are properly initialized
+    if (!Array.isArray(this.addresses)) {
+        this.addresses = []
+    }
+    if (!Array.isArray(this.credits)) {
+        this.credits = []
+    }
+    if (!Array.isArray(this.activeSubscriptions)) {
+        this.activeSubscriptions = []
+    }
+    
+    // Handle default address logic
     if (this.addresses && this.addresses.length > 0) {
         const defaultAddresses = this.addresses.filter(addr => addr.isDefault)
         if (defaultAddresses.length > 1) {

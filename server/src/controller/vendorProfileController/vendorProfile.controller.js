@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateCreateVendorProfile, ValidateUpdateVendorProfile, ValidateVendorProfileQuery, ValidateVerifyVendor, ValidateUpdateCapacity, ValidateUpdateRating, ValidateNearbyVendors, ValidateVendorTypeParam, ValidateVendorCuisineParam, ValidateVendorIdParam, ValidateUserIdParam, ValidateCreateVendorWithUser, ValidateUpdateVendorWithUserInfo } from '../../service/validationService.js';
+import { validateJoiSchema, ValidateCreateVendorProfile, ValidateUpdateVendorProfile, ValidateVendorProfileQuery, ValidateVerifyVendor, ValidateUpdateCapacity, ValidateUpdateRating, ValidateNearbyVendors, ValidateVendorTypeParam, ValidateVendorCuisineParam, ValidateVendorIdParam, ValidateUserIdParam, ValidateCreateVendorWithUser, ValidateUpdateVendorWithUserInfo, ValidateVendorAddress } from '../../service/validationService.js';
 import VendorProfile from '../../models/vendorProfile.model.js';
 import User from '../../models/user.model.js';
 import { EUserRole } from '../../constant/application.js';
@@ -405,6 +405,83 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 vendorProfile: updatedProfile,
                 message: 'Profile updated successfully'
+            });
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+
+    updateVendorAddress: async (req, res, next) => {
+        try {
+            const { error: paramError, value: paramValue } = validateJoiSchema(ValidateVendorIdParam, req.params);
+            if (paramError) {
+                return httpError(next, paramError, req, 422);
+            }
+
+            const { error, value } = validateJoiSchema(ValidateVendorAddress, req.body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+
+            const { street, city, state, country, zipCode, latitude, longitude } = value;
+
+            const vendor = await VendorProfile.findById(paramValue.id);
+            if (!vendor) {
+                return httpError(next, new Error('Vendor profile not found'), req, 404);
+            }
+
+            const addressData = {
+                street,
+                city,
+                state,
+                country,
+                zipCode,
+                lat: latitude ? parseFloat(latitude) : null,
+                lng: longitude ? parseFloat(longitude) : null
+            };
+
+            await vendor.updateAddress(addressData);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                vendorProfile: vendor,
+                message: 'Address updated successfully'
+            });
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+
+    updateMyAddress: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser;
+
+            const { error, value } = validateJoiSchema(ValidateVendorAddress, req.body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+
+            const { street, city, state, country, zipCode, latitude, longitude } = value;
+
+            const vendor = await VendorProfile.findOne({ userId });
+            if (!vendor) {
+                return httpError(next, new Error('Vendor profile not found'), req, 404);
+            }
+
+            const addressData = {
+                street,
+                city,
+                state,
+                country,
+                zipCode,
+                lat: latitude ? parseFloat(latitude) : null,
+                lng: longitude ? parseFloat(longitude) : null
+            };
+
+            await vendor.updateAddress(addressData);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                vendorProfile: vendor,
+                message: 'Address updated successfully'
             });
         } catch (err) {
             httpError(next, err, req, 500);
