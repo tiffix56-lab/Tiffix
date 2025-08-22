@@ -33,13 +33,13 @@ export default {
 
             const user = await userModel.findOne({ emailAddress });
             if (!user) {
-                return httpError(next, new Error(responseMessage.INVALID_CREDENTIALS), req, 401);
+                return httpError(next, new Error(responseMessage.AUTH.ACCOUNT_NOT_FOUND), req, 401);
             }
 
             const isPasswordValid = await user.comparePassword(password);
 
             if (!isPasswordValid) {
-                return httpError(next, new Error(responseMessage.INVALID_CREDENTIALS), req, 401);
+                return httpError(next, new Error(responseMessage.AUTH.PASSWORD_NOT_MATCH), req, 401);
             }
 
             if (!user.isAccountConfirmed()) {

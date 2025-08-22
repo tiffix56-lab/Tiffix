@@ -18,6 +18,7 @@ export default {
         ACCOUNT_ALREADY_CONFIRMED: 'Account already confirmed',
         ACCOUNT_NOT_CONFIRMED: 'Account not confirmed',
         PASSWORD_NOT_MATCH: 'Password does not match',
+        ACCOUNT_NOT_FOUND: 'Account not found',
     },
 
     ERROR: {
