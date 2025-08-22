@@ -1,5 +1,4 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from 'react-hot-toast';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -34,6 +33,7 @@ import { VendorCustomers } from './components/vendor/VendorCustomers';
 import { VendorReviews } from './components/vendor/VendorReviews';
 import { VendorAvailability } from './components/vendor/VendorAvailability';
 import NotFound from "./pages/NotFound";
+import SignIn from "./components/SignIn";
 
 const queryClient = new QueryClient();
 
@@ -42,9 +42,12 @@ const App = () => (
     <TooltipProvider>
       <div className="dark">
         <Toaster />
-        <Sonner />
+        {/* <Sonner /> */}
         <BrowserRouter>
           <Routes>
+            <Route path="/sign-in" element={
+              <SignIn />
+            } />
             <Route path="/" element={
               <Layout>
                 <Dashboard />
