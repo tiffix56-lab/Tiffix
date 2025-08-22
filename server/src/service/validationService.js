@@ -106,72 +106,6 @@ export const ValidateLocationQuery = Joi.object({
 /**
  * ************ SUBSCRIPTION VALIDATION ***********************
  */
-export const ValidateCreateSubscription = Joi.object({
-    planName: Joi.string().min(3).max(100).trim().required(),
-    duration: Joi.string().valid('daily', 'weekly', 'monthly', 'custom').required(),
-    customDurationDays: Joi.number().min(1).when('duration', {
-        is: 'custom',
-        then: Joi.required(),
-        otherwise: Joi.optional()
-    }),
-    mealsPerPlan: Joi.number().min(1).required(),
-    originalPrice: Joi.number().min(0).required(),
-    discountedPrice: Joi.number().min(0).required().custom((value, helpers) => {
-        const { originalPrice } = helpers.state.ancestors[0];
-        if (value > originalPrice) {
-            return helpers.error('any.custom', { message: 'Discounted price cannot be greater than original price' });
-        }
-        return value;
-    }),
-    category: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').required(),
-    freeDelivery: Joi.boolean().optional(),
-    description: Joi.string().max(500).trim().optional(),
-    features: Joi.array().items(Joi.string()).optional(),
-    terms: Joi.string().max(1000).optional(),
-    isActive: Joi.boolean().optional(),
-    currentPurchases: Joi.number().min(0).optional(),
-    tags: Joi.array().items(Joi.string()).optional()
-});
-
-export const ValidateUpdateSubscription = Joi.object({
-    planName: Joi.string().min(3).max(100).trim().optional(),
-    duration: Joi.string().valid('daily', 'weekly', 'monthly', 'custom').optional(),
-    customDurationDays: Joi.number().min(1).when('duration', {
-        is: 'custom',
-        then: Joi.optional(),
-        otherwise: Joi.optional()
-    }),
-    mealsPerPlan: Joi.number().min(1).optional(),
-    originalPrice: Joi.number().min(0).optional(),
-    discountedPrice: Joi.number().min(0).optional().custom((value, helpers) => {
-        const { originalPrice } = helpers.state.ancestors[0];
-        if (originalPrice && value > originalPrice) {
-            return helpers.error('any.custom', { message: 'Discounted price cannot be greater than original price' });
-        }
-        return value;
-    }),
-    category: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').optional(),
-    freeDelivery: Joi.boolean().optional(),
-    description: Joi.string().max(500).trim().optional(),
-    features: Joi.array().items(Joi.string()).optional(),
-    terms: Joi.string().max(1000).optional(),
-    isActive: Joi.boolean().optional(),
-    currentPurchases: Joi.number().min(0).optional(),
-    tags: Joi.array().items(Joi.string()).optional()
-});
-
-export const ValidateSubscriptionQuery = Joi.object({
-    page: Joi.number().positive().optional(),
-    limit: Joi.number().positive().max(100).optional(),
-    category: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').optional(),
-    duration: Joi.string().valid('daily', 'weekly', 'monthly', 'custom').optional(),
-    minPrice: Joi.number().positive().optional(),
-    maxPrice: Joi.number().positive().optional(),
-    isActive: Joi.string().valid('true', 'false').optional(),
-    sortBy: Joi.string().valid('originalPrice', 'discountedPrice', 'duration', 'priority', 'createdAt', 'planName', 'mealsPerPlan').optional(),
-    sortOrder: Joi.string().valid('asc', 'desc').optional(),
-    search: Joi.string().trim().optional()
-});
 
 /**
  * ************ REFERRAL VALIDATION ***********************
@@ -190,7 +124,6 @@ export const ValidateCreateMenu = Joi.object({
     foodSubImages: Joi.array().items(Joi.string().uri()).optional(),
     foodTitle: Joi.string().min(3).max(60).trim().required(),
     price: Joi.number().positive().required(),
-    creditsRequired: Joi.number().min(0).optional(),
     description: Joi.object({
         short: Joi.string().max(200).trim().required(),
         long: Joi.string().max(1000).trim().optional()
@@ -203,19 +136,7 @@ export const ValidateCreateMenu = Joi.object({
     dietaryOptions: Joi.array().items(
         Joi.string().valid('vegetarian', 'vegan', 'gluten-free', 'non-vegetarian', 'dairy-free', 'halal', 'kosher', 'nut-free')
     ).optional(),
-    tags: Joi.array().items(Joi.string()).optional(),
-    allergens: Joi.array().items(Joi.string()).optional(),
-    nutritionalInfo: Joi.object({
-        protein: Joi.number().min(0).optional(),
-        carbs: Joi.number().min(0).optional(),
-        fat: Joi.number().min(0).optional(),
-        fiber: Joi.number().min(0).optional(),
-        sugar: Joi.number().min(0).optional(),
-        sodium: Joi.number().min(0).optional()
-    }).optional(),
-    servingSize: Joi.string().optional(),
-    availableQuantity: Joi.number().min(0).optional(),
-    maxOrdersPerDay: Joi.number().positive().optional()
+    tags: Joi.array().items(Joi.string()).optional()
 });
 
 export const ValidateUpdateMenu = Joi.object({
@@ -223,7 +144,6 @@ export const ValidateUpdateMenu = Joi.object({
     foodSubImages: Joi.array().items(Joi.string().uri()).optional(),
     foodTitle: Joi.string().min(3).max(60).trim().optional(),
     price: Joi.number().positive().optional(),
-    creditsRequired: Joi.number().min(0).optional(),
     description: Joi.object({
         short: Joi.string().max(200).trim().optional(),
         long: Joi.string().max(1000).trim().optional()
@@ -237,18 +157,6 @@ export const ValidateUpdateMenu = Joi.object({
         Joi.string().valid('vegetarian', 'vegan', 'gluten-free', 'non-vegetarian', 'dairy-free', 'halal', 'kosher', 'nut-free')
     ).optional(),
     tags: Joi.array().items(Joi.string()).optional(),
-    allergens: Joi.array().items(Joi.string()).optional(),
-    nutritionalInfo: Joi.object({
-        protein: Joi.number().min(0).optional(),
-        carbs: Joi.number().min(0).optional(),
-        fat: Joi.number().min(0).optional(),
-        fiber: Joi.number().min(0).optional(),
-        sugar: Joi.number().min(0).optional(),
-        sodium: Joi.number().min(0).optional()
-    }).optional(),
-    servingSize: Joi.string().optional(),
-    availableQuantity: Joi.number().min(0).optional(),
-    maxOrdersPerDay: Joi.number().positive().optional(),
     isAvailable: Joi.boolean().optional(),
     isActive: Joi.boolean().optional()
 });
@@ -258,21 +166,10 @@ export const ValidateMenuQuery = Joi.object({
     limit: Joi.number().positive().max(100).optional(),
     vendorCategory: Joi.string().valid('home_chef', 'food_vendor').optional(),
     cuisine: Joi.string().optional(),
-    minPrice: Joi.number().positive().optional(),
-    maxPrice: Joi.number().positive().optional(),
-    minCalories: Joi.number().positive().optional(),
-    maxCalories: Joi.number().positive().optional(),
-    minPrepTime: Joi.number().positive().optional(),
-    maxPrepTime: Joi.number().positive().optional(),
-    minRating: Joi.number().min(0).max(5).optional(),
     dietaryOptions: Joi.string().optional(), // comma-separated string
     tags: Joi.string().optional(), // comma-separated string
-    allergens: Joi.string().optional(), // comma-separated string
     isAvailable: Joi.string().valid('true', 'false').optional(),
-    hasCreditsRequired: Joi.string().valid('true', 'false').optional(),
-    minCredits: Joi.number().min(0).optional(),
-    maxCredits: Joi.number().min(0).optional(),
-    sortBy: Joi.string().valid('price', 'rating.average', 'prepTime', 'calories', 'createdAt', 'soldToday', 'availableQuantity').optional(),
+    sortBy: Joi.string().valid('price', 'rating.average', 'prepTime', 'calories', 'createdAt').optional(),
     sortOrder: Joi.string().valid('asc', 'desc').optional(),
     search: Joi.string().trim().optional()
 });
@@ -634,22 +531,6 @@ export const ValidateApplyPromoCode = Joi.object({
 /**
  * ************ SUBSCRIPTION PURCHASE VALIDATION ***********************
  */
-export const ValidateInitiatePurchase = Joi.object({
-    subscriptionId: Joi.string().hex().length(24).required(),
-    promoCode: Joi.string().min(3).max(20).trim().uppercase().optional()
-});
-
-export const ValidateVerifyPayment = Joi.object({
-    transactionId: Joi.string().required(),
-    razorpay_payment_id: Joi.string().required(),
-    razorpay_order_id: Joi.string().required(),
-    razorpay_signature: Joi.string().required()
-});
-
-export const ValidateProcessWebhook = Joi.object({
-    event: Joi.string().required(),
-    payload: Joi.object().required()
-});
 
 /**
  * ************ TRANSACTION VALIDATION ***********************
@@ -659,7 +540,7 @@ export const ValidateTransactionQuery = Joi.object({
     limit: Joi.number().positive().max(100).optional(),
     status: Joi.string().valid('pending', 'processing', 'success', 'failed', 'cancelled', 'refunded').optional(),
     paymentMethod: Joi.string().valid('razorpay', 'upi', 'card', 'netbanking', 'wallet').optional(),
-    type: Joi.string().valid('purchase', 'renewal', 'refund', 'cancellation').optional(),
+    type: Joi.string().valid('purchase', 'refund', 'cancellation').optional(),
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
     sortBy: Joi.string().valid('createdAt', 'finalAmount', 'status').optional(),
@@ -674,18 +555,7 @@ export const ValidateRefundTransaction = Joi.object({
     amount: Joi.number().positive().optional()
 });
 
-/**
- * ************ CREDIT MANAGEMENT VALIDATION ***********************
- */
-export const ValidateUseCredits = Joi.object({
-    creditsToUse: Joi.number().positive().min(1).required(),
-    subscriptionType: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').optional(),
-    orderDetails: Joi.object({
-        orderId: Joi.string().optional(),
-        vendorId: Joi.string().optional(),
-        menuItems: Joi.array().optional()
-    }).optional()
-});
+
 
 /**
  * ************ ADMIN USER MANAGEMENT VALIDATION ***********************

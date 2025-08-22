@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import TimezoneUtil from '../util/timezone.js'
+import { EPaymentStatus } from '../constant/application.js'
 
 const transactionSchema = new mongoose.Schema(
     {
@@ -26,7 +27,7 @@ const transactionSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ['purchase', 'renewal', 'refund', 'cancellation'],
+            enum: ['purchase', 'refund', 'cancellation'],
             default: 'purchase'
         },
         amount: {
@@ -76,8 +77,8 @@ const transactionSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['pending', 'processing', 'success', 'failed', 'cancelled', 'refunded'],
-            default: 'pending'
+            enum: [...Object.values(EPaymentStatus)],
+            default: EPaymentStatus.PENDING
         },
         promoCodeUsed: {
             code: String,
@@ -147,11 +148,11 @@ transactionSchema.pre('save', function (next) {
     if (this.finalAmount !== (this.originalAmount - this.discountAmount)) {
         next(new Error('Final amount calculation is incorrect'))
     }
-    
+
     if (this.discountAmount > this.originalAmount) {
         next(new Error('Discount amount cannot exceed original amount'))
     }
-    
+
     next()
 })
 
@@ -200,10 +201,10 @@ transactionSchema.statics.findByUser = function (userId, options = {}) {
         .populate('subscriptionId', 'planName duration category')
         .populate('promoCodeUsed.promoCodeId', 'code discountType discountValue')
         .sort({ createdAt: -1 })
-    
+
     if (options.limit) query.limit(options.limit)
     if (options.status) query.where({ status: options.status })
-    
+
     return query
 }
 
@@ -290,7 +291,7 @@ transactionSchema.statics.getDashboardStats = function (startDate, endDate) {
 transactionSchema.statics.findPendingTransactions = function (olderThanMinutes = 30) {
     const now = TimezoneUtil.now()
     const cutoffTime = new Date(now.getTime() - (olderThanMinutes * 60 * 1000))
-    
+
     return this.find({
         status: { $in: ['pending', 'processing'] },
         createdAt: { $lt: cutoffTime }

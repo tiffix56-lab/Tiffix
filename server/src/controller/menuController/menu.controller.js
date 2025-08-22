@@ -39,21 +39,10 @@ export default {
                 cuisine,
                 dietaryOptions,
                 tags,
-                allergens,
-                minPrice,
-                maxPrice,
-                minCalories,
-                maxCalories,
-                minPrepTime,
-                maxPrepTime,
-                minRating,
-                minCredits,
-                maxCredits,
-                hasCreditsRequired,
-                search,
                 isAvailable,
                 sortBy = 'createdAt',
-                sortOrder = 'desc'
+                sortOrder = 'desc',
+                search
             } = value;
 
             const skip = (page - 1) * limit;
@@ -71,48 +60,6 @@ export default {
             if (tags) {
                 const tagsArray = tags.split(',').map(t => t.trim());
                 filter.tags = { $in: tagsArray };
-            }
-
-            if (allergens) {
-                const allergensArray = allergens.split(',').map(a => a.trim());
-                filter.allergens = { $nin: allergensArray };
-            }
-
-            if (minPrice || maxPrice) {
-                filter.price = {};
-                if (minPrice) filter.price.$gte = parseFloat(minPrice);
-                if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
-            }
-
-            if (minCalories || maxCalories) {
-                filter.calories = {};
-                if (minCalories) filter.calories.$gte = parseFloat(minCalories);
-                if (maxCalories) filter.calories.$lte = parseFloat(maxCalories);
-            }
-
-            if (minPrepTime || maxPrepTime) {
-                filter.prepTime = {};
-                if (minPrepTime) filter.prepTime.$gte = parseFloat(minPrepTime);
-                if (maxPrepTime) filter.prepTime.$lte = parseFloat(maxPrepTime);
-            }
-
-            if (minRating) {
-                filter['rating.average'] = { $gte: parseFloat(minRating) };
-            }
-
-            if (hasCreditsRequired === 'true') {
-                filter.creditsRequired = { $exists: true, $gt: 0 };
-            } else if (hasCreditsRequired === 'false') {
-                filter.$or = [
-                    { creditsRequired: { $exists: false } },
-                    { creditsRequired: 0 }
-                ];
-            }
-
-            if (minCredits || maxCredits) {
-                filter.creditsRequired = filter.creditsRequired || {};
-                if (minCredits) filter.creditsRequired.$gte = parseFloat(minCredits);
-                if (maxCredits) filter.creditsRequired.$lte = parseFloat(maxCredits);
             }
 
             if (isAvailable !== undefined) filter.isAvailable = isAvailable === 'true';
@@ -206,7 +153,6 @@ export default {
             httpError(next, err, req, 500);
         }
     },
-
 
     toggleAvailability: async (req, res, next) => {
         try {

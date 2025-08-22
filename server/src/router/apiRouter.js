@@ -66,8 +66,6 @@ router.route('/user-profiles/addresses').get(authentication, userProfileControll
 
 // Preferences and credits
 router.route('/user-profiles/preferences').patch(authentication, userProfileController.updatePreferences)
-router.route('/user-profiles/credits').get(authentication, userProfileController.getCreditsBalance)
-router.route('/user-profiles/credits/use').post(authentication, userProfileController.useCredits)
 
 
 // ############### REFERRAL ROUTES ####################
@@ -97,15 +95,8 @@ router.route('/admin/menus/bulk-availability').patch(authentication, authorizati
 
 // ############### SUBSCRIPTION ROUTES ####################
 
-router.route('/subscriptions').get(authentication, subscriptionController.getAllSubscriptions)
-router.route('/subscriptions/:id').get(authentication, subscriptionController.getSubscriptionById)
 
 // Admin subscription routes
-router.route('/admin/subscriptions').post(authentication, authorization([EUserRole.ADMIN]), subscriptionController.createSubscription)
-router.route('/admin/subscriptions/:id').put(authentication, authorization([EUserRole.ADMIN]), subscriptionController.updateSubscription)
-router.route('/admin/subscriptions/:id').delete(authentication, authorization([EUserRole.ADMIN]), subscriptionController.deleteSubscription)
-router.route('/admin/subscriptions/:id/toggle-status').patch(authentication, authorization([EUserRole.ADMIN]), subscriptionController.toggleSubscriptionStatus)
-
 
 // ############### LOCATION ZONE ROUTES ####################
 router.route('/zones').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.getAllLocationZones)
@@ -155,17 +146,10 @@ router.route('/admin/promo-codes/:id/stats').get(authentication, authorization([
 
 // ############### SUBSCRIPTION PURCHASE ROUTES ####################
 // User subscription purchase routes
-router.route('/purchase/initiate').post(authentication, subscriptionPurchaseController.initiatePurchase)
-router.route('/purchase/verify').post(authentication, subscriptionPurchaseController.verifyPayment)
-router.route('/purchase/webhook').post(subscriptionPurchaseController.processWebhook) // No auth for webhook
 
 // User subscription management
-router.route('/user-subscriptions').get(authentication, subscriptionPurchaseController.getUserSubscriptions)
-router.route('/user-subscriptions/active').get(authentication, subscriptionPurchaseController.getActiveSubscriptions)
-router.route('/user-subscriptions/:id').get(authentication, subscriptionPurchaseController.getSubscriptionById)
 
 // Transaction status
-router.route('/transactions/:transactionId/status').get(authentication, subscriptionPurchaseController.getTransactionStatus)
 
 // ############### TRANSACTION & ANALYTICS ROUTES ####################
 // User transaction routes

@@ -19,3 +19,21 @@ export const EAuthProvider = Object.freeze({
     GOOGLE: "GOOGLE",
     FACEBOOK: "FACEBOOK"
 })
+
+
+export const EPaymentStatus = Object.freeze({
+    PENDING: 'pending',
+    PROCESSING: 'processing',
+    SUCCESS: 'success',
+    FAILED: 'failed',
+    CANCELLED: 'cancelled',
+    REFUNDED: 'refunded'
+});
+
+export const ESubscriptionStatus = Object.freeze({
+    PENDING: 'pending',
+    ACTIVE: 'active',
+    EXPIRED: 'expired',
+    CANCELLED: 'cancelled',
+});
+

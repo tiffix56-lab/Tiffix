@@ -98,7 +98,6 @@ class PromoCodeService {
         }
     }
 
-
     async getPromoCodeStats(promoCodeId) {
         try {
             const promoCode = await PromoCode.findById(promoCodeId)

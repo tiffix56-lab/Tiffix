@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import TimezoneUtil from '../util/timezone.js'
+import { ESubscriptionStatus } from '../constant/application.js'
 
 const userSubscriptionSchema = new mongoose.Schema(
     {
@@ -20,8 +21,8 @@ const userSubscriptionSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['active', 'expired', 'cancelled', 'pending'],
-            default: 'pending'
+            enum: [...Object.values(ESubscriptionStatus)],
+            default: ESubscriptionStatus.PENDING
         },
         creditsGranted: {
             type: Number,
@@ -33,6 +34,14 @@ const userSubscriptionSchema = new mongoose.Schema(
             default: 0,
             min: 0
         },
+        skipCreditAvailable: {
+            type: Number,
+            default: 6
+        },
+        isVendorSwitch: {
+            type: Boolean,
+            default: true,
+        },
         startDate: {
             type: Date,
             default: Date.now
@@ -40,10 +49,6 @@ const userSubscriptionSchema = new mongoose.Schema(
         endDate: {
             type: Date,
             required: true
-        },
-        autoRenew: {
-            type: Boolean,
-            default: false
         },
         originalPrice: {
             type: Number,
@@ -65,31 +70,22 @@ const userSubscriptionSchema = new mongoose.Schema(
             ref: 'PromoCode',
             default: null
         },
-        subscriptionDetails: {
-            planName: String,
-            duration: String,
-            category: String,
-            features: [String]
+        isExpired: {
+            type: Boolean,
+            default: false
         },
-        renewalHistory: [{
-            renewedAt: {
-                type: Date,
-                default: Date.now
-            },
-            newEndDate: Date,
-            transactionId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Transaction'
-            }
-        }],
         cancellationDetails: {
+            isCancel: {
+                type: Boolean,
+                default: false
+            },
             cancelledAt: Date,
             reason: String,
             refundAmount: {
                 type: Number,
                 default: 0
             }
-        }
+        },
     },
     { timestamps: true }
 )
@@ -105,15 +101,15 @@ userSubscriptionSchema.pre('save', function (next) {
     if (this.endDate <= this.startDate) {
         next(new Error('End date must be after start date'))
     }
-    
+
     if (this.creditsUsed > this.creditsGranted) {
         next(new Error('Credits used cannot exceed credits granted'))
     }
-    
+
     if (this.discountApplied > this.originalPrice) {
         next(new Error('Discount cannot exceed original price'))
     }
-    
+
     next()
 })
 
@@ -139,7 +135,7 @@ userSubscriptionSchema.methods.useCredits = function (creditsToUse) {
     if (!this.canUseCredits(creditsToUse)) {
         throw new Error('Insufficient credits or subscription not active')
     }
-    
+
     this.creditsUsed += creditsToUse
     return this.save()
 }
@@ -154,15 +150,7 @@ userSubscriptionSchema.methods.cancel = function (reason, refundAmount = 0) {
     return this.save()
 }
 
-userSubscriptionSchema.methods.renew = function (newEndDate, transactionId) {
-    this.endDate = newEndDate
-    this.renewalHistory.push({
-        renewedAt: TimezoneUtil.now(),
-        newEndDate: newEndDate,
-        transactionId: transactionId
-    })
-    return this.save()
-}
+
 
 userSubscriptionSchema.methods.activate = function () {
     this.status = 'active'
@@ -194,11 +182,10 @@ userSubscriptionSchema.statics.findByUser = function (userId) {
 userSubscriptionSchema.statics.findExpiring = function (days = 3) {
     const now = TimezoneUtil.now()
     const futureDate = TimezoneUtil.addDays(days)
-    
+
     return this.find({
         status: 'active',
         endDate: { $lte: futureDate, $gte: now },
-        autoRenew: false
     }).populate('userId subscriptionId')
 }
 

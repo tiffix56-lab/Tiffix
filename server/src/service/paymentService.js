@@ -52,7 +52,7 @@ class PaymentService {
             } = paymentData
 
             const body = razorpay_order_id + '|' + razorpay_payment_id
-            
+
             const expectedSignature = crypto
                 .createHmac('sha256', config.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET)
                 .update(body.toString())
@@ -100,14 +100,6 @@ class PaymentService {
             // Create user subscription
             const userSubscription = await this.createUserSubscription(transaction)
 
-            // Add credits to user profile
-            await this.addCreditsToUser(
-                transaction.userId._id,
-                transaction.subscriptionId.mealsPerPlan,
-                transaction.subscriptionId._id,
-                transaction.subscriptionId.category,
-                transaction._id
-            )
 
             // Update subscription purchase count
             await transaction.subscriptionId.incrementPurchases()
@@ -116,7 +108,6 @@ class PaymentService {
                 success: true,
                 transaction,
                 userSubscription,
-                creditsAdded: transaction.subscriptionId.mealsPerPlan
             }
         } catch (error) {
             console.error('Payment processing error:', error)
@@ -142,12 +133,6 @@ class PaymentService {
                 discountApplied: transaction.discountAmount,
                 finalPrice: transaction.finalAmount,
                 promoCodeUsed: transaction.promoCodeUsed?.promoCodeId || null,
-                subscriptionDetails: {
-                    planName: transaction.subscriptionId.planName,
-                    duration: transaction.subscriptionId.duration,
-                    category: transaction.subscriptionId.category,
-                    features: transaction.subscriptionId.features
-                }
             })
 
             await userSubscription.save()
@@ -187,20 +172,7 @@ class PaymentService {
         }
     }
 
-    async addCreditsToUser(userId, credits, subscriptionId, subscriptionType, transactionId) {
-        try {
-            const userProfile = await UserProfile.findOne({ userId })
-            if (!userProfile) {
-                throw new Error('User profile not found')
-            }
 
-            await userProfile.addCredits(credits, subscriptionId, subscriptionType, transactionId)
-            return userProfile
-        } catch (error) {
-            console.error('Error adding credits to user:', error)
-            throw error
-        }
-    }
 
     async handleFailedPayment(transactionId, reason) {
         try {

@@ -342,18 +342,18 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
         userType,
         hasSubscription
     } = filters
-    
+
     const {
         page = 1,
         limit = 10,
         sortBy = 'createdAt',
         sortOrder = 'desc'
     } = options
-    
+
     const matchQuery = {}
-    
+
     if (role) matchQuery.role = role
-    
+
     if (status) {
         switch (status) {
             case 'active':
@@ -368,7 +368,7 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
                 break
         }
     }
-    
+
     if (search) {
         matchQuery.$or = [
             { name: { $regex: search, $options: 'i' } },
@@ -376,9 +376,9 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
             { 'phoneNumber.internationalNumber': { $regex: search, $options: 'i' } }
         ]
     }
-    
+
     const pipeline = [{ $match: matchQuery }]
-    
+
     if (hasSubscription === 'true') {
         pipeline.push({
             $lookup: {
@@ -394,7 +394,7 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
             }
         })
     }
-    
+
     pipeline.push({
         $lookup: {
             from: 'usersubscriptions',
@@ -403,7 +403,7 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
             as: 'subscriptions'
         }
     })
-    
+
     pipeline.push({
         $addFields: {
             subscriptionCount: { $size: '$subscriptions' },
@@ -422,15 +422,15 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
             }
         }
     })
-    
+
     const sortObj = {}
     sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1
     pipeline.push({ $sort: sortObj })
-    
+
     const skip = (page - 1) * limit
     pipeline.push({ $skip: skip })
     pipeline.push({ $limit: parseInt(limit) })
-    
+
     return this.aggregate(pipeline)
 }
 
@@ -441,11 +441,11 @@ userSchema.statics.countWithFilters = function (filters = {}) {
         search,
         hasSubscription
     } = filters
-    
+
     const matchQuery = {}
-    
+
     if (role) matchQuery.role = role
-    
+
     if (status) {
         switch (status) {
             case 'active':
@@ -460,7 +460,7 @@ userSchema.statics.countWithFilters = function (filters = {}) {
                 break
         }
     }
-    
+
     if (search) {
         matchQuery.$or = [
             { name: { $regex: search, $options: 'i' } },
@@ -468,9 +468,9 @@ userSchema.statics.countWithFilters = function (filters = {}) {
             { 'phoneNumber.internationalNumber': { $regex: search, $options: 'i' } }
         ]
     }
-    
+
     const pipeline = [{ $match: matchQuery }]
-    
+
     if (hasSubscription === 'true') {
         pipeline.push({
             $lookup: {
@@ -486,9 +486,9 @@ userSchema.statics.countWithFilters = function (filters = {}) {
             }
         })
     }
-    
+
     pipeline.push({ $count: 'total' })
-    
+
     return this.aggregate(pipeline)
 }
 

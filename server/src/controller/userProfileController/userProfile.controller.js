@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateAddAddress, ValidateUserPreferences, ValidateUserIdParam, ValidateUpdateUserProfile, ValidateUseCredits } from '../../service/validationService.js';
+import { validateJoiSchema, ValidateAddAddress, ValidateUserPreferences, ValidateUpdateUserProfile } from '../../service/validationService.js';
 import UserProfile from '../../models/userProfile.model.js';
 import User from '../../models/user.model.js';
 import quicker from '../../util/quicker.js';
@@ -248,68 +248,4 @@ export default {
             httpError(next, err, req, 500);
         }
     },
-
-    getCreditsBalance: async (req, res, next) => {
-        try {
-            const { userId } = req.authenticatedUser;
-
-            const userProfile = await UserProfile.findOne({ userId })
-                .populate('credits.subscriptionId', 'planName category duration')
-                .populate('credits.transactionId', 'transactionId createdAt');
-
-            if (!userProfile) {
-                return httpError(next, new Error('User profile not found'), req, 404);
-            }
-
-            const creditsByType = userProfile.getCreditsByType();
-            const creditHistory = userProfile.getCreditHistory();
-            const totalCredits = userProfile.getTotalAvailableCredits();
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                totalCredits,
-                creditsByType,
-                creditHistory,
-                message: 'Credits retrieved successfully'
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    },
-
-    useCredits: async (req, res, next) => {
-        try {
-            const { userId } = req.authenticatedUser;
-            const { body } = req;
-
-            const { error, value } = validateJoiSchema(ValidateUseCredits, body);
-            if (error) {
-                return httpError(next, error, req, 422);
-            }
-
-            const { creditsToUse, subscriptionType, orderDetails } = value;
-
-            const userProfile = await UserProfile.findOne({ userId });
-            if (!userProfile) {
-                return httpError(next, new Error('User profile not found'), req, 404);
-            }
-
-            if (!userProfile.canAfford(creditsToUse, subscriptionType)) {
-                return httpError(next, new Error('Insufficient credits for this subscription type'), req, 400);
-            }
-
-            await userProfile.deductCredits(creditsToUse, subscriptionType, orderDetails);
-
-            const remainingCredits = userProfile.getTotalAvailableCredits(subscriptionType);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                creditsUsed: creditsToUse,
-                remainingCredits,
-                subscriptionType: subscriptionType || 'any',
-                message: 'Credits used successfully'
-            });
-        } catch (err) {
-            httpError(next, err, req, 500);
-        }
-    },
-
 };

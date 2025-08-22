@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { EVendorType } from '../constant/application.js'
 
 const subscriptionSchema = new mongoose.Schema(
     {
@@ -13,6 +14,13 @@ const subscriptionSchema = new mongoose.Schema(
             enum: ['daily', 'weekly', 'monthly', 'custom'],
             required: true
         },
+        planMenus: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Menu',
+                unique: true
+            }
+        ],
         customDurationDays: {
             type: Number,
             required: function () {
@@ -24,6 +32,12 @@ const subscriptionSchema = new mongoose.Schema(
             type: Number,
             required: true,
             min: 1
+        },
+        userSkipMealPerPlan: {
+            type: Number,
+            required: true,
+            min: 6,
+            default: 6,
         },
         originalPrice: {
             type: Number,
@@ -37,7 +51,7 @@ const subscriptionSchema = new mongoose.Schema(
         },
         category: {
             type: String,
-            enum: ['universal', 'food_vendor_specific', 'home_chef_specific', 'both_options'],
+            enum: [EVendorType.FOOD_VENDOR, EVendorType.HOME_CHEF],
             required: true
         },
         freeDelivery: {
@@ -105,9 +119,6 @@ subscriptionSchema.methods.getDiscountPercentage = function () {
     return ((this.originalPrice - this.discountedPrice) / this.originalPrice) * 100
 }
 
-subscriptionSchema.methods.calculateCredits = function () {
-    return this.mealsPerPlan
-}
 
 subscriptionSchema.statics.findActive = function () {
     return this.find({

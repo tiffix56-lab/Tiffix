@@ -126,9 +126,9 @@ promoCodeSchema.methods.calculateDiscount = function (orderValue) {
     }
 
     if (orderValue < this.minOrderValue) {
-        return { 
-            discount: 0, 
-            error: `Minimum order value of ₹${this.minOrderValue} required` 
+        return {
+            discount: 0,
+            error: `Minimum order value of ₹${this.minOrderValue} required`
         }
     }
 
@@ -150,11 +150,11 @@ promoCodeSchema.methods.isApplicableToSubscription = function (subscriptionId, s
     if (this.applicableSubscriptions.length > 0) {
         return this.applicableSubscriptions.some(id => id.toString() === subscriptionId.toString())
     }
-    
+
     if (this.applicableCategories.length > 0) {
         return this.applicableCategories.includes(subscriptionCategory)
     }
-    
+
     return true
 }
 

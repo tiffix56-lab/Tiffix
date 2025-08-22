@@ -108,7 +108,6 @@ const vendorProfileSchema = new mongoose.Schema(
             type: Boolean,
             default: true
         },
-
         capacity: {
             dailyOrders: {
                 type: Number,
@@ -213,7 +212,7 @@ vendorProfileSchema.methods.calculateDistance = function (coord1, coord2) {
 
 vendorProfileSchema.methods.updateAddress = function (addressData) {
     const { street, city, state, country, zipCode, lat, lng } = addressData
-    
+
     this.businessInfo.address = {
         street: street || null,
         city: city || null,
