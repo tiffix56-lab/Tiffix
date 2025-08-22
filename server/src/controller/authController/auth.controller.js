@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateLogin, ValidateRegister, ValidateChangePassword, ValidateForgotPassword } from '../../util/validationService.js';
+import { validateJoiSchema, ValidateLogin, ValidateRegister, ValidateChangePassword, ValidateForgotPassword, ValidateUpdateLocation } from '../../service/validationService.js';
 import config from '../../config/config.js';
 import { EApplicationEnvironment, EAuthProvider, EUserRole } from '../../constant/application.js';
 import userModel from '../../models/user.model.js';
@@ -9,6 +9,7 @@ import userProfileModel from '../../models/userProfile.model.js';
 import quicker from '../../util/quicker.js';
 import emailService from '../../service/emailService.js';
 import referralService from '../../service/referralService.js';
+import TimezoneUtil from '../../util/timezone.js';
 
 
 export default {
@@ -122,7 +123,7 @@ export default {
                 accountConfirmation: {
                     status: false,
                     otp: hashedOTP,
-                    timestamp: new Date()
+                    timestamp: TimezoneUtil.now()
                 },
                 referral: {
                     userReferralCode: quicker.generateReferralCode()
@@ -309,7 +310,7 @@ export default {
             const newOTP = quicker.generateOTP();
             const hashedNewOTP = await quicker.hashPassword(newOTP);
             user.accountConfirmation.otp = hashedNewOTP;
-            user.accountConfirmation.timestamp = new Date();
+            user.accountConfirmation.timestamp = TimezoneUtil.now();
             await user.save();
 
             try {
@@ -349,7 +350,7 @@ export default {
 
             user.passwordReset.otp = hashedResetOTP;
             user.passwordReset.expiry = expiryTime;
-            user.passwordReset.lastResetAt = new Date();
+            user.passwordReset.lastResetAt = TimezoneUtil.now();
             await user.save();
 
             try {
@@ -471,6 +472,40 @@ export default {
         }
     },
 
+    getUserLocation: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser;
+
+            const user = await userModel.findById(userId).select('location');
+            if (!user) {
+                return httpError(next, new Error('User not found'), req, 404);
+            }
+
+            if (!user.location || !user.location.coordinates || user.location.coordinates[0] === 0) {
+                return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                    hasLocation: false,
+                    message: 'No location set for user'
+                });
+            }
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                hasLocation: true,
+                location: {
+                    latitude: user.location.coordinates[1],
+                    longitude: user.location.coordinates[0],
+                    address: user.location.address,
+                    city: user.location.city,
+                    state: user.location.state,
+                    country: user.location.country,
+                    pincode: user.location.pincode,
+                    lastUpdated: user.location.lastUpdated ? TimezoneUtil.format(user.location.lastUpdated, 'datetime') : null
+                }
+            });
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+
     oauthFailure: (req, res, next) => {
         try {
             httpResponse(req, res, 400, 'Authentication failed', {
@@ -526,6 +561,56 @@ export default {
                     role: user.role,
                     phoneNumber: user.phoneNumber,
                     profileComplete: true
+                }
+            });
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+
+    updateLocation: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser;
+            const { body } = req;
+
+            const { error, value } = validateJoiSchema(ValidateUpdateLocation, body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+
+            const { latitude, longitude, address, city, state, country, pincode } = value;
+
+            const lat = parseFloat(latitude);
+            const lng = parseFloat(longitude);
+
+            const user = await userModel.findById(userId);
+            if (!user) {
+                return httpError(next, new Error('User not found'), req, 404);
+            }
+
+            const locationData = {
+                type: 'Point',
+                coordinates: [lng, lat], // GeoJSON format: [longitude, latitude]
+                address: address || null,
+                city: city || null,
+                state: state || null,
+                country: country || null,
+                pincode: pincode || null
+            };
+
+            await user.updateLocation(locationData);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                message: 'Location updated successfully',
+                location: {
+                    latitude: lat,
+                    longitude: lng,
+                    address,
+                    city,
+                    state,
+                    country,
+                    pincode,
+                    lastUpdated: TimezoneUtil.format(TimezoneUtil.now(), 'datetime')
                 }
             });
         } catch (err) {

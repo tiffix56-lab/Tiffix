@@ -1,0 +1,288 @@
+### Credit Management API Testing - Updated System
+
+@baseURL = http://localhost:4000/v1
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
+
+## ===========================
+## CREDIT BALANCE & TRACKING
+## ===========================
+
+### Get User's Credit Balance (All Types)
+GET {{baseURL}}/user-profiles/credits
+Authorization: Bearer {{userToken}}
+
+### Expected Response Structure:
+# {
+#   "totalCredits": 25,
+#   "creditsByType": {
+#     "universal": 10,
+#     "food_vendor_specific": 8,
+#     "home_chef_specific": 5,
+#     "both_options": 2
+#   },
+#   "creditHistory": [
+#     {
+#       "subscriptionId": "subscription_id",
+#       "subscriptionType": "universal",
+#       "totalCredits": 10,
+#       "usedCredits": 2,
+#       "remainingCredits": 8,
+#       "purchasedAt": "2025-01-15T10:30:00+05:30",
+#       "transactionId": "transaction_id"
+#     }
+#   ]
+# }
+
+## ===========================
+## CREDIT USAGE
+## ===========================
+
+### Use Universal Credits (Can be used for any vendor type)
+POST {{baseURL}}/user-profiles/credits/use
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "creditsToUse": 2,
+    "subscriptionType": "universal",
+    "orderDetails": {
+        "orderId": "ORD_12345",
+        "vendorId": "VENDOR_123",
+        "menuItems": ["item1", "item2"]
+    }
+}
+
+### Use Food Vendor Specific Credits
+POST {{baseURL}}/user-profiles/credits/use
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "creditsToUse": 1,
+    "subscriptionType": "food_vendor_specific",
+    "orderDetails": {
+        "orderId": "ORD_12346",
+        "vendorId": "FOOD_VENDOR_456"
+    }
+}
+
+### Use Home Chef Specific Credits
+POST {{baseURL}}/user-profiles/credits/use
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "creditsToUse": 3,
+    "subscriptionType": "home_chef_specific",
+    "orderDetails": {
+        "orderId": "ORD_12347",
+        "vendorId": "HOME_CHEF_789"
+    }
+}
+
+### Use Credits Without Specifying Type (System will use best available)
+POST {{baseURL}}/user-profiles/credits/use
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "creditsToUse": 2,
+    "orderDetails": {
+        "orderId": "ORD_12348"
+    }
+}
+
+## ===========================
+## SUBSCRIPTION PURCHASE FLOW (Updated)
+## ===========================
+
+### Purchase Universal Subscription (Credits work for all vendor types)
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "UNIVERSAL_SUBSCRIPTION_ID",
+    "promoCode": "WELCOME50"
+}
+
+### Purchase Food Vendor Specific Subscription
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "FOOD_VENDOR_SUBSCRIPTION_ID"
+}
+
+### Purchase Home Chef Specific Subscription
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "HOME_CHEF_SUBSCRIPTION_ID"
+}
+
+### Purchase "Both Options" Subscription (Works for both food vendors and home chefs)
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "BOTH_OPTIONS_SUBSCRIPTION_ID",
+    "promoCode": "FLAT100"
+}
+
+## ===========================
+## MULTIPLE PURCHASES OF SAME TYPE
+## ===========================
+
+### Buy Same Subscription Again (Credits Stack)
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "UNIVERSAL_SUBSCRIPTION_ID"
+}
+
+# Example: If user already has 10 universal credits and buys another 
+# universal subscription with 15 credits, they'll have 25 total universal credits
+# Credits don't expire and are tracked separately by purchase transaction
+
+## ===========================
+## COMBINED ANALYTICS (Single API)
+## ===========================
+
+### Get Complete Transaction Statistics (Replaces 3 separate APIs)
+GET {{baseURL}}/admin/transactions/stats
+Authorization: Bearer {{adminToken}}
+
+### Get Stats with Date Range and Grouping
+GET {{baseURL}}/admin/transactions/stats?startDate=2025-01-01&endDate=2025-01-31&groupBy=day
+Authorization: Bearer {{adminToken}}
+
+### Get Weekly Statistics
+GET {{baseURL}}/admin/transactions/stats?startDate=2025-01-01&endDate=2025-03-31&groupBy=week
+Authorization: Bearer {{adminToken}}
+
+### Get Monthly Overview
+GET {{baseURL}}/admin/transactions/stats?startDate=2025-01-01&endDate=2025-12-31&groupBy=month
+Authorization: Bearer {{adminToken}}
+
+### Expected Combined Response Structure:
+# {
+#   "overview": {
+#     "total": { "count": 150, "amount": 45000 },
+#     "successful": { "count": 140, "amount": 42000 },
+#     "failed": { "count": 8, "amount": 2400 },
+#     "pending": { "count": 2, "amount": 600 }
+#   },
+#   "revenueAnalytics": [
+#     {
+#       "_id": { "year": 2025, "month": 1, "day": 15 },
+#       "totalRevenue": 5000,
+#       "totalTransactions": 20,
+#       "averageAmount": 250,
+#       "totalDiscount": 500
+#     }
+#   ],
+#   "paymentMethodStats": [
+#     { "_id": "card", "count": 80, "totalAmount": 25000 },
+#     { "_id": "upi", "count": 50, "totalAmount": 15000 },
+#     { "_id": "netbanking", "count": 10, "totalAmount": 2000 }
+#   ],
+#   "subscriptionBreakdown": [
+#     {
+#       "_id": { "category": "universal", "duration": "monthly" },
+#       "count": 50,
+#       "totalRevenue": 15000,
+#       "averageAmount": 300
+#     }
+#   ],
+#   "failureAnalysis": [
+#     { "_id": "Payment processing failed", "count": 5, "totalAmount": 1500 },
+#     { "_id": "Insufficient balance", "count": 3, "totalAmount": 900 }
+#   ],
+#   "recentTransactions": [...],
+#   "growthPercentage": 20.5,
+#   "dateRange": {
+#     "startDate": "01-01-2025 00:00:00",
+#     "endDate": "31-01-2025 23:59:59"
+#   },
+#   "generatedAt": "15-01-2025 14:30:25"
+# }
+
+
+## ===========================
+## CREDIT SYSTEM LOGIC EXPLANATION
+## ===========================
+
+# Credit Types and Usage Rules:
+# 
+# 1. UNIVERSAL credits - Can be used for ANY vendor type
+# 2. FOOD_VENDOR_SPECIFIC - Only for food vendors
+# 3. HOME_CHEF_SPECIFIC - Only for home chefs  
+# 4. BOTH_OPTIONS - Can be used for food vendors OR home chefs (not universal services)
+#
+# Priority Order (FIFO - First In, First Out):
+# - Credits are used in the order they were purchased
+# - Older credits are consumed first
+# - System automatically selects best matching credits
+#
+# Multiple Purchases:
+# - Same subscription type purchases STACK credits
+# - Each purchase is tracked separately for audit
+# - No expiration - credits never expire
+# - Each credit batch links to original transaction
+#
+# Example Credit Usage Flow:
+# 1. User buys Universal subscription (10 credits)
+# 2. User buys Food Vendor subscription (5 credits) 
+# 3. User has: 10 universal + 5 food vendor specific
+# 4. Order from food vendor for 3 credits:
+#    - System can use either universal OR food vendor credits
+#    - Uses older credits first (FIFO)
+# 5. Order from home chef for 2 credits:
+#    - System can ONLY use universal credits
+#    - Food vendor credits cannot be used for home chef
+
+## ===========================
+## BUSINESS LOGIC TESTING
+## ===========================
+
+### Test Credit Stacking (Buy Same Subscription Multiple Times)
+# Step 1: Buy subscription
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "UNIVERSAL_10_CREDITS"
+}
+
+# Step 2: Check balance (should show 10 credits)
+GET {{baseURL}}/user-profiles/credits
+Authorization: Bearer {{userToken}}
+
+# Step 3: Buy SAME subscription again
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "UNIVERSAL_10_CREDITS"
+}
+
+# Step 4: Check balance (should show 20 credits total)
+GET {{baseURL}}/user-profiles/credits
+Authorization: Bearer {{userToken}}
+
+### Test FIFO Credit Usage
+# Credits should be consumed in purchase order (oldest first)
+
+### Test Cross-Type Credit Usage
+# Universal credits should work for specific types
+# Specific credits should NOT work for other types

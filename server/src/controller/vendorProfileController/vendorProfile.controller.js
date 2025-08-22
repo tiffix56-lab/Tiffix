@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateCreateVendorProfile, ValidateUpdateVendorProfile, ValidateVendorProfileQuery, ValidateVerifyVendor, ValidateUpdateCapacity, ValidateUpdateRating, ValidateNearbyVendors, ValidateVendorTypeParam, ValidateVendorCuisineParam, ValidateVendorIdParam, ValidateUserIdParam, ValidateCreateVendorWithUser, ValidateUpdateVendorWithUserInfo } from '../../util/validationService.js';
+import { validateJoiSchema, ValidateCreateVendorProfile, ValidateUpdateVendorProfile, ValidateVendorProfileQuery, ValidateVerifyVendor, ValidateUpdateCapacity, ValidateUpdateRating, ValidateNearbyVendors, ValidateVendorTypeParam, ValidateVendorCuisineParam, ValidateVendorIdParam, ValidateUserIdParam, ValidateCreateVendorWithUser, ValidateUpdateVendorWithUserInfo } from '../../service/validationService.js';
 import VendorProfile from '../../models/vendorProfile.model.js';
 import User from '../../models/user.model.js';
 import { EUserRole } from '../../constant/application.js';

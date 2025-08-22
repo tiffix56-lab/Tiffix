@@ -167,9 +167,7 @@ export const ValidateReferralCode = Joi.object({
     referralCode: Joi.string().min(6).max(10).trim().uppercase().required()
 });
 
-export const ValidateUseCredits = Joi.object({
-    creditsToUse: Joi.number().positive().min(1).required()
-});
+
 
 /**
  * ************ MENU VALIDATION ***********************
@@ -564,6 +562,150 @@ export const ValidateLocationZoneQuery = Joi.object({
     vendorType: Joi.string().valid('vendor', 'home_chef').optional()
 });
 
+
+/**
+ * ************ PROMO CODE VALIDATION ***********************
+ */
+export const ValidateCreatePromoCode = Joi.object({
+    code: Joi.string().min(3).max(20).trim().uppercase().required(),
+    description: Joi.string().max(500).trim().required(),
+    discountType: Joi.string().valid('percentage', 'flat').required(),
+    discountValue: Joi.number().positive().required(),
+    minOrderValue: Joi.number().min(0).default(0).optional(),
+    maxDiscount: Joi.number().positive().optional(),
+    usageLimit: Joi.number().positive().required(),
+    validFrom: Joi.date().required(),
+    validUntil: Joi.date().greater(Joi.ref('validFrom')).required(),
+    applicableSubscriptions: Joi.array().items(Joi.string().hex().length(24)).optional(),
+    applicableCategories: Joi.array().items(
+        Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options')
+    ).optional(),
+    userUsageLimit: Joi.number().positive().default(1).optional()
+});
+
+export const ValidateUpdatePromoCode = Joi.object({
+    code: Joi.string().min(3).max(20).trim().uppercase().optional(),
+    description: Joi.string().max(500).trim().optional(),
+    discountType: Joi.string().valid('percentage', 'flat').optional(),
+    discountValue: Joi.number().positive().optional(),
+    minOrderValue: Joi.number().min(0).optional(),
+    maxDiscount: Joi.number().positive().optional(),
+    usageLimit: Joi.number().positive().optional(),
+    validFrom: Joi.date().optional(),
+    validUntil: Joi.date().optional(),
+    applicableSubscriptions: Joi.array().items(Joi.string().hex().length(24)).optional(),
+    applicableCategories: Joi.array().items(
+        Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options')
+    ).optional(),
+    userUsageLimit: Joi.number().positive().optional(),
+    isActive: Joi.boolean().optional()
+});
+
+export const ValidatePromoCodeQuery = Joi.object({
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(100).optional(),
+    isActive: Joi.string().valid('true', 'false').optional(),
+    discountType: Joi.string().valid('percentage', 'flat').optional(),
+    status: Joi.string().valid('active', 'expired', 'used_up').optional(),
+    sortBy: Joi.string().valid('createdAt', 'validUntil', 'usageLimit', 'usedCount', 'discountValue').optional(),
+    sortOrder: Joi.string().valid('asc', 'desc').optional(),
+    search: Joi.string().trim().optional()
+});
+
+export const ValidateApplyPromoCode = Joi.object({
+    code: Joi.string().min(3).max(20).trim().uppercase().required(),
+    subscriptionId: Joi.string().hex().length(24).required(),
+    orderValue: Joi.number().positive().required()
+});
+
+/**
+ * ************ SUBSCRIPTION PURCHASE VALIDATION ***********************
+ */
+export const ValidateInitiatePurchase = Joi.object({
+    subscriptionId: Joi.string().hex().length(24).required(),
+    promoCode: Joi.string().min(3).max(20).trim().uppercase().optional()
+});
+
+export const ValidateVerifyPayment = Joi.object({
+    transactionId: Joi.string().required(),
+    razorpay_payment_id: Joi.string().required(),
+    razorpay_order_id: Joi.string().required(),
+    razorpay_signature: Joi.string().required()
+});
+
+export const ValidateProcessWebhook = Joi.object({
+    event: Joi.string().required(),
+    payload: Joi.object().required()
+});
+
+/**
+ * ************ TRANSACTION VALIDATION ***********************
+ */
+export const ValidateTransactionQuery = Joi.object({
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(100).optional(),
+    status: Joi.string().valid('pending', 'processing', 'success', 'failed', 'cancelled', 'refunded').optional(),
+    paymentMethod: Joi.string().valid('razorpay', 'upi', 'card', 'netbanking', 'wallet').optional(),
+    type: Joi.string().valid('purchase', 'renewal', 'refund', 'cancellation').optional(),
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    sortBy: Joi.string().valid('createdAt', 'finalAmount', 'status').optional(),
+    sortOrder: Joi.string().valid('asc', 'desc').optional(),
+    search: Joi.string().trim().optional(),
+    userId: Joi.string().hex().length(24).optional(),
+    subscriptionId: Joi.string().hex().length(24).optional()
+});
+
+export const ValidateRefundTransaction = Joi.object({
+    reason: Joi.string().max(500).trim().required(),
+    amount: Joi.number().positive().optional()
+});
+
+/**
+ * ************ CREDIT MANAGEMENT VALIDATION ***********************
+ */
+export const ValidateUseCredits = Joi.object({
+    creditsToUse: Joi.number().positive().min(1).required(),
+    subscriptionType: Joi.string().valid('universal', 'food_vendor_specific', 'home_chef_specific', 'both_options').optional(),
+    orderDetails: Joi.object({
+        orderId: Joi.string().optional(),
+        vendorId: Joi.string().optional(),
+        menuItems: Joi.array().optional()
+    }).optional()
+});
+
+/**
+ * ************ ADMIN USER MANAGEMENT VALIDATION ***********************
+ */
+export const ValidateUserFilters = Joi.object({
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(100).optional(),
+    role: Joi.string().valid('USER', 'VENDOR', 'ADMIN').optional(),
+    status: Joi.string().valid('active', 'inactive', 'banned').optional(),
+    search: Joi.string().trim().min(2).optional(),
+    userType: Joi.string().valid('normal', 'vendor', 'premium').optional(),
+    hasSubscription: Joi.string().valid('true', 'false').optional(),
+    sortBy: Joi.string().valid('createdAt', 'name', 'emailAddress', 'lastLogin', 'role').optional(),
+    sortOrder: Joi.string().valid('asc', 'desc').optional()
+});
+
+export const ValidateBanUser = Joi.object({
+    reason: Joi.string().min(5).max(500).trim().required()
+});
+
+export const ValidateUnbanUser = Joi.object({
+    reason: Joi.string().max(500).trim().optional()
+});
+
+export const ValidateUpdateLocation = Joi.object({
+    latitude: Joi.number().min(-90).max(90).required(),
+    longitude: Joi.number().min(-180).max(180).required(),
+    address: Joi.string().max(500).trim().optional(),
+    city: Joi.string().max(100).trim().optional(),
+    state: Joi.string().max(100).trim().optional(),
+    country: Joi.string().max(100).trim().optional(),
+    pincode: Joi.string().pattern(/^[0-9]{6}$/).optional()
+});
 
 export const validateJoiSchema = (schema, value) => {
     const result = schema.validate(value, { abortEarly: false });

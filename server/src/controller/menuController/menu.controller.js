@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateCreateMenu, ValidateUpdateMenu, ValidateMenuQuery } from '../../util/validationService.js';
+import { validateJoiSchema, ValidateCreateMenu, ValidateUpdateMenu, ValidateMenuQuery } from '../../service/validationService.js';
 import Menu from '../../models/menu.model.js';
 
 export default {

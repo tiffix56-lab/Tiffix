@@ -1,0 +1,149 @@
+### Promo Code Management API Testing
+
+@baseURL = http://localhost:4000/v1
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+@promoCodeId = 689ddd15bd0e72f74f580a94
+@subscriptionId = 689247b921ca814950b2037f
+
+## ===========================
+## ADMIN PROMO CODE MANAGEMENT
+## ===========================
+
+### Create New Promo Code
+POST {{baseURL}}/admin/promo-codes
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "code": "WELCOME50",
+    "description": "Welcome discount for new users - 50% off",
+    "discountType": "percentage",
+    "discountValue": 50,
+    "minOrderValue": 100,
+    "maxDiscount": 500,
+    "usageLimit": 1000,
+    "validFrom": "2025-01-01T00:00:00.000Z",
+    "validUntil": "2025-12-31T23:59:59.000Z",
+    "applicableCategories": ["universal"],
+    "userUsageLimit": 1
+}
+
+### Create Flat Discount Promo Code
+POST {{baseURL}}/admin/promo-codes
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "code": "FLAT100",
+    "description": "Flat ₹100 discount on all subscriptions",
+    "discountType": "flat",
+    "discountValue": 100,
+    "minOrderValue": 200,
+    "usageLimit": 500,
+    "validFrom": "2025-01-15T00:00:00.000Z",
+    "validUntil": "2025-02-15T23:59:59.000Z",
+    "applicableCategories": ["food_vendor_specific", "home_chef_specific"],
+    "userUsageLimit": 2
+}
+
+### Create Subscription-Specific Promo Code
+POST {{baseURL}}/admin/promo-codes
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "code": "PREMIUM20",
+    "description": "20% discount on premium subscriptions only",
+    "discountType": "percentage",
+    "discountValue": 20,
+    "minOrderValue": 500,
+    "maxDiscount": 200,
+    "usageLimit": 100,
+    "validFrom": "2025-01-10T00:00:00.000Z",
+    "validUntil": "2025-03-10T23:59:59.000Z",
+    "applicableSubscriptions": ["{{subscriptionId}}"],
+    "userUsageLimit": 1
+}
+
+### Get All Promo Codes with Pagination
+GET {{baseURL}}/admin/promo-codes?page=1&limit=10&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+### Get Active Promo Codes Only
+GET {{baseURL}}/admin/promo-codes?status=active&page=1&limit=20
+Authorization: Bearer {{adminToken}}
+
+### Search Promo Codes
+GET {{baseURL}}/admin/promo-codes?search=WELCOME&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Filter by Discount Type
+GET {{baseURL}}/admin/promo-codes?discountType=percentage&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get Promo Code by ID
+GET {{baseURL}}/admin/promo-codes/{{promoCodeId}}
+Authorization: Bearer {{adminToken}}
+
+### Update Promo Code
+PUT {{baseURL}}/admin/promo-codes/{{promoCodeId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "description": "Updated welcome discount - Limited time offer",
+    "discountValue": 40,
+    "maxDiscount": 400,
+    "usageLimit": 800
+}
+
+### Toggle Promo Code Status (Active/Inactive)
+PATCH {{baseURL}}/admin/promo-codes/{{promoCodeId}}/toggle-status
+Authorization: Bearer {{adminToken}}
+
+### Get Promo Code Statistics
+GET {{baseURL}}/admin/promo-codes/{{promoCodeId}}/stats
+Authorization: Bearer {{adminToken}}
+
+### Get Expiring Promo Codes (Next 7 days)
+GET {{baseURL}}/admin/promo-codes/expiring?days=7
+Authorization: Bearer {{adminToken}}
+
+### Bulk Create Promo Codes
+POST {{baseURL}}/admin/promo-codes/bulk-create
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+    "count": 5,
+    "description": "Bulk created discount codes",
+    "discountType": "flat",
+    "discountValue": 50,
+    "minOrderValue": 100,
+    "usageLimit": 50,
+    "validFrom": "2025-01-01T00:00:00.000Z",
+    "validUntil": "2025-06-01T23:59:59.000Z",
+    "applicableCategories": ["universal"],
+    "userUsageLimit": 1
+}
+
+### Delete Promo Code (Only if not used)
+DELETE {{baseURL}}/admin/promo-codes/{{promoCodeId}}
+Authorization: Bearer {{adminToken}}
+
+## ===========================
+## PUBLIC/USER PROMO CODE USAGE
+## ===========================
+
+### Validate Promo Code Before Purchase
+POST {{baseURL}}/promo-codes/validate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "code": "WELCOME50",
+    "subscriptionId": "{{subscriptionId}}",
+    "orderValue": 299
+}
+

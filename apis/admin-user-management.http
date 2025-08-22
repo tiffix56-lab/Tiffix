@@ -1,0 +1,127 @@
+### Admin User Management APIs
+### Base URL
+@baseUrl = http://localhost:4000/v1
+
+### Admin Authorization Token (Replace with actual admin token)
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
+
+### User ID for testing (Replace with actual user ID)
+@userId = 6891f5288bfe6b3749409d35
+
+###
+# Get User Overview Statistics
+GET {{baseUrl}}/admin/users/overview
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get All Users with Filters (Basic)
+GET {{baseUrl}}/admin/users?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get All Users with Role Filter
+GET {{baseUrl}}/admin/users?role=USER&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get All Users with Status Filter (Active)
+GET {{baseUrl}}/admin/users?status=active&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get All Users with Status Filter (Banned)
+GET {{baseUrl}}/admin/users?status=banned&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get All Vendors
+GET {{baseUrl}}/admin/users?role=VENDOR&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get Premium Users (with subscriptions)
+GET {{baseUrl}}/admin/users?hasSubscription=true&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Search Users by Name/Email
+GET {{baseUrl}}/admin/users?search=john&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get Users with Sorting
+GET {{baseUrl}}/admin/users?sortBy=createdAt&sortOrder=desc&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get User by ID
+GET {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Ban User
+POST {{baseUrl}}/admin/users/{{userId}}/ban
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "reason": "Violated terms of service - inappropriate behavior"
+}
+
+###
+# Unban User
+POST {{baseUrl}}/admin/users/{{userId}}/unban
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Toggle User Active Status
+PUT {{baseUrl}}/admin/users/{{userId}}/toggle-status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Delete User (Soft Delete)
+DELETE {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get User Activity Stats
+GET {{baseUrl}}/admin/users/activity-stats?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get User Activity Stats (Last 30 days)
+GET {{baseUrl}}/admin/users/activity-stats
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Search Users (Quick Search)
+GET {{baseUrl}}/admin/users/search?q=john&limit=5
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Complex Filter Example - Active Vendors with Subscriptions
+GET {{baseUrl}}/admin/users?role=VENDOR&status=active&hasSubscription=true&sortBy=createdAt&sortOrder=desc&page=1&limit=20
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+# Get All Users with Combined Filters
+GET {{baseUrl}}/admin/users?role=USER&status=active&search=test&hasSubscription=false&sortBy=name&sortOrder=asc&page=1&limit=15
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json

@@ -1,0 +1,199 @@
+### Subscription Purchase & Management API Testing
+
+@baseURL = http://localhost:4000/v1
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+@subscriptionId = 689247b921ca814950b2037f
+@userSubscriptionId = USER_SUBSCRIPTION_ID_HERE
+@transactionId = TXN_1755176666817_2DHJPO
+
+## ===========================
+## SUBSCRIPTION PURCHASE FLOW
+## ===========================
+
+### Step 1: Initiate Purchase (Without Promo Code)
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "{{subscriptionId}}"
+}
+
+### Step 1: Initiate Purchase (With Promo Code)
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "{{subscriptionId}}",
+    "promoCode": "WELCOME50"
+}
+
+### Step 2: Verify Payment (After Razorpay Payment Success)
+POST {{baseURL}}/purchase/verify
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "transactionId": "{{transactionId}}",
+    "razorpay_payment_id": "pay_RAZORPAY_PAYMENT_ID",
+    "razorpay_order_id": "order_RAZORPAY_ORDER_ID",
+    "razorpay_signature": "RAZORPAY_SIGNATURE"
+}
+
+### Webhook Endpoint (No Authorization - Called by Razorpay)
+POST {{baseURL}}/purchase/webhook
+Content-Type: application/json
+X-Razorpay-Signature: WEBHOOK_SIGNATURE
+
+{
+    "entity": "event",
+    "account_id": "acc_ACCOUNT_ID",
+    "event": "payment.captured",
+    "contains": ["payment"],
+    "payload": {
+        "payment": {
+            "entity": {
+                "id": "pay_PAYMENT_ID",
+                "entity": "payment",
+                "amount": 29900,
+                "currency": "INR",
+                "status": "captured",
+                "order_id": "order_ORDER_ID",
+                "method": "card"
+            }
+        }
+    },
+    "created_at": 1643723389
+}
+
+## ===========================
+## USER SUBSCRIPTION MANAGEMENT
+## ===========================
+
+### Get User's All Subscriptions
+GET {{baseURL}}/user-subscriptions?page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User's Active Subscriptions Only
+GET {{baseURL}}/user-subscriptions/active
+Authorization: Bearer {{userToken}}
+
+### Get User's Subscriptions by Status
+GET {{baseURL}}/user-subscriptions?status=active&page=1&limit=5
+Authorization: Bearer {{userToken}}
+
+### Get User's Expired Subscriptions
+GET {{baseURL}}/user-subscriptions?status=expired&page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get Specific User Subscription Details
+GET {{baseURL}}/user-subscriptions/{{userSubscriptionId}}
+Authorization: Bearer {{userToken}}
+
+
+## ===========================
+## TRANSACTION STATUS TRACKING
+## ===========================
+
+### Get Transaction Status by ID
+GET {{baseURL}}/transactions/{{transactionId}}/status
+Authorization: Bearer {{userToken}}
+
+### Get User's All Transactions
+GET {{baseURL}}/my-transactions?page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User's Successful Transactions Only
+GET {{baseURL}}/my-transactions?status=success&page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User's Failed Transactions
+GET {{baseURL}}/my-transactions?status=failed&page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User's Transactions by Date Range
+GET {{baseURL}}/my-transactions?startDate=2025-01-01&endDate=2025-12-31&page=1&limit=20
+Authorization: Bearer {{userToken}}
+
+### Get User's Purchase Transactions Only
+GET {{baseURL}}/my-transactions?type=purchase&page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User's Refunded Transactions
+GET {{baseURL}}/my-transactions?type=refund&page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+## ===========================
+## PAYMENT INTEGRATION TESTING
+## ===========================
+
+### Test Payment with Minimum Order Value
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "{{subscriptionId}}",
+    "promoCode": "FLAT100"
+}
+
+### Test Payment with Maximum Discount Promo
+POST {{baseURL}}/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+    "subscriptionId": "{{subscriptionId}}",
+    "promoCode": "WELCOME50"
+}
+
+## ===========================
+## SAMPLE RAZORPAY INTEGRATION
+## ===========================
+
+### Frontend Integration Example (JavaScript)
+# This is how you would integrate on the frontend:
+#
+# const response = await fetch('/v1/purchase/initiate', {
+#     method: 'POST',
+#     headers: {
+#         'Content-Type': 'application/json',
+#         'Authorization': `Bearer ${userToken}`
+#     },
+#     body: JSON.stringify({
+#         subscriptionId: 'SUBSCRIPTION_ID',
+#         promoCode: 'OPTIONAL_PROMO_CODE'
+#     })
+# });
+# 
+# const { razorpayOrderId, amount, razorpayKeyId, transactionId } = await response.json();
+# 
+# const options = {
+#     key: razorpayKeyId,
+#     amount: amount * 100, // amount in paise
+#     currency: 'INR',
+#     name: 'Your Company Name',
+#     description: 'Subscription Purchase',
+#     order_id: razorpayOrderId,
+#     handler: async function(response) {
+#         // Verify payment on your server
+#         await fetch('/v1/purchase/verify', {
+#             method: 'POST',
+#             headers: {
+#                 'Content-Type': 'application/json',
+#                 'Authorization': `Bearer ${userToken}`
+#             },
+#             body: JSON.stringify({
+#                 transactionId: transactionId,
+#                 razorpay_payment_id: response.razorpay_payment_id,
+#                 razorpay_order_id: response.razorpay_order_id,
+#                 razorpay_signature: response.razorpay_signature
+#             })
+#         });
+#     }
+# };
+# 
+# const razorpay = new Razorpay(options);
+# razorpay.open();
