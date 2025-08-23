@@ -73,14 +73,15 @@ class TimezoneUtil {
     /**
      * Format date for IST display
      * @param {Date|string} date - Date to format
-     * @param {string} format - Format type ('date', 'datetime', 'time')
+     * @param {string} format - Format type ('date', 'datetime', 'time', 'time24')
      * @returns {string} Formatted date string
      */
     static format(date, format = 'datetime') {
         const istDate = this.toIST(date)
         
         const options = {
-            timeZone: INDIAN_TIMEZONE
+            timeZone: INDIAN_TIMEZONE,
+            hour12: false // Always use 24-hour format
         }
 
         switch (format) {
@@ -90,6 +91,7 @@ class TimezoneUtil {
                 options.day = '2-digit'
                 break
             case 'time':
+            case 'time24':
                 options.hour = '2-digit'
                 options.minute = '2-digit'
                 options.second = '2-digit'
@@ -105,6 +107,62 @@ class TimezoneUtil {
         }
 
         return new Intl.DateTimeFormat('en-IN', options).format(istDate)
+    }
+
+    /**
+     * Get time in HH:MM format (24-hour)
+     * @param {Date|string} date - Date to format
+     * @returns {string} Time in HH:MM format
+     */
+    static getTimeString(date = null) {
+        const istDate = date ? this.toIST(date) : this.now()
+        const hours = istDate.getHours().toString().padStart(2, '0')
+        const minutes = istDate.getMinutes().toString().padStart(2, '0')
+        return `${hours}:${minutes}`
+    }
+
+    /**
+     * Parse time string (HH:MM) and create date with current IST date
+     * @param {string} timeString - Time in HH:MM format
+     * @param {Date|string} baseDate - Base date, defaults to current
+     * @returns {Date} Date with specified time in IST
+     */
+    static parseTimeString(timeString, baseDate = null) {
+        const [hours, minutes] = timeString.split(':').map(Number)
+        const istDate = baseDate ? this.toIST(baseDate) : this.now()
+        istDate.setHours(hours, minutes, 0, 0)
+        return istDate
+    }
+
+    /**
+     * Check if time string is within a time range
+     * @param {string} time - Time in HH:MM format
+     * @param {string} startTime - Start time in HH:MM format
+     * @param {string} endTime - End time in HH:MM format
+     * @returns {boolean} True if time is within range
+     */
+    static isTimeInRange(time, startTime, endTime) {
+        const timeMinutes = this.timeStringToMinutes(time)
+        const startMinutes = this.timeStringToMinutes(startTime)
+        const endMinutes = this.timeStringToMinutes(endTime)
+        
+        if (startMinutes <= endMinutes) {
+            // Normal range (e.g., 09:00 - 17:00)
+            return timeMinutes >= startMinutes && timeMinutes <= endMinutes
+        } else {
+            // Overnight range (e.g., 22:00 - 06:00)
+            return timeMinutes >= startMinutes || timeMinutes <= endMinutes
+        }
+    }
+
+    /**
+     * Convert time string to minutes since midnight
+     * @param {string} timeString - Time in HH:MM format
+     * @returns {number} Minutes since midnight
+     */
+    static timeStringToMinutes(timeString) {
+        const [hours, minutes] = timeString.split(':').map(Number)
+        return hours * 60 + minutes
     }
 
     /**

@@ -134,7 +134,6 @@ const transactionSchema = new mongoose.Schema(
     { timestamps: true }
 )
 
-transactionSchema.index({ transactionId: 1 }, { unique: true })
 transactionSchema.index({ userId: 1 })
 transactionSchema.index({ status: 1 })
 transactionSchema.index({ paymentMethod: 1 })

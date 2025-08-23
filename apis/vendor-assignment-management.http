@@ -1,0 +1,85 @@
+### Vendor Assignment Management API Testing
+
+@baseURL = http://localhost:4000/v1
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
+@requestId = 689247b921ca814950b2037f
+@vendorId = 689247b921ca814950b20380
+@zoneId = 689247b921ca814950b20381
+
+## ===========================
+## ADMIN VENDOR ASSIGNMENT MANAGEMENT
+## ===========================
+
+### Get All Vendor Assignment Requests with Filters
+GET {{baseURL}}/admin/vendor-assignments?page=1&limit=10&status=pending&requestType=initial_assignment&priority=high&sortBy=requestedAt&sortOrder=desc
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get All Pending Vendor Assignment Requests
+GET {{baseURL}}/admin/vendor-assignments/pending?page=1&limit=10
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Pending Initial Assignment Requests
+GET {{baseURL}}/admin/vendor-assignments/initial-assignments
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Pending Vendor Switch Requests
+GET {{baseURL}}/admin/vendor-assignments/vendor-switches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Urgent Vendor Assignment Requests
+GET {{baseURL}}/admin/vendor-assignments/urgent
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Vendor Assignment Requests by Delivery Zone
+GET {{baseURL}}/admin/vendor-assignments/zone/{{zoneId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Available Vendors for a Specific Request
+GET {{baseURL}}/admin/vendor-assignments/{{requestId}}/available-vendors
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Assign Vendor to a Request
+POST {{baseURL}}/admin/vendor-assignments/{{requestId}}/assign
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "vendorId": "{{vendorId}}",
+  "adminNotes": "Assigned vendor based on proximity and availability"
+}
+
+### Reject a Vendor Assignment Request
+POST {{baseURL}}/admin/vendor-assignments/{{requestId}}/reject
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "rejectionReason": "No suitable vendors available in the requested zone",
+  "adminNotes": "Consider alternative zones or vendor types"
+}
+
+### Update Priority of a Vendor Assignment Request
+PATCH {{baseURL}}/admin/vendor-assignments/{{requestId}}/priority
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "priority": "urgent"
+}
+
+### Get Vendor Assignment Request Details
+GET {{baseURL}}/admin/vendor-assignments/{{requestId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Vendor Assignment Statistics
+GET {{baseURL}}/admin/vendor-assignments/stats?startDate=2025-08-01&endDate=2025-08-23
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}

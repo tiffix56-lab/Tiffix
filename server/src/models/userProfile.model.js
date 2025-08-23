@@ -75,7 +75,6 @@ const userProfileSchema = new mongoose.Schema(
 )
 
 // Indexes
-userProfileSchema.index({ userId: 1 }, { unique: true })
 userProfileSchema.index({ 'addresses.coordinates': '2dsphere' })
 userProfileSchema.index({ 'addresses.zipCode': 1 })
 userProfileSchema.index({ 'addresses.city': 1 })
