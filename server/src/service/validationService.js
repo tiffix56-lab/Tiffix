@@ -758,6 +758,53 @@ export const ValidateUpdateLocation = Joi.object({
     pincode: Joi.string().pattern(/^[0-9]{6}$/).optional()
 });
 
+/**
+ * ************ ADMIN SUBSCRIPTION PURCHASE VALIDATION ***********************
+ */
+export const ValidateAdminSubscriptionQuery = Joi.object({
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(100).optional(),
+    search: Joi.string().trim().optional(),
+    status: Joi.string().valid('pending', 'active', 'expired', 'cancelled', 'failed', 'newer', 'older').optional(),
+    vendorAssigned: Joi.string().valid('assigned', 'unassigned').optional(),
+    dateFrom: Joi.date().optional(),
+    dateTo: Joi.date().optional(),
+    sortBy: Joi.string().valid('createdAt', 'startDate', 'endDate', 'finalPrice', 'status').optional(),
+    sortOrder: Joi.string().valid('asc', 'desc').optional(),
+    category: Joi.string().valid('home_chef', 'food_vendor').optional(),
+    priceMin: Joi.number().min(0).optional(),
+    priceMax: Joi.number().min(0).optional(),
+    subscriptionId: Joi.string().hex().length(24).optional()
+});
+
+export const ValidateAdminStatsQuery = Joi.object({
+    period: Joi.string().valid('7d', '30d', '90d', '1y', 'all').optional(),
+    category: Joi.string().valid('home_chef', 'food_vendor').optional(),
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional()
+});
+
+/**
+ * ************ VENDOR CUSTOMER MANAGEMENT VALIDATION ***********************
+ */
+export const ValidateVendorCustomerQuery = Joi.object({
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(50).optional(),
+    search: Joi.string().trim().optional(),
+    status: Joi.string().valid('active', 'expired', 'pending', 'cancelled').optional(),
+    deliveryAddress: Joi.string().trim().optional(),
+    amount: Joi.string().pattern(/^\d+(-\d+)?$/).optional(), // format: "min" or "min-max"
+    dateFrom: Joi.date().optional(),
+    dateTo: Joi.date().optional(),
+    sortBy: Joi.string().valid('createdAt', 'startDate', 'endDate', 'finalPrice', 'status').optional(),
+    sortOrder: Joi.string().valid('asc', 'desc').optional()
+});
+
+export const ValidateVendorAnalyticsQuery = Joi.object({
+    period: Joi.string().valid('7d', '30d', '90d', '1y', 'all').optional(),
+    category: Joi.string().valid('home_chef', 'food_vendor').optional()
+});
+
 export const validateJoiSchema = (schema, value) => {
     const result = schema.validate(value, { abortEarly: false });
     return {

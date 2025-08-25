@@ -9,6 +9,8 @@ import userProfileController from '../controller/userProfileController/userProfi
 import referralController from '../controller/referralController/referral.controller.js'
 import promoCodeController from '../controller/promoCodeController/promoCode.controller.js'
 import subscriptionPurchaseController from '../controller/subscriptionPurchaseController/subscriptionPurchase.controller.js'
+import adminSubscriptionPurchaseController from '../controller/subscriptionPurchaseController/admin-subscriptionPurchase.controller.js'
+import vendorCustomerManagementController from '../controller/subscriptionPurchaseController/customer-management-vendor.controller.js'
 import transactionController from '../controller/transactionController/transaction.controller.js'
 import userAdminController from '../controller/AdminController/user.admincontroller.js'
 import vendorAssignmentController from '../controller/vendorAssignmentController/vendorAssignment.controller.js'
@@ -164,6 +166,18 @@ router.route('/my-subscriptions').get(authentication, subscriptionPurchaseContro
 router.route('/my-subscriptions/:subscriptionId').get(authentication, subscriptionPurchaseController.getSubscriptionById)
 router.route('/my-subscriptions/:subscriptionId/cancel').post(authentication, subscriptionPurchaseController.cancelSubscription)
 router.route('/my-subscriptions/:subscriptionId/request-vendor-switch').post(authentication, subscriptionPurchaseController.requestVendorSwitch)
+
+// ############### ADMIN SUBSCRIPTION PURCHASE ROUTES ####################
+// Admin subscription purchase management with comprehensive filters
+router.route('/admin/subscription-purchases').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getAllPurchaseSubscriptions)
+router.route('/admin/subscription-purchases/stats').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getPurchaseSubscriptionStats)
+router.route('/admin/subscription-purchases/:subscriptionId').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getPurchaseSubscriptionById)
+
+// ############### VENDOR CUSTOMER MANAGEMENT ROUTES ####################
+// Vendor customer management - view and manage assigned customers
+router.route('/vendor/customers').get(authentication, authorization([EUserRole.VENDOR]), vendorCustomerManagementController.getAllMyCustomers)
+router.route('/vendor/customers/analytics').get(authentication, authorization([EUserRole.VENDOR]), vendorCustomerManagementController.getCustomerAnalytics)
+router.route('/vendor/customers/:subscriptionId').get(authentication, authorization([EUserRole.VENDOR]), vendorCustomerManagementController.getCustomerSubscriptionById)
 
 // ############### TRANSACTION & ANALYTICS ROUTES ####################
 // User transaction routes

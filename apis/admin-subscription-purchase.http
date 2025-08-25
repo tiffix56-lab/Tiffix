@@ -1,0 +1,56 @@
+### Admin Subscription Purchase API Testing
+
+@baseURL = http://localhost:4000/v1
+@adminToken = your_admin_access_token_here
+
+### Get all purchase subscriptions with filters
+GET {{baseURL}}/admin/subscription-purchases?page=1&limit=20&search=user&status=active&vendorAssigned=assigned
+Authorization: Bearer {{adminToken}}
+
+### Get all purchase subscriptions - basic
+GET {{baseURL}}/admin/subscription-purchases
+Authorization: Bearer {{adminToken}}
+
+### Get purchase subscriptions with date filter
+GET {{baseURL}}/admin/subscription-purchases?dateFrom=2024-01-01&dateTo=2024-12-31&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+### Get purchase subscriptions with price filter
+GET {{baseURL}}/admin/subscription-purchases?priceMin=1000&priceMax=5000&category=home_chef
+Authorization: Bearer {{adminToken}}
+
+### Get purchase subscriptions - newer status
+GET {{baseURL}}/admin/subscription-purchases?status=newer&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get purchase subscriptions - older status
+GET {{baseURL}}/admin/subscription-purchases?status=older&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get purchase subscriptions - unassigned vendors
+GET {{baseURL}}/admin/subscription-purchases?vendorAssigned=unassigned&sortBy=createdAt&sortOrder=asc
+Authorization: Bearer {{adminToken}}
+
+### Get specific subscription purchase by ID
+GET {{baseURL}}/admin/subscription-purchases/subscription_id_here
+Authorization: Bearer {{adminToken}}
+
+### Get subscription purchase statistics - 30 days
+GET {{baseURL}}/admin/subscription-purchases/stats?period=30d
+Authorization: Bearer {{adminToken}}
+
+### Get subscription purchase statistics - 7 days with category
+GET {{baseURL}}/admin/subscription-purchases/stats?period=7d&category=home_chef
+Authorization: Bearer {{adminToken}}
+
+### Get subscription purchase statistics - custom date range
+GET {{baseURL}}/admin/subscription-purchases/stats?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{adminToken}}
+
+### Get subscription purchase statistics - all time
+GET {{baseURL}}/admin/subscription-purchases/stats?period=all
+Authorization: Bearer {{adminToken}}
+
+### Get subscription purchase statistics - 1 year food vendor
+GET {{baseURL}}/admin/subscription-purchases/stats?period=1y&category=food_vendor
+Authorization: Bearer {{adminToken}}
