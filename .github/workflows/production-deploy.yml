@@ -22,13 +22,13 @@ jobs:
 
       - name: Deploy to Production Server
         env:
-          DEPLOY_PATH: /home/production
+          DEPLOY_PATH: /home/Tiffix
           DEPLOY_HOST: ${{ secrets.SERVER_IP }}
           DEPLOY_USER: ${{ secrets.SERVER_USER }}
           GITHUB_USERNAME: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.DEPLOY_GITHUB_TOKEN }}
-          DOMAIN: <your-domain-url>
+          DOMAIN: tiffix.in
         run: |
           # Pass environment variables to the SSH session
           ssh $DEPLOY_USER@$DEPLOY_HOST "
