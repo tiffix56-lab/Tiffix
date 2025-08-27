@@ -25,99 +25,64 @@ GET {{baseUrl}}/menus?cuisine=indian
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 5. Filter by Price Range
-GET {{baseUrl}}/menus?minPrice=100&maxPrice=500
-Content-Type: application/json
-Authorization: {{adminToken}}
-
-### 6. Filter by Calories Range
-GET {{baseUrl}}/menus?minCalories=200&maxCalories=800
-Content-Type: application/json
-Authorization: {{adminToken}}
-
-### 7. Filter by Prep Time
-GET {{baseUrl}}/menus?minPrepTime=10&maxPrepTime=30
-Content-Type: application/json
-Authorization: {{adminToken}}
-
-### 8. Filter by Rating
-GET {{baseUrl}}/menus?minRating=4.0
-Content-Type: application/json
-Authorization: {{adminToken}}
-
-### 9. Filter by Dietary Options
+### 5. Filter by Dietary Options
 GET {{baseUrl}}/menus?dietaryOptions=vegetarian,vegan
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 10. Filter by Tags
+### 6. Filter by Tags
 GET {{baseUrl}}/menus?tags=healthy,organic
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 11. Exclude Allergens
-GET {{baseUrl}}/menus?allergens=nuts,dairy
-Content-Type: application/json
-Authorization: {{adminToken}}
-
-### 12. Filter by Availability
+### 7. Filter by Availability
 GET {{baseUrl}}/menus?isAvailable=true
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 13. Filter by Credits Required
-GET {{baseUrl}}/menus?hasCreditsRequired=true
-Content-Type: application/json
-Authorization: {{adminToken}}
-
-### 14. Filter by Credits Range
-GET {{baseUrl}}/menus?minCredits=5&maxCredits=20
-Content-Type: application/json
-Authorization: {{adminToken}}
-
-### 15. Search Menus
+### 8. Search Menus
 GET {{baseUrl}}/menus?search=chicken curry
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 16. Sort by Price (Ascending)
+### 9. Sort by Price (Ascending)
 GET {{baseUrl}}/menus?sortBy=price&sortOrder=asc
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 17. Sort by Rating (Descending)
+### 10. Sort by Rating (Descending)
 GET {{baseUrl}}/menus?sortBy=rating.average&sortOrder=desc
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 18. Sort by Prep Time
+### 11. Sort by Prep Time
 GET {{baseUrl}}/menus?sortBy=prepTime&sortOrder=asc
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 19. Sort by Calories
+### 12. Sort by Calories
 GET {{baseUrl}}/menus?sortBy=calories&sortOrder=desc
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 20. Sort by Available Quantity
-GET {{baseUrl}}/menus?sortBy=availableQuantity&sortOrder=desc
+### 13. Sort by Created Date
+GET {{baseUrl}}/menus?sortBy=createdAt&sortOrder=desc
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 21. Complex Filter Example
-GET {{baseUrl}}/menus?vendorCategory=home_chef&cuisine=indian&minPrice=200&maxPrice=600&dietaryOptions=vegetarian&minRating=3.5&isAvailable=true&sortBy=rating.average&sortOrder=desc&page=1&limit=10
+### 14. Complex Filter Example
+GET {{baseUrl}}/menus?vendorCategory=home_chef&cuisine=indian&dietaryOptions=vegetarian&isAvailable=true&sortBy=rating.average&sortOrder=desc&page=1&limit=10
 Content-Type: application/json
 Authorization: {{adminToken}}
 
-### 22. Get Menu by ID
+### 15. Get Menu by ID
 GET {{baseUrl}}/menus/{{menuId}}
 Content-Type: application/json
 Authorization: {{adminToken}}
 
 ### ============== ADMIN MENU ROUTES ==============
 
-### 23. Create New Menu
+### 16. Create New Menu
 POST {{baseUrl}}/admin/menus
 Authorization: {{adminToken}}
 Content-Type: application/json
@@ -128,9 +93,8 @@ Content-Type: application/json
     "https://example.com/sub-image1.jpg",
     "https://example.com/sub-image2.jpg"
   ],
-  "foodTitle": "Delicious Chicken Biryani Primium",
+  "foodTitle": "Delicious Chicken Biryani Premium",
   "price": 299,
-  "creditsRequired": 10,
   "description": {
     "short": "Aromatic basmati rice cooked with tender chicken pieces and exotic spices",
     "long": "A traditional recipe passed down through generations, featuring premium basmati rice, succulent chicken pieces marinated in yogurt and spices, slow-cooked to perfection with saffron, caramelized onions, and fresh herbs."
@@ -141,22 +105,10 @@ Content-Type: application/json
   "prepTime": 45,
   "calories": 650,
   "dietaryOptions": ["non-vegetarian", "dairy-free"],
-  "tags": ["spicy", "traditional", "aromatic"],
-  "allergens": ["dairy"],
-  "nutritionalInfo": {
-    "protein": 35,
-    "carbs": 75,
-    "fat": 20,
-    "fiber": 3,
-    "sugar": 8,
-    "sodium": 890
-  },
-  "servingSize": "1 full plate",
-  "availableQuantity": 20,
-  "maxOrdersPerDay": 25
+  "tags": ["spicy", "traditional", "aromatic"]
 }
 
-### 24. Update Menu
+### 17. Update Menu
 PUT {{baseUrl}}/admin/menus/{{menuId}}
 Authorization: {{adminToken}}
 Content-Type: application/json
@@ -165,21 +117,20 @@ Content-Type: application/json
   "price": 349,
   "description": {
     "short": "Premium Chicken Biryani with extra saffron and nuts"
-  },
-  "availableQuantity": 15
+  }
 }
 
-### 25. Delete Menu
+### 18. Delete Menu
 DELETE {{baseUrl}}/admin/menus/{{menuId}}
 Authorization: {{adminToken}}
 Content-Type: application/json
 
-### 26. Toggle Menu Availability
+### 19. Toggle Menu Availability
 PATCH {{baseUrl}}/admin/menus/{{menuId}}/toggle-availability
 Authorization: {{adminToken}}
 Content-Type: application/json
 
-### 27. Update Menu Rating
+### 20. Update Menu Rating
 PATCH {{baseUrl}}/admin/menus/{{menuId}}/rating
 Authorization: {{adminToken}}
 Content-Type: application/json
@@ -188,7 +139,7 @@ Content-Type: application/json
   "rating": 4.5
 }
 
-### 28. Bulk Update Menu Availability
+### 21. Bulk Update Menu Availability
 PATCH {{baseUrl}}/admin/menus/bulk-availability
 Authorization: {{adminToken}}
 Content-Type: application/json
