@@ -16,18 +16,11 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "format:check": "prettier . --check",
-    "format:fix": "prettier . --fix",
-    "prepare": "husky"
+    "format:fix": "prettier . --fix"
   },
   "keywords": [],
   "author": "Manish",
   "license": "ISC",
-  "lint-staged": {
-    "*.{js,jsx}": [
-      "npm run lint:fix",
-      "npm run format:fix"
-    ]
-  },
   "description": "",
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
@@ -36,8 +29,6 @@
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.1.2",
     "prettier": "3.6.2"
   },
   "dependencies": {
