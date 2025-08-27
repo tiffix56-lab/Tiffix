@@ -118,10 +118,10 @@ userSubscriptionSchema.methods.isActive = function () {
     return this.status === 'active' && now <= this.endDate
 }
 
-userSubscriptionSchema.methods.isExpired = function () {
-    const now = TimezoneUtil.now()
-    return now > this.endDate
-}
+// userSubscriptionSchema.methods.isExpired = function () {
+//     const now = TimezoneUtil.now()
+//     return now > this.endDate
+// }
 
 userSubscriptionSchema.methods.getRemainingCredits = function () {
     return Math.max(0, this.creditsGranted - this.creditsUsed)

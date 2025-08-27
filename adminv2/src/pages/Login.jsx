@@ -1,15 +1,16 @@
-import { signInApi } from '@/services/api.service';
+
 import { Loader2 } from 'lucide-react';
 import React, { useState } from 'react'
 import {toast} from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom';
-function SignIn() {
+import { signInApi } from '../service/api.service';
+function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSignIn = async (event) => {
     event.preventDefault();
     try {
       setIsLoading(true);
@@ -77,4 +78,4 @@ function SignIn() {
   )
 }
 
-export default SignIn
+export default Login
