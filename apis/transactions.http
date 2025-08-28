@@ -1,0 +1,62 @@
+### Transaction Management & Analytics API Testing
+
+# Base URL
+@baseURL = http://localhost:4000/v1
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+@transactionId = TXN_1755176666817_2DHJPO
+@subscriptionId = 689ddbe0bd0e72f74f580a50
+@userId = 6891f5288bfe6b3749409d35
+
+## ===========================
+## USER TRANSACTION MANAGEMENT
+## ===========================
+
+### Get User's Transactions with Filters (User)
+GET {{baseURL}}/my-transactions?page=1&limit=10&status=success&type=purchase&startDate=2025-08-01&endDate=2025-08-23
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+## ===========================
+## ADMIN TRANSACTION MANAGEMENT
+## ===========================
+
+### Get All Transactions with Filters (Admin)
+GET {{baseURL}}/admin/transactions?page=1&limit=10&status=success&paymentMethod=card&type=purchase&startDate=2025-08-01&endDate=2025-08-23&sortBy=finalAmount&sortOrder=desc&search={{transactionId}}&userId={{userId}}&subscriptionId={{subscriptionId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Transaction by ID (Admin)
+GET {{baseURL}}/admin/transactions/{{transactionId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Transaction Statistics (Admin)
+GET {{baseURL}}/admin/transactions/stats?startDate=2025-08-01&endDate=2025-08-23&groupBy=month
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Get Failed Transactions for Review (Admin)
+GET {{baseURL}}/admin/transactions/failed?page=1&limit=10&startDate=2025-08-01&endDate=2025-08-23
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Process Refund for Transaction (Admin)
+POST {{baseURL}}/admin/transactions/{{transactionId}}/refund
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "reason": "Customer requested refund due to service dissatisfaction",
+  "amount": 1500
+}
+
+### Export Transactions as JSON (Admin)
+GET {{baseURL}}/admin/transactions/export?status=success&startDate=2025-08-01&endDate=2025-08-23
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+### Export Transactions as CSV (Admin)
+GET {{baseURL}}/admin/transactions/export?status=success&startDate=2025-08-01&endDate=2025-08-23&format=csv
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}

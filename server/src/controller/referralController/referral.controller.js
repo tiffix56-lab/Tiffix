@@ -2,6 +2,7 @@ import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
 import referralService from '../../service/referralService.js';
+import User from '../../models/user.model.js';
 
 export default {
 
@@ -16,8 +17,7 @@ export default {
                 return httpError(next, new Error('Referral code is required'), req, 400);
             }
 
-            // Just check if the referral code exists
-            const User = (await import('../../models/user.model.js')).default;
+
             const referrer = await User.findOne({
                 'referral.userReferralCode': referralCode.toUpperCase()
             }).select('name');
@@ -41,7 +41,7 @@ export default {
      */
     generateReferralLink: async (req, res, next) => {
         try {
-            const { userId } = req.authenticatedUser; // From auth middleware
+            const { userId } = req.authenticatedUser;
 
             const referralData = await referralService.generateReferralLink(userId);
 
@@ -58,7 +58,7 @@ export default {
      */
     getReferralStats: async (req, res, next) => {
         try {
-            const { userId } = req.authenticatedUser; // From auth middleware
+            const { userId } = req.authenticatedUser;
 
             const stats = await referralService.getReferralStats(userId);
 
@@ -101,9 +101,7 @@ export default {
                 sortOrder = 'desc'
             } = req.query;
 
-            const User = (await import('../../models/user.model.js')).default;
 
-            // Build date filter
             const dateFilter = {};
             if (startDate || endDate) {
                 dateFilter.createdAt = {};
@@ -111,7 +109,6 @@ export default {
                 if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
             }
 
-            // Get referral analytics
             const skip = (page - 1) * limit;
             const sortObj = {};
             sortObj[`referral.${sortBy}`] = sortOrder === 'desc' ? -1 : 1;
@@ -167,13 +164,11 @@ export default {
                 }
             ]);
 
-            // Get total count
             const totalCount = await User.countDocuments({
                 'referral.totalreferralCredits': { $gt: 0 },
                 ...dateFilter
             });
 
-            // Get overall statistics
             const overallStats = await User.aggregate([
                 {
                     $group: {
@@ -193,7 +188,6 @@ export default {
                 }
             ]);
 
-            // Get time-based statistics (last 30 days)
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -214,7 +208,6 @@ export default {
                 }
             ]);
 
-            // Get top referrers
             const topReferrers = await User.find({
                 'referral.totalreferralCredits': { $gt: 0 }
             })

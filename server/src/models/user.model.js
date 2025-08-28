@@ -216,7 +216,6 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 )
 
-userSchema.index({ emailAddress: 1 }, { unique: true })
 userSchema.index({ 'phoneNumber.internationalNumber': 1 })
 userSchema.index({ googleId: 1 })
 userSchema.index({ role: 1 })

@@ -128,7 +128,6 @@ const vendorProfileSchema = new mongoose.Schema(
 )
 
 // Indexes
-vendorProfileSchema.index({ userId: 1 }, { unique: true })
 vendorProfileSchema.index({ vendorType: 1 })
 vendorProfileSchema.index({ 'businessInfo.serviceArea.coordinates': '2dsphere' })
 vendorProfileSchema.index({ 'businessInfo.address.coordinates': '2dsphere' })

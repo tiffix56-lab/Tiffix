@@ -1,0 +1,68 @@
+### Vendor Customer Management API Testing
+
+@baseURL = http://localhost:4000/v1
+@vendorToken = your_vendor_access_token_here
+
+### Get all my customers - basic
+GET {{baseURL}}/vendor/customers
+Authorization: Bearer {{vendorToken}}
+
+### Get all my customers with search
+GET {{baseURL}}/vendor/customers?search=john&page=1&limit=15
+Authorization: Bearer {{vendorToken}}
+
+### Get active customers only
+GET {{baseURL}}/vendor/customers?status=active&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{vendorToken}}
+
+### Get expired customers
+GET {{baseURL}}/vendor/customers?status=expired&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Get customers with delivery address filter
+GET {{baseURL}}/vendor/customers?deliveryAddress=mumbai&sortBy=finalPrice&sortOrder=asc
+Authorization: Bearer {{vendorToken}}
+
+### Get customers with amount range filter
+GET {{baseURL}}/vendor/customers?amount=2000-5000&status=active
+Authorization: Bearer {{vendorToken}}
+
+### Get customers with date range filter
+GET {{baseURL}}/vendor/customers?dateFrom=2024-01-01&dateTo=2024-12-31&sortBy=endDate&sortOrder=desc
+Authorization: Bearer {{vendorToken}}
+
+### Get pending customers
+GET {{baseURL}}/vendor/customers?status=pending&page=1&limit=20
+Authorization: Bearer {{vendorToken}}
+
+### Get cancelled customers
+GET {{baseURL}}/vendor/customers?status=cancelled&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{vendorToken}}
+
+### Get specific customer subscription by ID
+GET {{baseURL}}/vendor/customers/subscription_id_here
+Authorization: Bearer {{vendorToken}}
+
+### Get customer analytics - 30 days
+GET {{baseURL}}/vendor/customers/analytics?period=30d
+Authorization: Bearer {{vendorToken}}
+
+### Get customer analytics - 7 days
+GET {{baseURL}}/vendor/customers/analytics?period=7d
+Authorization: Bearer {{vendorToken}}
+
+### Get customer analytics - 90 days with category
+GET {{baseURL}}/vendor/customers/analytics?period=90d&category=home_chef
+Authorization: Bearer {{vendorToken}}
+
+### Get customer analytics - 1 year
+GET {{baseURL}}/vendor/customers/analytics?period=1y
+Authorization: Bearer {{vendorToken}}
+
+### Get customer analytics - all time
+GET {{baseURL}}/vendor/customers/analytics?period=all
+Authorization: Bearer {{vendorToken}}
+
+### Get customer analytics - food vendor category
+GET {{baseURL}}/vendor/customers/analytics?period=30d&category=food_vendor
+Authorization: Bearer {{vendorToken}}

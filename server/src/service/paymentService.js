@@ -30,16 +30,10 @@ class PaymentService {
                 notes
             })
 
-            return {
-                success: true,
-                order
-            }
+            return order // Return the order directly for easier access
         } catch (error) {
             console.error('Razorpay order creation error:', error)
-            return {
-                success: false,
-                error: error.message
-            }
+            throw new Error(`Payment order creation failed: ${error.message}`)
         }
     }
 
@@ -60,17 +54,10 @@ class PaymentService {
 
             const isValid = expectedSignature === razorpay_signature
 
-            return {
-                isValid,
-                razorpay_payment_id,
-                razorpay_order_id
-            }
+            return isValid // Return boolean directly for simpler usage
         } catch (error) {
             console.error('Payment verification error:', error)
-            return {
-                isValid: false,
-                error: error.message
-            }
+            return false
         }
     }
 
@@ -151,24 +138,25 @@ class PaymentService {
         }
     }
 
-    calculateSubscriptionEndDate(duration, customDurationDays = null) {
+    calculateSubscriptionEndDate(duration, durationDays = null) {
         const startDate = TimezoneUtil.now()
 
         switch (duration) {
-            case 'daily':
-                return TimezoneUtil.addDays(1, startDate)
             case 'weekly':
                 return TimezoneUtil.addDays(7, startDate)
             case 'monthly':
                 return TimezoneUtil.addMonths(1, startDate)
+            case 'yearly':
+                return TimezoneUtil.addMonths(12, startDate)
             case 'custom':
-                if (customDurationDays) {
-                    return TimezoneUtil.addDays(customDurationDays, startDate)
+                if (durationDays) {
+                    return TimezoneUtil.addDays(durationDays, startDate)
                 } else {
                     return TimezoneUtil.addDays(30, startDate) // Default to 30 days
                 }
             default:
-                return TimezoneUtil.addMonths(1, startDate) // Default to monthly
+                // Use durationDays if provided, otherwise default to 30 days
+                return TimezoneUtil.addDays(durationDays || 30, startDate)
         }
     }
 

@@ -83,6 +83,43 @@ class PromoCodeService {
         }
     }
 
+    async validateAndApplyPromoCode(code, userId, orderValue, subscriptionId) {
+        try {
+            // First validate the promo code
+            const validationResult = await this.validatePromoCode(code, userId, subscriptionId, orderValue)
+            
+            if (!validationResult.valid) {
+                throw new Error(validationResult.error)
+            }
+
+            return {
+                promoCode: validationResult.promoCode,
+                discountAmount: validationResult.discount,
+                finalAmount: orderValue - validationResult.discount,
+                discountType: validationResult.discountType,
+                discountValue: validationResult.discountValue
+            }
+        } catch (error) {
+            console.error('Error validating and applying promo code:', error)
+            throw error
+        }
+    }
+
+    async usePromoCode(promoCodeId, userId) {
+        try {
+            const promoCode = await PromoCode.findById(promoCodeId)
+            if (!promoCode || !promoCode.canBeUsed()) {
+                throw new Error('Promo code cannot be used')
+            }
+
+            await promoCode.incrementUsage()
+            return promoCode
+        } catch (error) {
+            console.error('Error using promo code:', error)
+            throw error
+        }
+    }
+
     async applyPromoCode(promoCodeId, userId, subscriptionId) {
         try {
             const promoCode = await PromoCode.findById(promoCodeId)

@@ -69,7 +69,7 @@ export default {
             const transactions = await Transaction.find(filter)
                 .populate('userId', 'name emailAddress phoneNumber')
                 .populate('subscriptionId', 'planName duration category mealsPerPlan originalPrice discountedPrice')
-                .populate('promoCodeUsed.promoCodeId', 'code discountType discountValue')
+                .populate('promoCodeUsed', 'code discountType discountValue')
                 .sort(sortObj)
                 .skip(skip)
                 .limit(parseInt(limit))
@@ -109,7 +109,7 @@ export default {
                 .populate('userId', 'name emailAddress phoneNumber')
                 .populate('subscriptionId', 'planName duration category mealsPerPlan features')
                 .populate('userSubscriptionId')
-                .populate('promoCodeUsed.promoCodeId', 'code description discountType discountValue')
+                .populate('promoCodeUsed', 'code description discountType discountValue')
 
             if (!transaction) {
                 return httpError(next, new Error('Transaction not found'), req, 404)
@@ -153,7 +153,7 @@ export default {
 
             const transactions = await Transaction.find(filter)
                 .populate('subscriptionId', 'planName duration category mealsPerPlan')
-                .populate('promoCodeUsed.promoCodeId', 'code discountType discountValue')
+                .populate('promoCodeUsed', 'code discountType discountValue')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(parseInt(limit))

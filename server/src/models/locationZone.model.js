@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import { EVendorType } from '../constant/application.js'
+import TimezoneUtil from '../util/timezone.js'
 
 const locationZoneSchema = new mongoose.Schema(
     {
@@ -165,10 +166,10 @@ locationZoneSchema.pre('save', function (next) {
 locationZoneSchema.methods.isServiceAvailable = function (vendorType = null) {
     if (!this.isActive) return false
 
-    const now = new Date()
-    const currentTime = now.toTimeString().substr(0, 5)
-
-    if (currentTime < this.operatingHours.start || currentTime > this.operatingHours.end) {
+    // Check operating hours using IST
+    const currentTime = TimezoneUtil.getTimeString()
+    
+    if (!TimezoneUtil.isTimeInRange(currentTime, this.operatingHours.start, this.operatingHours.end)) {
         return false
     }
 
@@ -177,6 +178,43 @@ locationZoneSchema.methods.isServiceAvailable = function (vendorType = null) {
     }
 
     return true
+}
+
+// New method to validate delivery address
+locationZoneSchema.methods.validateDeliveryAddress = function (address) {
+    const errors = []
+
+    // Check pincode
+    if (!this.isPincodeSupported(address.zipCode)) {
+        errors.push('Delivery not available to this pincode')
+    }
+
+    // Check coordinates if provided
+    if (address.coordinates && address.coordinates.coordinates) {
+        const coordinates = {
+            lat: address.coordinates.coordinates[1],
+            lng: address.coordinates.coordinates[0]
+        }
+        
+        if (!this.isInServiceRadius(coordinates)) {
+            errors.push('Delivery address is outside service area')
+        }
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    }
+}
+
+// Method to check if subscription category is supported
+locationZoneSchema.methods.isSubscriptionCategorySupported = function (subscriptionCategory) {
+    if (subscriptionCategory === 'home_chef') {
+        return this.supportedVendorTypes.includes('home_chef')
+    } else if (subscriptionCategory === 'food_vendor') {
+        return this.supportedVendorTypes.includes('food_vendor')
+    }
+    return false
 }
 
 locationZoneSchema.methods.isPincodeSupported = function (pincode) {
@@ -264,6 +302,77 @@ locationZoneSchema.statics.checkServiceAvailability = function (pincode, vendorT
     return this.findByPincode(pincode).then(zones => {
         return zones.some(zone => zone.isServiceAvailable(vendorType))
     })
+}
+
+// Static method to validate delivery for subscription purchase
+locationZoneSchema.statics.validateDeliveryForSubscription = async function (deliveryAddress, subscriptionCategory) {
+    try {
+        // Find zones by pincode
+        const zones = await this.findByPincode(deliveryAddress.zipCode)
+        
+        if (zones.length === 0) {
+            return {
+                isValid: false,
+                errors: ['Delivery not available to this pincode'],
+                suggestedZones: []
+            }
+        }
+
+        // Check if any zone supports the subscription category and is currently available
+        const validZones = zones.filter(zone => {
+            return zone.isServiceAvailable() && 
+                   zone.isSubscriptionCategorySupported(subscriptionCategory)
+        })
+
+        if (validZones.length === 0) {
+            return {
+                isValid: false,
+                errors: [`${subscriptionCategory} service not available in this area`],
+                suggestedZones: zones.map(zone => ({
+                    zoneName: zone.zoneName,
+                    supportedTypes: zone.supportedVendorTypes,
+                    operatingHours: zone.operatingHours
+                }))
+            }
+        }
+
+        // Validate address against the best zone (highest priority)
+        const bestZone = validZones[0]
+        const addressValidation = bestZone.validateDeliveryAddress(deliveryAddress)
+
+        if (!addressValidation.isValid) {
+            return {
+                isValid: false,
+                errors: addressValidation.errors,
+                zone: bestZone
+            }
+        }
+
+        // Calculate delivery fee
+        let deliveryFee = 0
+        if (deliveryAddress.coordinates && deliveryAddress.coordinates.coordinates) {
+            const coordinates = {
+                lat: deliveryAddress.coordinates.coordinates[1],
+                lng: deliveryAddress.coordinates.coordinates[0]
+            }
+            const distance = bestZone.calculateDistance(bestZone.coordinates.center, coordinates)
+            deliveryFee = bestZone.calculateDeliveryFee(distance, 0) // Order value will be calculated later
+        }
+
+        return {
+            isValid: true,
+            zone: bestZone,
+            deliveryFee: deliveryFee,
+            supportedVendorTypes: bestZone.supportedVendorTypes,
+            operatingHours: bestZone.operatingHours
+        }
+    } catch (error) {
+        return {
+            isValid: false,
+            errors: ['Error validating delivery area'],
+            error: error.message
+        }
+    }
 }
 
 export default mongoose.model('LocationZone', locationZoneSchema)

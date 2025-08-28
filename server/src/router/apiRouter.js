@@ -9,8 +9,11 @@ import userProfileController from '../controller/userProfileController/userProfi
 import referralController from '../controller/referralController/referral.controller.js'
 import promoCodeController from '../controller/promoCodeController/promoCode.controller.js'
 import subscriptionPurchaseController from '../controller/subscriptionPurchaseController/subscriptionPurchase.controller.js'
+import adminSubscriptionPurchaseController from '../controller/subscriptionPurchaseController/admin-subscriptionPurchase.controller.js'
+import vendorCustomerManagementController from '../controller/subscriptionPurchaseController/customer-management-vendor.controller.js'
 import transactionController from '../controller/transactionController/transaction.controller.js'
 import userAdminController from '../controller/AdminController/user.admincontroller.js'
+import vendorAssignmentController from '../controller/vendorAssignmentController/vendorAssignment.controller.js'
 import { uploadFiles } from '../middleware/multerHandler.js'
 import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
@@ -94,9 +97,18 @@ router.route('/admin/menus/:id/rating').patch(authentication, authorization([EUs
 router.route('/admin/menus/bulk-availability').patch(authentication, authorization([EUserRole.ADMIN]), menuController.bulkUpdateAvailability)
 
 // ############### SUBSCRIPTION ROUTES ####################
+// Public subscription routes - for users to view available plans
+router.route('/subscriptions').get(authentication, subscriptionController.getActiveSubscriptions)
+router.route('/subscriptions/:subscriptionId').get(authentication, subscriptionController.getSubscriptionForUser)
 
-
-// Admin subscription routes
+// Admin subscription routes - for managing subscription plans
+router.route('/admin/subscriptions').get(authentication, authorization([EUserRole.ADMIN]), subscriptionController.getAllSubscriptions)
+router.route('/admin/subscriptions').post(authentication, authorization([EUserRole.ADMIN]), subscriptionController.createSubscription)
+router.route('/admin/subscriptions/:subscriptionId').get(authentication, authorization([EUserRole.ADMIN]), subscriptionController.getSubscriptionById)
+router.route('/admin/subscriptions/:subscriptionId').put(authentication, authorization([EUserRole.ADMIN]), subscriptionController.updateSubscription)
+router.route('/admin/subscriptions/:subscriptionId').delete(authentication, authorization([EUserRole.ADMIN]), subscriptionController.deleteSubscription)
+router.route('/admin/subscriptions/:subscriptionId/toggle-status').patch(authentication, authorization([EUserRole.ADMIN]), subscriptionController.toggleSubscriptionStatus)
+router.route('/admin/subscriptions/stats').get(authentication, authorization([EUserRole.ADMIN]), subscriptionController.getSubscriptionStats)
 
 // ############### LOCATION ZONE ROUTES ####################
 router.route('/zones').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.getAllLocationZones)
@@ -146,10 +158,26 @@ router.route('/admin/promo-codes/:id/stats').get(authentication, authorization([
 
 // ############### SUBSCRIPTION PURCHASE ROUTES ####################
 // User subscription purchase routes
+router.route('/subscription-purchase/initiate').post(authentication, subscriptionPurchaseController.initiatePurchase)
+router.route('/subscription-purchase/verify-payment').post(authentication, subscriptionPurchaseController.verifyPayment)
 
 // User subscription management
+router.route('/my-subscriptions').get(authentication, subscriptionPurchaseController.getUserSubscriptions)
+router.route('/my-subscriptions/:subscriptionId').get(authentication, subscriptionPurchaseController.getSubscriptionById)
+router.route('/my-subscriptions/:subscriptionId/cancel').post(authentication, subscriptionPurchaseController.cancelSubscription)
+router.route('/my-subscriptions/:subscriptionId/request-vendor-switch').post(authentication, subscriptionPurchaseController.requestVendorSwitch)
 
-// Transaction status
+// ############### ADMIN SUBSCRIPTION PURCHASE ROUTES ####################
+// Admin subscription purchase management with comprehensive filters
+router.route('/admin/subscription-purchases').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getAllPurchaseSubscriptions)
+router.route('/admin/subscription-purchases/stats').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getPurchaseSubscriptionStats)
+router.route('/admin/subscription-purchases/:subscriptionId').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getPurchaseSubscriptionById)
+
+// ############### VENDOR CUSTOMER MANAGEMENT ROUTES ####################
+// Vendor customer management - view and manage assigned customers
+router.route('/vendor/customers').get(authentication, authorization([EUserRole.VENDOR]), vendorCustomerManagementController.getAllMyCustomers)
+router.route('/vendor/customers/analytics').get(authentication, authorization([EUserRole.VENDOR]), vendorCustomerManagementController.getCustomerAnalytics)
+router.route('/vendor/customers/:subscriptionId').get(authentication, authorization([EUserRole.VENDOR]), vendorCustomerManagementController.getCustomerSubscriptionById)
 
 // ############### TRANSACTION & ANALYTICS ROUTES ####################
 // User transaction routes
@@ -162,6 +190,25 @@ router.route('/admin/transactions/stats').get(authentication, authorization([EUs
 router.route('/admin/transactions/export').get(authentication, authorization([EUserRole.ADMIN]), transactionController.exportTransactions)
 router.route('/admin/transactions/:id').get(authentication, authorization([EUserRole.ADMIN]), transactionController.getTransactionById)
 router.route('/admin/transactions/:id/refund').post(authentication, authorization([EUserRole.ADMIN]), transactionController.processRefund)
+
+// ############### VENDOR ASSIGNMENT ROUTES ####################
+// Admin vendor assignment management
+router.route('/admin/vendor-assignments').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getAllRequests)
+router.route('/admin/vendor-assignments/pending').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getAllPendingRequests)
+router.route('/admin/vendor-assignments/initial-assignments').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getPendingInitialAssignments)
+router.route('/admin/vendor-assignments/vendor-switches').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getPendingVendorSwitches)
+router.route('/admin/vendor-assignments/urgent').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getUrgentRequests)
+router.route('/admin/vendor-assignments/stats').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getAssignmentStats)
+
+// Individual request management
+router.route('/admin/vendor-assignments/:requestId').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getRequestDetails)
+router.route('/admin/vendor-assignments/:requestId/available-vendors').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getAvailableVendors)
+router.route('/admin/vendor-assignments/:requestId/assign').post(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.assignVendor)
+router.route('/admin/vendor-assignments/:requestId/reject').post(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.rejectRequest)
+router.route('/admin/vendor-assignments/:requestId/priority').patch(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.updatePriority)
+
+// Zone-based requests
+router.route('/admin/vendor-assignments/zone/:zoneId').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getRequestsByZone)
 
 // ############### ADMIN USER MANAGEMENT ROUTES ####################
 // Admin user overview and statistics

@@ -11,7 +11,7 @@ const subscriptionSchema = new mongoose.Schema(
         },
         duration: {
             type: String,
-            enum: ['daily', 'weekly', 'monthly', 'custom'],
+            enum: ['weekly', 'monthly', 'yearly', 'custom'],
             required: true
         },
         planMenus: [
@@ -21,12 +21,44 @@ const subscriptionSchema = new mongoose.Schema(
                 unique: true
             }
         ],
-        customDurationDays: {
+        durationDays: {
             type: Number,
-            required: function () {
-                return this.duration === 'custom'
-            },
+            required: true,
             min: 1
+        },
+        mealTimings: {
+            isLunchAvailable: {
+                type: Boolean,
+                default: false
+            },
+            isDinnerAvailable: {
+                type: Boolean,
+                default: false
+            },
+            lunchOrderWindow: {
+                startTime: {
+                    type: String,
+                    default: '11:00',
+                    match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+                },
+                endTime: {
+                    type: String,
+                    default: '16:00',
+                    match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+                }
+            },
+            dinnerOrderWindow: {
+                startTime: {
+                    type: String,
+                    default: '19:00',
+                    match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+                },
+                endTime: {
+                    type: String,
+                    default: '23:00',
+                    match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+                }
+            }
         },
         mealsPerPlan: {
             type: Number,
@@ -94,6 +126,16 @@ subscriptionSchema.index({ category: 1, duration: 1 })
 subscriptionSchema.index({ isActive: 1, discountedPrice: 1 })
 
 subscriptionSchema.pre('save', function (next) {
+    // Validate meal timing requirements
+    if (!this.mealTimings.isLunchAvailable && !this.mealTimings.isDinnerAvailable) {
+        return next(new Error('At least one meal timing (lunch or dinner) must be available'))
+    }
+    
+    // Validate pricing
+    if (this.discountedPrice > this.originalPrice) {
+        return next(new Error('Discounted price cannot be greater than original price'))
+    }
+    
     next()
 })
 
