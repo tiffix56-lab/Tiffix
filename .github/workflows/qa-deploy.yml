@@ -60,10 +60,6 @@ jobs:
               exit 1
             fi
 
-            # SSL Certificate Setup with Certbot
-            echo '🔒 Checking/Updating SSL certificates for QA...'
-            certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos -m <your-email-id> || { echo '❌ Certbot failed for QA'; exit 1; }
-
             # Stop existing QA containers
             echo '🛑 Stopping existing QA containers...'
             docker compose -f Docker/docker-compose.yml --profile qa down || true
@@ -86,7 +82,7 @@ jobs:
           
           # Check if services are responding
           echo "🔍 Verifying QA service availability..."
-          curl -f -s -S --retry 3 --retry-delay 5 -I https://<your-qa-domain-url>:8443 || {
+          curl -f -s -S --retry 3 --retry-delay 5 -I https://qa.tiffix.in:8443 || {
             echo "❌ QA Service verification failed"
             exit 1
           }
