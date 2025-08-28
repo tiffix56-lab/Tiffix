@@ -1,0 +1,38 @@
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+
+
+
+ios
+android
+
+# macOS
+.DS_Store
+
+# Temporary files created by Metro to check the health of the file watcher
+.metro-health-check*
+
+# Android build files
+android/.gradle/
+android/build/
+android/app/build/
+
+# Local SDK path (should not be versioned)
+android/local.properties
+
+# Keystore (debug/release) — sensitive!
+android/app/debug.keystore
+android/app/release.keystore
+
+# MacOS files (if any dev is using mac)
+android/.DS_Store

@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Tiffix",
+    "slug": "tiffix",
+    "version": "1.0.0",
+    "scheme": "tiffix",
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "plugins": ["expo-router"],
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["src/assets/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.rutwik187.tiffix"
+    },
+    "entryPoint": "expo-router/entry",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b0503ac0-e2ae-48f1-a2fb-3b7dd33c40f2"
+      }
+    }
+  }
+}
