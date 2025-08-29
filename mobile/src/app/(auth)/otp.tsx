@@ -1,15 +1,25 @@
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { LoadingButton } from '@/components/common/LoadingButton';
+import { ErrorMessage } from '@/components/common/ErrorMessage';
+import { useAuth } from '@/context/AuthContext';
+import { formatOTP, isValidOTPFormat, maskEmail } from '@/utils/format.utils';
 
 const OTP = () => {
   const { colorScheme } = useColorScheme();
+  const { verifyEmail, resendOTP, isLoading } = useAuth();
+  const params = useLocalSearchParams<{ email?: string }>();
+  const emailAddress = params?.email || '';
+  
   const [pin, setPin] = useState<string[]>(['', '', '', '', '', '']);
-  const [countdown, setCountdown] = useState(56);
+  const [countdown, setCountdown] = useState(60);
+  const [error, setError] = useState<string>('');
+  const [isResending, setIsResending] = useState(false);
   const inputs = useRef<TextInput[]>([]);
 
   useEffect(() => {
@@ -27,12 +37,21 @@ const OTP = () => {
   }, []);
 
   const handleChange = (text: string, index: number) => {
+    setError('');
+    const formattedText = formatOTP(text);
     const newPin = [...pin];
-    newPin[index] = text;
+    newPin[index] = formattedText;
     setPin(newPin);
 
-    if (text && index < 5) {
+    if (formattedText && index < 5) {
       inputs.current[index + 1]?.focus();
+    }
+
+    if (formattedText && index === 5) {
+      const otpString = [...newPin.slice(0, 5), formattedText].join('');
+      if (isValidOTPFormat(otpString)) {
+        handleVerifyOTP(otpString);
+      }
     }
   };
 
@@ -40,6 +59,55 @@ const OTP = () => {
     if (e.nativeEvent.key === 'Backspace' && !pin[index] && index > 0) {
       inputs.current[index - 1]?.focus();
     }
+  };
+
+  const handleVerifyOTP = async (otpCode?: string) => {
+    const otpString = otpCode || pin.join('');
+    
+    if (!isValidOTPFormat(otpString)) {
+      setError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    if (!emailAddress) {
+      setError('Email address not found. Please go back and try again.');
+      return;
+    }
+
+    const result = await verifyEmail({
+      emailAddress,
+      otp: otpString,
+    });
+
+    if (result.success) {
+      router.replace('/home');
+    } else {
+      setError(result.message);
+      setPin(['', '', '', '', '', '']);
+      inputs.current[0]?.focus();
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (!emailAddress) {
+      setError('Email address not found. Please go back and try again.');
+      return;
+    }
+
+    setIsResending(true);
+    setError('');
+    
+    const result = await resendOTP(emailAddress);
+    
+    if (result.success) {
+      setCountdown(60);
+      setPin(['', '', '', '', '', '']);
+      inputs.current[0]?.focus();
+    } else {
+      setError(result.message);
+    }
+    
+    setIsResending(false);
   };
 
   const formatTime = (seconds: number) => {
@@ -77,15 +145,16 @@ const OTP = () => {
       {/* Main content with rounded top corners */}
       <View className="flex-1 rounded-t-3xl bg-white dark:bg-black">
         <ScrollView className="flex-1 px-6 pt-10" showsVerticalScrollIndicator={false}>
-          {/* Verification Section */}
           <View className="mb-10 items-center">
             <Text className="mb-4 text-3xl font-semibold text-black dark:text-white">
               Verification
             </Text>
             <Text className="text-center text-base leading-6 text-zinc-500 dark:text-zinc-400">
-              6-digits pin has been sent to your email{'\n'}address,mukulparmar470@gmail.com
+              6-digits pin has been sent to your email{'\n'}address, {maskEmail(emailAddress)}
             </Text>
           </View>
+
+          <ErrorMessage message={error} visible={!!error} className="mb-6" />
 
           {/* OTP Input */}
           <View className="mb-10 flex-row justify-between px-4">
@@ -118,22 +187,30 @@ const OTP = () => {
             </Text>
             <View className="flex-row">
               <Text className="text-base text-zinc-500 dark:text-zinc-400">
-                Didn't receive code?
+                Didn&apos;t receive code?
               </Text>
-              <TouchableOpacity>
-                <Text className="text-base font-semibold text-black dark:text-white">
-                  Resend Code
+              <TouchableOpacity
+                onPress={handleResendOTP}
+                disabled={countdown > 0 || isResending}
+              >
+                <Text className={`ml-2 text-base font-semibold ${
+                  countdown > 0 || isResending
+                    ? 'text-zinc-400 dark:text-zinc-600'
+                    : 'text-black dark:text-white'
+                }`}>
+                  {isResending ? 'Sending...' : 'Resend Code'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Verify Button */}
-          <TouchableOpacity className="mb-8 rounded-3xl bg-black py-4 dark:bg-white">
-            <Text className="text-center text-lg font-medium text-white dark:text-black">
-              Verify
-            </Text>
-          </TouchableOpacity>
+          <LoadingButton
+            title="Verify"
+            onPress={() => handleVerifyOTP()}
+            loading={isLoading}
+            disabled={!pin.join('') || pin.join('').length < 6}
+            className="mb-8 w-full"
+          />
         </ScrollView>
       </View>
     </View>

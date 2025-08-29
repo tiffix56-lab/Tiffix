@@ -1,12 +1,15 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
-import React from 'react';
+import { View, Text, Image } from 'react-native';
+import React, { useState } from 'react';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { LoadingButton } from '@/components/common/LoadingButton';
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
 
 const Welcome = () => {
   const { colorScheme } = useColorScheme();
+  const [, setSocialLoading] = useState(false);
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-black">
@@ -47,46 +50,14 @@ const Welcome = () => {
             Amet minim mollit non deserunt{'\n'}ullamco est sit aliqua dolor do amet.
           </Text>
 
-          {/* Login Button */}
-          <TouchableOpacity
-            className="mb-8 w-full rounded-3xl bg-black py-4 dark:bg-white"
-            onPress={() => router.push('/login')}>
-            <Text
-              className="text-center text-lg font-medium text-white dark:text-black"
-              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Login
-            </Text>
-          </TouchableOpacity>
+          <LoadingButton
+            title="Login"
+            onPress={() => router.push('/login')}
+            className="mb-8 w-full"
+            loading={false}
+          />
 
-          {/* Social Login Section */}
-          <Text
-            className="mb-6 text-base text-zinc-500 dark:text-zinc-400"
-            style={{ fontFamily: 'Poppins_500Medium' }}>
-            Or Login With...
-          </Text>
-          <View className="flex-row justify-center space-x-6">
-            <TouchableOpacity className="h-14 w-14 items-center justify-center rounded-full">
-              <Image
-                source={require('@/assets/facebook.png')}
-                className="h-10 w-10"
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity className="h-14 w-14 items-center justify-center rounded-full">
-              <Image
-                source={require('@/assets/google.png')}
-                className="h-10 w-10"
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity className="h-14 w-14 items-center justify-center rounded-full">
-              <Image
-                source={require('@/assets/apple.png')}
-                className="h-10 w-10"
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          </View>
+          <SocialLoginButtons onLoading={setSocialLoading} />
         </View>
       </View>
     </View>

@@ -8,6 +8,7 @@ import Paginator from '@/components/onboarding/Paginator';
 import NextButton from '@/components/onboarding/NextButton';
 import { useColorScheme } from 'nativewind';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { storageService } from '@/services/storage.service';
 
 const slides = [
   {
@@ -41,10 +42,11 @@ const Onboarding = () => {
 
   const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
-  const scrollTo = () => {
+  const scrollTo = async () => {
     if (slidesRef.current && currentIndex < slides.length - 1) {
       slidesRef.current.scrollToIndex({ index: currentIndex + 1 });
     } else {
+      await storageService.setOnboardingCompleted(true);
       router.replace('/(auth)/welcome');
     }
   };

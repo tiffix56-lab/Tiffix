@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, View, Text } from 'react-native';
+import { TouchableOpacity, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 

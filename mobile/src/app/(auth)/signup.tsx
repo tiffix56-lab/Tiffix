@@ -2,9 +2,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   ScrollView,
-  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -13,11 +11,68 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { FormInput } from '@/components/common/FormInput';
+import { LoadingButton } from '@/components/common/LoadingButton';
+import { ErrorMessage } from '@/components/common/ErrorMessage';
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
+import { useAuth } from '@/context/AuthContext';
+import { registerSchema } from '@/utils/validation';
+import { formatPhoneNumber } from '@/utils/format.utils';
+import { RegisterCredentials } from '@/types/auth.types';
 
 const Signup = () => {
   const { colorScheme } = useColorScheme();
-  const [showPassword, setShowPassword] = useState(false);
+  const { register, isLoading } = useAuth();
+  const [error, setError] = useState<string>('');
+  const [, setSocialLoading] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterCredentials>({
+    resolver: yupResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      emailAddress: '',
+      password: '',
+      phoneNumber: '',
+      referralCode: '',
+    },
+  });
+
+  const onSubmit = async (data: RegisterCredentials) => {
+    setError('');
+    
+    const formattedData = {
+      ...data,
+      phoneNumber: formatPhoneNumber(data.phoneNumber),
+    };
+
+    // Remove empty referralCode to avoid backend validation issues
+    if (!formattedData.referralCode || formattedData.referralCode.trim() === '') {
+      delete formattedData.referralCode;
+    }
+
+    console.log('Signup form - submitting data:', JSON.stringify(formattedData, null, 2));
+    const result = await register(formattedData);
+    
+    if (result.success) {
+      if (result.requiresVerification) {
+        router.push({
+          pathname: '/otp',
+          params: { email: data.emailAddress },
+        });
+      } else {
+        router.replace('/home');
+      }
+    } else {
+      setError(result.message);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -64,105 +119,60 @@ const Signup = () => {
               </Text>
             </View>
 
-            {/* Form */}
+            <ErrorMessage message={error} visible={!!error} className="mb-6" />
+
             <View className="gap-6">
-              {/* Password Field - First as shown in image */}
-              <View>
-                <Text className="mb-3 text-base font-medium text-black dark:text-white">
-                  Password
-                </Text>
-                <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-                  <TextInput
-                    className="flex-1 text-base text-black dark:text-white"
-                    placeholder="password"
-                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                    secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                    <Feather
-                      name={showPassword ? 'eye' : 'eye-off'}
-                      size={20}
-                      color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <FormInput
+                name="password"
+                control={control}
+                label="Password"
+                placeholder="Enter your password"
+                secureTextEntry
+                error={errors.password}
+              />
 
-              {/* Full Name Field */}
-              <View>
-                <Text className="mb-3 text-base font-medium text-black dark:text-white">
-                  Full Name
-                </Text>
-                <View className="rounded-md border border-zinc-100 bg-zinc-50 dark:border-zinc-400 dark:bg-black">
-                  <TextInput
-                    className="min-h-14 px-4 py-4 text-base text-black dark:text-white"
-                    placeholder="Full Name"
-                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                  />
-                </View>
-              </View>
+              <FormInput
+                name="name"
+                control={control}
+                label="Full Name"
+                placeholder="Enter your full name"
+                autoCapitalize="words"
+                error={errors.name}
+              />
 
-              {/* Email Field */}
-              <View>
-                <Text className="mb-3 text-base font-medium text-black dark:text-white">Email</Text>
-                <View className="rounded-md border border-zinc-100 bg-zinc-50 dark:border-zinc-400 dark:bg-black">
-                  <TextInput
-                    className="min-h-14 px-4 py-4 text-base text-black dark:text-white"
-                    placeholder="email"
-                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
+              <FormInput
+                name="emailAddress"
+                control={control}
+                label="Email"
+                placeholder="Enter your email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={errors.emailAddress}
+              />
 
-              {/* Phone Number Field */}
-              <View>
-                <Text className="mb-3 text-base font-medium text-black dark:text-white">
-                  Phone Number
-                </Text>
-                <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-                  <View className="mr-3 flex-row items-center">
-                    <Text className="mr-2 text-2xl">🇮🇳</Text>
-                    <Text className="text-base font-medium text-black dark:text-white">+91</Text>
-                    <Feather
-                      name="chevron-down"
-                      size={16}
-                      color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                      className="ml-1"
-                    />
-                  </View>
-                  <TextInput
-                    className="flex-1 text-base text-black dark:text-white"
-                    placeholder="2365 3265 3263"
-                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                    keyboardType="phone-pad"
-                  />
-                </View>
-              </View>
+              <FormInput
+                name="phoneNumber"
+                control={control}
+                label="Phone Number"
+                placeholder="Enter 10-digit phone number"
+                keyboardType="phone-pad"
+                error={errors.phoneNumber}
+              />
 
-              {/* Referral Code Field */}
-              <View>
-                <Text className="mb-3 text-base font-medium text-black dark:text-white">
-                  Referral code
-                </Text>
-                <View className="rounded-md border border-zinc-100 bg-zinc-50 dark:border-zinc-400 dark:bg-black">
-                  <TextInput
-                    className="min-h-14 px-4 py-4 text-base text-black dark:text-white"
-                    placeholder="Referral code"
-                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                  />
-                </View>
-              </View>
+              <FormInput
+                name="referralCode"
+                control={control}
+                label="Referral Code (Optional)"
+                placeholder="Enter referral code"
+                error={errors.referralCode}
+              />
 
-              {/* Sign Up Button */}
-              <TouchableOpacity
-                className="mt-8 rounded-3xl bg-black py-4 dark:bg-white"
-                onPress={() => router.push('/otp')}>
-                <Text className="text-center text-lg font-medium text-white dark:text-black">
-                  Sign Up
-                </Text>
-              </TouchableOpacity>
+              <LoadingButton
+                title="Sign Up"
+                onPress={handleSubmit(onSubmit)}
+                loading={isLoading}
+                className="mt-8 w-full"
+              />
 
               {/* Login Link */}
               <View className="flex-row justify-center pt-6">
@@ -175,35 +185,7 @@ const Signup = () => {
               </View>
             </View>
 
-            {/* Social Login */}
-            <View className="items-center pb-8 pt-10">
-              <Text className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
-                Or Login With...
-              </Text>
-              <View className="flex-row justify-center gap-6">
-                <TouchableOpacity className="h-14 w-14 items-center justify-center rounded-full">
-                  <Image
-                    source={require('@/assets/facebook.png')}
-                    style={{ height: 40, width: 40 }}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity className="h-14 w-14 items-center justify-center rounded-full">
-                  <Image
-                    source={require('@/assets/google.png')}
-                    style={{ height: 40, width: 40 }}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity className="h-14 w-14 items-center justify-center rounded-full">
-                  <Image
-                    source={require('@/assets/apple.png')}
-                    style={{ height: 40, width: 40 }}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
+            <SocialLoginButtons onLoading={setSocialLoading} className="pb-8 pt-10" />
           </ScrollView>
         </View>
       </View>

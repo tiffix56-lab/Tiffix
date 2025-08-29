@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import React, { useState } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
@@ -10,49 +10,54 @@ import ThemeToggle from '@/components/ui/ThemeToggle';
 import { FormInput } from '@/components/common/FormInput';
 import { LoadingButton } from '@/components/common/LoadingButton';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
-import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
 import { useAuth } from '@/context/AuthContext';
-import { loginSchema } from '@/utils/validation';
-import { LoginCredentials } from '@/types/auth.types';
+import { resetPasswordSchema } from '@/utils/validation';
+import { ResetPasswordData } from '@/types/auth.types';
+import { maskEmail } from '@/utils/format.utils';
 
-const Login = () => {
+const ResetPassword = () => {
   const { colorScheme } = useColorScheme();
-  const { login, isLoading } = useAuth();
+  const { resetPassword } = useAuth();
+  const params = useLocalSearchParams<{ email?: string }>();
+  const emailAddress = params?.email || '';
+  
   const [error, setError] = useState<string>('');
-  const [, setSocialLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginCredentials>({
-    resolver: yupResolver(loginSchema),
+  } = useForm<ResetPasswordData>({
+    resolver: yupResolver(resetPasswordSchema),
     defaultValues: {
-      emailAddress: '',
-      password: '',
+      emailAddress,
+      otp: '',
+      newPassword: '',
     },
   });
 
-  const onSubmit = async (data: LoginCredentials) => {
+  const onSubmit = async (data: ResetPasswordData) => {
     setError('');
+    setIsLoading(true);
     
-    const result = await login(data);
-
+    const result = await resetPassword(data);
+    
     if (result.success) {
-      router.replace('/home');
+      router.replace('/login');
     } else {
       setError(result.message);
     }
+    
+    setIsLoading(false);
   };
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
 
-      {/* More top margin */}
       <View className="h-12" />
 
-      {/* Header with more height and rounded back button */}
       <View className="bg-zinc-50 px-6 pb-8 pt-8 dark:bg-neutral-900">
         <View className="flex-row items-center">
           <TouchableOpacity
@@ -65,22 +70,22 @@ const Login = () => {
             />
           </TouchableOpacity>
           <View className="flex-1 items-center">
-            <Text className="text-3xl font-semibold text-black dark:text-white">Log In</Text>
+            <Text className="text-3xl font-semibold text-black dark:text-white">
+              Reset Password
+            </Text>
           </View>
           <ThemeToggle />
         </View>
       </View>
 
-      {/* Main content with rounded top corners */}
       <View className="flex-1 rounded-t-3xl bg-white dark:bg-black">
         <ScrollView className="flex-1 px-6 pt-10" showsVerticalScrollIndicator={false}>
-          {/* Welcome Section */}
           <View className="mb-10 items-center">
             <Text className="mb-4 text-3xl font-semibold text-black dark:text-white">
-              Welcome Back
+              Reset Password
             </Text>
             <Text className="text-center text-base leading-6 text-zinc-500 dark:text-zinc-400">
-              Sign in with your email and password{'\n'}or continue with social media
+              Enter the reset code sent to {maskEmail(emailAddress)} and your new password
             </Text>
           </View>
 
@@ -88,56 +93,46 @@ const Login = () => {
 
           <View className="gap-6">
             <FormInput
-              name="emailAddress"
+              name="otp"
               control={control}
-              label="Email"
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={errors.emailAddress}
+              label="Reset Code"
+              placeholder="Enter 6-digit reset code"
+              keyboardType="numeric"
+              maxLength={6}
+              error={errors.otp}
             />
 
             <FormInput
-              name="password"
+              name="newPassword"
               control={control}
-              label="Password"
-              placeholder="Enter your password"
+              label="New Password"
+              placeholder="Enter your new password"
               secureTextEntry
-              error={errors.password}
+              error={errors.newPassword}
             />
 
-            {/* Forgot Password */}
-            <View className="flex-row justify-end pt-2">
-              <TouchableOpacity onPress={() => router.push('/forgot-password')}>
-                <Text className="text-sm font-medium text-black dark:text-white">
-                  Forgot Password?
-                </Text>
-              </TouchableOpacity>
-            </View>
-
             <LoadingButton
-              title="Login"
+              title="Reset Password"
               onPress={handleSubmit(onSubmit)}
               loading={isLoading}
               className="mt-8 w-full"
             />
 
-            {/* Sign Up Link */}
             <View className="flex-row justify-center pt-6">
-              <Text className="mr-4 text-sm text-zinc-500 dark:text-zinc-400">
-                Don&apos;t have an account?
+              <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+                Remember your password?
               </Text>
-              <TouchableOpacity onPress={() => router.push('/signup')}>
-                <Text className="text-sm font-semibold text-black dark:text-white">SIGN UP</Text>
+              <TouchableOpacity onPress={() => router.push('/login')}>
+                <Text className="ml-2 text-sm font-semibold text-black dark:text-white">
+                  Back to Login
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
-
-          <SocialLoginButtons onLoading={setSocialLoading} className="pb-8 pt-10" />
         </ScrollView>
       </View>
     </View>
   );
 };
 
-export default Login;
+export default ResetPassword;
