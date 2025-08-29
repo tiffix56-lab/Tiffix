@@ -18,6 +18,15 @@ export const API_ENDPOINTS = {
     ADDRESSES: '/user-profiles/addresses',
     PREFERENCES: '/user-profiles/preferences',
   },
+  MENU: {
+    GET_ALL: '/menus',
+    GET_BY_ID: '/menus',
+  },
+  SUBSCRIPTION: {
+    GET_ALL: '/subscriptions',
+    GET_BY_ID: '/subscriptions',
+    PURCHASE: '/subscription-purchase',
+  },
 } as const;
 
 export const HTTP_STATUS = {
