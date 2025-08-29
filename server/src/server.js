@@ -1,6 +1,7 @@
 import app from './app.js';
 import config from './config/config.js';
 import { initRateLimiter } from './config/rateLimiter.js';
+import cronService from './service/cronService.js';
 import databaseService from './service/databaseService.js';
 import logger from './util/logger.js';
 
@@ -17,6 +18,8 @@ const server = app.listen(config.server.port);
 
         initRateLimiter(connection);
         logger.info('RATE_LIMITER_INITIATED');
+
+        await cronService.init()
 
         logger.info('APPLICATION_STARTED', {
             meta: {

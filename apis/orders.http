@@ -1,0 +1,127 @@
+### Order Management API Testing
+
+@baseURL = http://localhost:4000/v1
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzYiLCJlbWFpbCI6InZlbmRvckBnbWFpbC5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.VendorTokenExample
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzciLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.AdminTokenExample
+@orderId = 674c8e5b123456789012345a
+
+############### USER ORDER MANAGEMENT ###############
+
+### Get User's Orders (All)
+GET {{baseURL}}/my-orders
+Authorization: Bearer {{userToken}}
+
+### Get User's Orders with Status Filter
+GET {{baseURL}}/my-orders?status=upcoming&page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User's Orders by Date Range
+GET {{baseURL}}/my-orders?startDate=2024-01-01&endDate=2024-01-31
+Authorization: Bearer {{userToken}}
+
+### Get User's Orders for Next 7 Days
+GET {{baseURL}}/my-orders?days=7
+Authorization: Bearer {{userToken}}
+
+### Get User's Delivered Orders
+GET {{baseURL}}/my-orders?status=delivered&page=1&limit=20
+Authorization: Bearer {{userToken}}
+
+### Get Specific Order Details
+GET {{baseURL}}/orders/{{orderId}}
+Authorization: Bearer {{userToken}}
+
+### Skip Order (Must be 2+ hours before delivery)
+POST {{baseURL}}/orders/{{orderId}}/skip
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "skipReason": "Not feeling well today, will skip lunch"
+}
+
+### Cancel Order (Must be 2+ hours before delivery) 
+POST {{baseURL}}/orders/{{orderId}}/cancel
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "cancelReason": "Emergency came up, cannot receive delivery"
+}
+
+############### VENDOR ORDER MANAGEMENT ###############
+
+### Get Vendor's Orders
+GET {{baseURL}}/vendor/orders
+Authorization: Bearer {{vendorToken}}
+
+### Get Vendor's Orders with Status Filter
+GET {{baseURL}}/vendor/orders?status=upcoming&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Get Vendor's Orders for Today
+GET {{baseURL}}/vendor/orders?days=1
+Authorization: Bearer {{vendorToken}}
+
+### Get Vendor's Orders by Date Range
+GET {{baseURL}}/vendor/orders?startDate=2024-01-15&endDate=2024-01-15
+Authorization: Bearer {{vendorToken}}
+
+### Update Order Status to Preparing
+PATCH {{baseURL}}/orders/{{orderId}}/status
+Content-Type: application/json
+Authorization: Bearer {{vendorToken}}
+
+{
+  "status": "preparing",
+  "notes": "Started preparing the meal"
+}
+
+### Update Order Status to Out for Delivery
+PATCH {{baseURL}}/orders/{{orderId}}/status
+Content-Type: application/json
+Authorization: Bearer {{vendorToken}}
+
+{
+  "status": "out_for_delivery", 
+  "notes": "Order is out for delivery"
+}
+
+### Try to Set Order as Delivered (Should Fail - Vendor Restriction)
+PATCH {{baseURL}}/orders/{{orderId}}/status
+Content-Type: application/json
+Authorization: Bearer {{vendorToken}}
+
+{
+  "status": "delivered",
+  "notes": "This should fail - vendors cannot mark as delivered"
+}
+
+############### ADMIN ORDER MANAGEMENT ###############
+
+### Get All Orders (Admin View)
+GET {{baseURL}}/admin/orders
+Authorization: Bearer {{adminToken}}
+
+### Get Orders with Filters
+GET {{baseURL}}/admin/orders?status=out_for_delivery&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get Orders by Vendor
+GET {{baseURL}}/admin/orders?vendorId=674c8e5b123456789012345b
+Authorization: Bearer {{adminToken}}
+
+### Get Orders by Date Range
+GET {{baseURL}}/admin/orders?startDate=2024-01-01&endDate=2024-01-31
+Authorization: Bearer {{adminToken}}
+
+### Confirm Order Delivery (Admin Only)
+POST {{baseURL}}/admin/orders/{{orderId}}/confirm-delivery
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "notes": "Delivery confirmed by admin",
+  "photos": ["delivery-photo-1.jpg", "delivery-photo-2.jpg"]
+}

@@ -37,3 +37,23 @@ export const ESubscriptionStatus = Object.freeze({
     CANCELLED: 'cancelled',
 });
 
+export const EOrderStatus = Object.freeze({
+    UPCOMING: 'upcoming',
+    PREPARING: 'preparing',
+    OUT_FOR_DELIVERY: 'out_for_delivery',
+    DELIVERED: 'delivered',
+    SKIPPED: 'skipped',
+    CANCELLED: 'cancelled'
+});
+
+export const EMealType = Object.freeze({
+    LUNCH: 'lunch',
+    DINNER: 'dinner'
+});
+
+export const EOrderAction = Object.freeze({
+    SKIP: 'skip',
+    CANCEL: 'cancel',
+    SWITCH_VENDOR: 'switch_vendor'
+});
+

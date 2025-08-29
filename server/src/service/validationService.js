@@ -805,6 +805,104 @@ export const ValidateVendorAnalyticsQuery = Joi.object({
     category: Joi.string().valid('home_chef', 'food_vendor').optional()
 });
 
+/**
+ * ************ ORDER MANAGEMENT VALIDATION ***********************
+ */
+export const ValidateSetTodayMeal = Joi.object({
+    subscriptionId: Joi.string().hex().length(24).required(),
+    lunchMenuIds: Joi.array().items(Joi.string().hex().length(24)).optional().default([]),
+    dinnerMenuIds: Joi.array().items(Joi.string().hex().length(24)).optional().default([]),
+    notes: Joi.string().max(500).trim().optional().default('')
+});
+
+export const ValidateCreateOrder = Joi.object({
+    userSubscriptionId: Joi.string().hex().length(24).required(),
+    deliveryDate: Joi.date().min('now').required(),
+    mealType: Joi.string().valid('lunch', 'dinner').required(),
+    specialInstructions: Joi.string().max(500).trim().optional().default('')
+});
+
+export const ValidateSkipOrder = Joi.object({
+    skipReason: Joi.string().max(300).trim().optional().default('')
+});
+
+export const ValidateCancelOrder = Joi.object({
+    cancelReason: Joi.string().max(300).trim().optional().default('')
+});
+
+export const ValidateUpdateOrderStatus = Joi.object({
+    status: Joi.string().valid('upcoming', 'preparing', 'out_for_delivery', 'delivered', 'skipped', 'cancelled').required(),
+    notes: Joi.string().max(500).trim().optional().default('')
+});
+
+export const ValidateConfirmDelivery = Joi.object({
+    notes: Joi.string().max(500).trim().optional().default(''),
+    photos: Joi.array().items(Joi.string().uri()).optional().default([])
+});
+
+export const ValidateOrderQuery = Joi.object({
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(100).optional(),
+    status: Joi.string().valid('upcoming', 'preparing', 'out_for_delivery', 'delivered', 'skipped', 'cancelled').optional(),
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    vendorId: Joi.string().hex().length(24).optional(),
+    days: Joi.number().positive().max(30).optional()
+});
+
+export const ValidateDateRangeQuery = Joi.object({
+    startDate: Joi.date().required(),
+    endDate: Joi.date().min(Joi.ref('startDate')).required(),
+    vendorType: Joi.string().valid('home_chef', 'food_vendor').optional()
+});
+
+export const ValidateUpdateDailyMeal = Joi.object({
+    lunchMenuIds: Joi.array().items(Joi.string().hex().length(24)).optional(),
+    dinnerMenuIds: Joi.array().items(Joi.string().hex().length(24)).optional(),
+    notes: Joi.string().max(500).trim().optional()
+});
+
+// ############### REVIEW VALIDATION SCHEMAS ###############
+export const ValidateCreateReview = Joi.object({
+    reviewType: Joi.string().valid('subscription', 'vendor', 'order').required(),
+    subscriptionId: Joi.string().hex().length(24).when('reviewType', {
+        is: 'subscription',
+        then: Joi.required(),
+        otherwise: Joi.forbidden()
+    }),
+    vendorId: Joi.string().hex().length(24).when('reviewType', {
+        is: 'vendor',
+        then: Joi.required(),
+        otherwise: Joi.forbidden()
+    }),
+    orderId: Joi.string().hex().length(24).when('reviewType', {
+        is: 'order',
+        then: Joi.required(),
+        otherwise: Joi.forbidden()
+    }),
+    rating: Joi.number().integer().min(1).max(5).required(),
+    reviewText: Joi.string().max(1000).trim().required()
+});
+
+export const ValidateUpdateReview = Joi.object({
+    rating: Joi.number().integer().min(1).max(5).optional(),
+    reviewText: Joi.string().max(1000).trim().optional()
+}).min(1); // At least one field required for update
+
+export const ValidateReviewQuery = Joi.object({
+    reviewType: Joi.string().valid('subscription', 'vendor', 'order').optional(),
+    status: Joi.string().valid('active', 'hidden', 'reported').optional(),
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(100).optional(),
+    minRating: Joi.number().integer().min(1).max(5).optional(),
+    maxRating: Joi.number().integer().min(1).max(5).optional(),
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().min(Joi.ref('startDate')).optional(),
+    sortBy: Joi.string().valid('createdAt', 'rating', 'helpfulCount').optional()
+});
+
+// Removed vendor response and report functionality for simplified review system
+
 export const validateJoiSchema = (schema, value) => {
     const result = schema.validate(value, { abortEarly: false });
     return {
