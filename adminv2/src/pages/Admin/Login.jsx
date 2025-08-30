@@ -1,25 +1,44 @@
 
 import { Loader2 } from 'lucide-react';
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {toast} from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom';
-import { signInApi } from '../service/api.service';
+import { signInApi } from '../../service/api.service';
+import { useAuth } from '../../context/AuthContext';
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login, isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Redirect to appropriate dashboard based on role
+      const dashboardPath = user?.role === 'admin' ? '/' : '/vendor';
+      navigate(dashboardPath);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSignIn = async (event) => {
     event.preventDefault();
     try {
       setIsLoading(true);
       const res = await signInApi({ emailAddress: email, password });
+      
+      // Store token separately for API calls
       localStorage.setItem('accessToken', res.data.accessToken);
+      
+      // Use the login method from AuthContext
+      login(res.data.user, res.data.accessToken);
+      
       toast.success('Signed in successfully');
-      navigate('/');
+      
+      // Navigate to appropriate dashboard based on role
+      const dashboardPath = res.data.user?.role === 'admin' ? '/' : '/vendor';
+      navigate(dashboardPath);
     } catch (error) {
-      toast.error(error.response.data.message || 'Error signing in');
+      toast.error(error.response?.data?.message || 'Error signing in');
     } finally {
       setIsLoading(false);
     }

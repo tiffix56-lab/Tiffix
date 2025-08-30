@@ -55,3 +55,288 @@ export const getMenuByIdApi = async (menuId) => {
 }
 
 
+// LOCATION ZONES
+
+export const createZoneApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/zones', body);
+    return response.data;
+}
+
+export const getZonesApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/zones', {
+        params
+    });
+    return response.data;
+}
+
+export const getZoneByIdApi = async (zoneId) => {
+    const response = await servicesAxiosInstance.get(`/zones/${zoneId}`);
+    return response.data;
+}
+
+export const updateZoneApi = async (zoneId, body) => {
+    const response = await servicesAxiosInstance.put(`/admin/zones/${zoneId}`, body);
+    return response.data;
+}
+
+export const deleteZoneApi = async (zoneId) => {
+    const response = await servicesAxiosInstance.delete(`/admin/zones/${zoneId}`);
+    return response.data;
+}
+
+export const toggleZoneStatusApi = async (zoneId) => {
+    const response = await servicesAxiosInstance.patch(`/admin/zones/${zoneId}/toggle-status`);
+    return response.data;
+}
+
+export const checkServiceByPincodeApi = async (pincode, vendorType) => {
+    const response = await servicesAxiosInstance.get(`/zones/check-service/${pincode}`, {
+        params: { vendorType }
+    });
+    return response.data;
+}
+
+export const calculateDeliveryFeeApi = async (zoneId, distance, orderValue) => {
+    const response = await servicesAxiosInstance.get(`/zones/${zoneId}/delivery-fee`, {
+        params: { distance, orderValue }
+    });
+    return response.data;
+}
+
+
+// SUBSCRIPTION
+
+export const createSubscriptionApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/subscriptions', body);
+    return response.data;
+}
+
+export const getSubscriptionsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/subscriptions', {
+        params
+    });
+    return response.data;
+}
+
+export const getSubscriptionByIdApi = async (subscriptionId) => {
+    const response = await servicesAxiosInstance.get(`/admin/subscriptions/${subscriptionId}`);
+    return response.data;
+}
+
+export const updateSubscriptionApi = async (subscriptionId, body) => {
+    const response = await servicesAxiosInstance.put(`/admin/subscriptions/${subscriptionId}`, body);
+    return response.data;
+}
+
+export const deleteSubscriptionApi = async (subscriptionId) => {
+    const response = await servicesAxiosInstance.delete(`/admin/subscriptions/${subscriptionId}`);
+    return response.data;
+}
+
+export const toggleSubscriptionStatusApi = async (subscriptionId) => {
+    const response = await servicesAxiosInstance.patch(`/admin/subscriptions/${subscriptionId}/toggle-status`);
+    return response.data;
+}
+
+export const getSubscriptionStatsApi = async () => {
+    const response = await servicesAxiosInstance.get('/admin/subscriptions/stats');
+    return response.data;
+}
+
+
+// VENDOR
+
+export const getVendorsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/vendors', {
+        params
+    });
+    return response.data;
+}
+
+export const createVendorApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/vendors', body);
+    return response.data;
+}
+
+export const updateVendorApi = async (vendorId, body) => {
+    const response = await servicesAxiosInstance.put(`/admin/vendors/${vendorId}`, body);
+    return response.data;
+}
+
+export const deleteVendorApi = async (vendorId) => {
+    const response = await servicesAxiosInstance.delete(`/admin/vendors/${vendorId}`);
+    return response.data;
+}
+
+export const verifyVendorApi = async (vendorId, isVerified) => {
+    const response = await servicesAxiosInstance.patch(`/admin/vendors/${vendorId}/verify`, {
+        isVerified
+    });
+    return response.data;
+}
+
+export const updateVendorRatingApi = async (vendorId, rating) => {
+    const response = await servicesAxiosInstance.patch(`/vendors/${vendorId}/rating`, {
+        rating
+    });
+    return response.data;
+}
+
+export const resetVendorCapacityApi = async (vendorId) => {
+    const response = await servicesAxiosInstance.patch(`/admin/vendors/${vendorId}/reset-capacity`);
+    return response.data;
+}
+
+export const updateVendorAddressApi = async (vendorId, address) => {
+    const response = await servicesAxiosInstance.put(`/admin/vendors/${vendorId}/address`, address);
+    return response.data;
+}
+
+
+// USER MANAGEMENT
+
+export const getUserOverviewApi = async () => {
+    const response = await servicesAxiosInstance.get('/admin/users/overview');
+    return response.data;
+}
+
+export const getAllUsersApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/users', {
+        params
+    });
+    return response.data;
+}
+
+export const getUserByIdApi = async (userId) => {
+    const response = await servicesAxiosInstance.get(`/admin/users/${userId}`);
+    return response.data;
+}
+
+export const banUserApi = async (userId, reason) => {
+    const response = await servicesAxiosInstance.post(`/admin/users/${userId}/ban`, {
+        reason
+    });
+    return response.data;
+}
+
+export const unbanUserApi = async (userId) => {
+    const response = await servicesAxiosInstance.post(`/admin/users/${userId}/unban`);
+    return response.data;
+}
+
+export const toggleUserStatusApi = async (userId) => {
+    const response = await servicesAxiosInstance.put(`/admin/users/${userId}/toggle-status`);
+    return response.data;
+}
+
+export const deleteUserApi = async (userId) => {
+    const response = await servicesAxiosInstance.delete(`/admin/users/${userId}`);
+    return response.data;
+}
+
+export const getUserActivityStatsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/users/activity-stats', {
+        params
+    });
+    return response.data;
+}
+
+export const searchUsersApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/users/search', {
+        params
+    });
+    return response.data;
+}
+
+
+// VENDOR CUSTOMER MANAGEMENT
+
+export const getVendorCustomersApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/vendor/customers', {
+        params
+    });
+    return response.data;
+}
+
+export const getVendorCustomerByIdApi = async (subscriptionId) => {
+    const response = await servicesAxiosInstance.get(`/vendor/customers/${subscriptionId}`);
+    return response.data;
+}
+
+export const getVendorCustomerAnalyticsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/vendor/customers/analytics', {
+        params
+    });
+    return response.data;
+}
+
+
+// ADMIN VENDOR ASSIGNMENT MANAGEMENT
+
+export const getVendorAssignmentsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/vendor-assignments', {
+        params
+    });
+    return response.data;
+}
+
+export const getPendingVendorAssignmentsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/vendor-assignments/pending', {
+        params
+    });
+    return response.data;
+}
+
+export const getInitialAssignmentRequestsApi = async () => {
+    const response = await servicesAxiosInstance.get('/admin/vendor-assignments/initial-assignments');
+    return response.data;
+}
+
+export const getVendorSwitchRequestsApi = async () => {
+    const response = await servicesAxiosInstance.get('/admin/vendor-assignments/vendor-switches');
+    return response.data;
+}
+
+export const getUrgentVendorAssignmentsApi = async () => {
+    const response = await servicesAxiosInstance.get('/admin/vendor-assignments/urgent');
+    return response.data;
+}
+
+export const getVendorAssignmentsByZoneApi = async (zoneId) => {
+    const response = await servicesAxiosInstance.get(`/admin/vendor-assignments/zone/${zoneId}`);
+    return response.data;
+}
+
+export const getAvailableVendorsApi = async (requestId) => {
+    const response = await servicesAxiosInstance.get(`/admin/vendor-assignments/${requestId}/available-vendors`);
+    return response.data;
+}
+
+export const assignVendorApi = async (requestId, body) => {
+    const response = await servicesAxiosInstance.post(`/admin/vendor-assignments/${requestId}/assign`, body);
+    return response.data;
+}
+
+export const rejectVendorAssignmentApi = async (requestId, body) => {
+    const response = await servicesAxiosInstance.post(`/admin/vendor-assignments/${requestId}/reject`, body);
+    return response.data;
+}
+
+export const updateVendorAssignmentPriorityApi = async (requestId, body) => {
+    const response = await servicesAxiosInstance.patch(`/admin/vendor-assignments/${requestId}/priority`, body);
+    return response.data;
+}
+
+export const getVendorAssignmentDetailsApi = async (requestId) => {
+    const response = await servicesAxiosInstance.get(`/admin/vendor-assignments/${requestId}`);
+    return response.data;
+}
+
+export const getVendorAssignmentStatsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/vendor-assignments/stats', {
+        params
+    });
+    return response.data;
+}
+
+

@@ -1,28 +1,60 @@
-import { Routes, Route, Link } from "react-router-dom";
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { Routes, Route } from "react-router-dom";
 import "./App.css";
-import Login from "./pages/Login";
-import Layout from "./Layout";
-import Menu from "./pages/Menu";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminLayout from "./Layout";
+import VendorLayout from "./VendorLayout";
+
+// Admin Components
+import Login from "./pages/Admin/Login";
+import Menu from "./pages/Admin/Menu";
+import LocationZone from "./pages/Admin/LocationZone";
+import Subscription from "./pages/Admin/Subscription";
+import Vendor from "./pages/Admin/Vendor";
+import UserManagement from "./pages/Admin/UserManagement";
+import Customers from "./pages/Vendor/Customers";
+import VendorAssignment from "./pages/Admin/VendorAssignment";
 
 
 
 function App() {
-
   return (
-    <div className="">
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route element={<Layout />}>
-          <Route path="/" element={<h1>Home</h1>} />
-          <Route path="/menu" element={<Menu />} />
-        </Route>
-        
-      </Routes>
+    <AuthProvider>
+      <div className="">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          
+          {/* Admin Routes */}
+          <Route element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/" element={<h1>Admin Dashboard</h1>} />
+            <Route path="/user-management" element={<UserManagement />} />
+            <Route path="/menu" element={<Menu />} />
+            <Route path="/location-zone" element={<LocationZone />} />
+            <Route path="/subscriptions" element={<Subscription />} />
+            <Route path="/vendor-management" element={<Vendor />} />
+            <Route path="/vendor-assignment" element={<VendorAssignment />} />
+          </Route>
 
-    </div>
+          {/* Vendor Routes */}
+          <Route element={
+            <ProtectedRoute requiredRole="vendor">
+              <VendorLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/vendor" element={<h1>Vendor Dashboard</h1>} />
+            <Route path="/vendor/menu" element={<h1>My Menu</h1>} />
+            <Route path="/vendor/orders" element={<h1>Orders</h1>} />
+            <Route path="/vendor/analytics" element={<h1>Analytics</h1>} />
+            <Route path="/vendor/profile" element={<h1>Profile</h1>} />
+            <Route path="/vendor/customers" element={<Customers />} />
+          </Route>
+        </Routes>
+      </div>
+    </AuthProvider>
   );
 }
 

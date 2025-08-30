@@ -1,21 +1,20 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { Home, Users, ChefHat, MapPin, Menu, X, LogOut } from "lucide-react";
+import { href, Link, Outlet, useLocation } from "react-router-dom";
+import { Home, Package, BarChart3, Settings, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 
-function AdminLayout() {
+function VendorLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'User Management', href: '/user-management', icon: Users },
-    { name: 'Menu Management', href: '/menu', icon: ChefHat },
-    { name: 'Location Zones', href: '/location-zone', icon: MapPin },
-    { name: 'Subscriptions', href: '/subscriptions', icon: Menu },
-    { name: 'Vendor Management', href: '/vendor-management', icon: Menu },
-    { name: 'Vendor Assignment', href: '/vendor-assignment', icon: Menu },
+    { name: 'Dashboard', href: '/vendor', icon: Home },
+    { name: 'My Menu', href: '/vendor/menu', icon: Package },
+    { name: 'Orders', href: '/vendor/orders', icon: BarChart3 },
+    { name: 'Analytics', href: '/vendor/analytics', icon: BarChart3 },
+    { name: 'Profile', href: '/vendor/profile', icon: Settings },
+    { name: 'Customers', href: '/vendor/customers', icon: Settings },
   ];
 
   const isActive = (path) => {
@@ -28,7 +27,7 @@ function AdminLayout() {
       <div className="md:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg bg-gray-800 text-orange-400 hover:bg-gray-700 transition-colors"
+          className="p-2 rounded-lg bg-gray-800 text-green-400 hover:bg-gray-700 transition-colors"
         >
           <Menu className="w-6 h-6" />
         </button>
@@ -58,10 +57,10 @@ function AdminLayout() {
 
         {/* Logo */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent">
             Tiffix
           </h2>
-          <p className="text-gray-400 text-sm mt-1">Admin Panel</p>
+          <p className="text-gray-400 text-sm mt-1">Vendor Panel</p>
         </div>
         
         {/* Navigation */}
@@ -78,7 +77,7 @@ function AdminLayout() {
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200
                   ${active 
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25' 
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25' 
                     : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                   }
                 `}
@@ -93,14 +92,14 @@ function AdminLayout() {
         {/* Footer */}
         <div className="mt-auto pt-6 border-t border-gray-700 space-y-4">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/50">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center">
               <span className="text-white text-sm font-semibold">
-                {user?.name?.charAt(0)?.toUpperCase() || 'A'}
+                {user?.name?.charAt(0)?.toUpperCase() || 'V'}
               </span>
             </div>
             <div className="flex-1">
-              <p className="text-white text-sm font-medium">{user?.name || 'Admin User'}</p>
-              <p className="text-gray-400 text-xs">{user?.email || 'admin@tiffix.com'}</p>
+              <p className="text-white text-sm font-medium">{user?.name || 'Vendor User'}</p>
+              <p className="text-gray-400 text-xs">{user?.email || 'vendor@tiffix.com'}</p>
             </div>
           </div>
           
@@ -126,4 +125,4 @@ function AdminLayout() {
   );
 }
 
-export default AdminLayout;
+export default VendorLayout;
