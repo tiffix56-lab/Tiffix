@@ -45,6 +45,7 @@ export default {
                     otp: '000000'
                 },
                 consent: true,
+                verified: true,
                 timezone: value.user.timezone || 'UTC'
             };
 
