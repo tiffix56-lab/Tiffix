@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,36 +7,96 @@ import {
   Image,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { LinearGradient } from 'expo-linear-gradient';
+import { menuService } from '@/services/menu.service';
+import { MenuItem } from '@/types/menu.types';
 
 const { width, height } = Dimensions.get('window');
 
 const MealDetails = () => {
   const { colorScheme } = useColorScheme();
+  const { id } = useLocalSearchParams();
   const [isLiked, setIsLiked] = useState(false);
+  const [menu, setMenu] = useState<MenuItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
-  const mealComponents = [
-    {
-      category: 'Main Course',
-      items: [
-        { name: '4 Roti', type: 'Bread' },
-        { name: 'Aloo Gobi', type: 'Vegetable' },
-        { name: 'Seasonal Sabji', type: 'Vegetable' },
-      ],
-    },
-    {
-      category: 'Accompaniments',
-      items: [
-        { name: 'Salad', type: 'Fresh' },
-        { name: 'Chawal', type: 'Rice' },
-        { name: 'Raita', type: 'Dairy' },
-      ],
-    },
-  ];
+  useEffect(() => {
+    if (id) {
+      fetchMenuDetails(id as string);
+    }
+  }, [id]);
+
+  const fetchMenuDetails = async (menuId: string) => {
+    try {
+      setLoading(true);
+      const response = await menuService.getMenuById(menuId);
+      
+      if (response.success && response.data) {
+        setMenu(response.data.menu);
+      } else {
+        setError('Menu not found');
+      }
+    } catch (err) {
+      setError('Failed to load menu details');
+      console.error('Error fetching menu details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  const parseMealComponents = (detailedItemList: string) => {
+    // Parse the detailed item list into structured components
+    const items = detailedItemList.split(',').map(item => item.trim());
+    return [
+      {
+        category: 'Meal Components',
+        items: items.map(item => ({
+          name: item,
+          type: 'Item'
+        }))
+      }
+    ];
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-zinc-50 dark:bg-neutral-900">
+        <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+        <Text className="mt-4 text-base text-zinc-500 dark:text-zinc-400">Loading meal details...</Text>
+      </View>
+    );
+  }
+
+  if (error || !menu) {
+    return (
+      <View className="flex-1 items-center justify-center bg-zinc-50 dark:bg-neutral-900">
+        <Feather name="alert-circle" size={48} color={colorScheme === 'dark' ? '#EF4444' : '#DC2626'} />
+        <Text className="mt-4 text-center text-lg font-medium text-zinc-600 dark:text-zinc-300">
+          {error || 'Menu not found'}
+        </Text>
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          className="mt-4 rounded-xl bg-black px-6 py-3 dark:bg-white"
+        >
+          <Text className="text-white font-medium dark:text-black">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const mealComponents = parseMealComponents(menu.detailedItemList);
+  const isVegetarian = menu.dietaryOptions?.includes('vegetarian');
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -72,7 +132,7 @@ const MealDetails = () => {
         {/* Hero Image */}
         <View className="h-[500px] w-full">
           <Image
-            source={require('@/assets/category-2.png')}
+            source={{ uri: menu.foodImage }}
             className="h-full w-full"
             resizeMode="cover"
           />
@@ -97,7 +157,7 @@ const MealDetails = () => {
               <Text
                 className="mb-3 text-left text-3xl font-semibold text-black dark:text-white"
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                Special Thali
+                {menu.foodTitle}
               </Text>
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
@@ -106,23 +166,36 @@ const MealDetails = () => {
                     <Text
                       className="text-base font-semibold text-yellow-600 dark:text-yellow-400"
                       style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                      4.9
+                      {menu.rating.average.toFixed(1)}
                     </Text>
                   </View>
                   <Text
                     className="text-base text-gray-500 dark:text-gray-400"
                     style={{ fontFamily: 'Poppins_400Regular' }}>
-                    (27 reviews)
+                    ({menu.rating.totalReviews} reviews)
                   </Text>
                 </View>
                 <View className="flex-row items-center space-x-2">
-                  <View className="rounded-full bg-green-100 px-3 py-1 dark:bg-green-900/20">
+                  <View className={`rounded-full px-3 py-1 ${
+                    isVegetarian 
+                      ? 'bg-green-100 dark:bg-green-900/20' 
+                      : 'bg-red-100 dark:bg-red-900/20'
+                  }`}>
                     <Text
-                      className="text-sm font-medium text-green-600 dark:text-green-400"
+                      className={`text-sm font-medium ${
+                        isVegetarian 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-red-600 dark:text-red-400'
+                      }`}
                       style={{ fontFamily: 'Poppins_500Medium' }}>
-                      Vegetarian
+                      {isVegetarian ? 'Vegetarian' : 'Non-Vegetarian'}
                     </Text>
                   </View>
+                  <Text
+                    className="text-2xl font-bold text-black dark:text-white"
+                    style={{ fontFamily: 'Poppins_700Bold' }}>
+                    {formatCurrency(menu.price)}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -131,9 +204,36 @@ const MealDetails = () => {
             <Text
               className="mb-6 text-left text-base leading-6 text-gray-700 dark:text-gray-300"
               style={{ fontFamily: 'Poppins_400Regular' }}>
-              A wholesome and nutritious Indian thali featuring fresh vegetables, whole grains, and
-              traditional accompaniments. Perfectly balanced for a complete meal experience.
+              {menu.description.long || menu.description.short}
             </Text>
+
+            {/* Quick Info */}
+            <View className="mb-6 flex-row items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+              <View className="flex-row items-center">
+                <Feather name="clock" size={16} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                <Text
+                  className="ml-2 text-sm text-gray-600 dark:text-gray-300"
+                  style={{ fontFamily: 'Poppins_400Regular' }}>
+                  {menu.prepTime} min
+                </Text>
+              </View>
+              <View className="flex-row items-center">
+                <Feather name="zap" size={16} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                <Text
+                  className="ml-2 text-sm text-gray-600 dark:text-gray-300"
+                  style={{ fontFamily: 'Poppins_400Regular' }}>
+                  {menu.calories} cal
+                </Text>
+              </View>
+              <View className="flex-row items-center">
+                <Feather name="map-pin" size={16} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                <Text
+                  className="ml-2 text-sm text-gray-600 dark:text-gray-300"
+                  style={{ fontFamily: 'Poppins_400Regular' }}>
+                  {menu.cuisine}
+                </Text>
+              </View>
+            </View>
 
             <View className="mb-6 h-px bg-gray-200 dark:bg-gray-700" />
 

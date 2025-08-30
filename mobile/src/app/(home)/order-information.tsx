@@ -28,6 +28,7 @@ const OrderInformation = () => {
   const [parsedOrderData, setParsedOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(false);
 
+
   useEffect(() => {
     if (orderData) {
       try {

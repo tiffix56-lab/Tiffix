@@ -1,11 +1,34 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { userService } from '@/services/user.service';
+import { User } from '@/types/user.types';
 
 const Profile = () => {
   const { colorScheme } = useColorScheme();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const response = await userService.getCurrentUser();
+      
+      if (response.success && response.data) {
+        setUser(response.data.user);
+      }
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const menuItems = [
     {
@@ -114,11 +137,15 @@ const Profile = () => {
                 />
               </TouchableOpacity>
             </View>
-            <Text
-              className="text-xl font-semibold text-black dark:text-white"
-              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Mukul Parmar
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+            ) : (
+              <Text
+                className="text-xl font-semibold text-black dark:text-white"
+                style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                {user?.fullName || 'User'}
+              </Text>
+            )}
           </View>
           <View className="h-10 w-10" />
         </View>

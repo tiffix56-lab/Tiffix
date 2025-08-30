@@ -49,6 +49,13 @@ class OrderService {
       '/my-subscriptions'
     );
   }
+
+  async cancelSubscription(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
+    return await apiService.post<{ message: string }>(
+      `/my-subscriptions/${subscriptionId}/cancel`,
+      { reason }
+    );
+  }
 }
 
 export const orderService = new OrderService();

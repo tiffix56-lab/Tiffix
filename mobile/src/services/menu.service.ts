@@ -45,7 +45,7 @@ class MenuService {
   async getVendorMenus(query?: Omit<MenuQuery, 'vendorCategory'>): Promise<ApiResponse<MenuResponse>> {
     return await this.getMenus({
       ...query,
-      vendorCategory: 'vendor',
+      vendorCategory: 'food_vendor',
     });
   }
 
