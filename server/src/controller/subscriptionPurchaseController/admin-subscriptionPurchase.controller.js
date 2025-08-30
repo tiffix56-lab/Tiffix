@@ -284,7 +284,10 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+
+            const errorMessage = error.message || 'Internal server error while processing admin request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -320,8 +323,8 @@ export default {
             const remainingDays = subscription.getDaysRemaining();
             const dailyMealCount = subscription.getDailyMealCount();
             const totalMealsExpected = Math.max(0, remainingDays * dailyMealCount);
-            const creditsUsedPercentage = subscription.creditsGranted > 0 
-                ? (subscription.creditsUsed / subscription.creditsGranted) * 100 
+            const creditsUsedPercentage = subscription.creditsGranted > 0
+                ? (subscription.creditsUsed / subscription.creditsGranted) * 100
                 : 0;
 
             // Get delivery zone information
@@ -354,7 +357,9 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+            const errorMessage = error.message || 'Internal server error while processing admin request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -535,11 +540,11 @@ export default {
                 overall: {
                     ...stats,
                     ...vendorStatistics,
-                    conversionRate: stats.totalSubscriptions > 0 
-                        ? ((stats.activeSubscriptions || 0) / stats.totalSubscriptions * 100).toFixed(2) 
+                    conversionRate: stats.totalSubscriptions > 0
+                        ? ((stats.activeSubscriptions || 0) / stats.totalSubscriptions * 100).toFixed(2)
                         : 0,
-                    cancellationRate: stats.totalSubscriptions > 0 
-                        ? ((stats.cancelledSubscriptions || 0) / stats.totalSubscriptions * 100).toFixed(2) 
+                    cancellationRate: stats.totalSubscriptions > 0
+                        ? ((stats.cancelledSubscriptions || 0) / stats.totalSubscriptions * 100).toFixed(2)
                         : 0
                 },
                 distribution: {
@@ -553,7 +558,10 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+
+            const errorMessage = error.message || 'Internal server error while processing admin request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };

@@ -22,7 +22,7 @@ export default {
         try {
             const { error } = validateJoiSchema(ValidateVendorAssignmentQuery, req.query);
             if (error) {
-                return httpError(next, error, req, 422);
+                return httpError(next, new Error(error), req, 422);
             }
 
             const {
@@ -86,7 +86,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -101,7 +101,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -116,7 +116,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -131,7 +131,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -147,7 +147,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -207,7 +207,7 @@ export default {
             }
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -216,7 +216,7 @@ export default {
         try {
             const { error } = validateJoiSchema(ValidateAssignVendor, req.body);
             if (error) {
-                return httpError(next, error, req, 422);
+                return httpError(next, new Error(error), req, 422);
             }
 
             const { requestId } = req.params
@@ -268,7 +268,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -277,7 +277,7 @@ export default {
         try {
             const { error } = validateJoiSchema(ValidateRejectRequest, req.body);
             if (error) {
-                return httpError(next, error, req, 422);
+                return httpError(next, new Error(error), req, 422);
             }
 
             const { requestId } = req.params
@@ -302,7 +302,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -311,7 +311,7 @@ export default {
         try {
             const { error } = validateJoiSchema(ValidateUpdatePriority, req.body);
             if (error) {
-                return httpError(next, error, req, 422);
+                return httpError(next, new Error(error), req, 422);
             }
 
             const { requestId } = req.params
@@ -335,7 +335,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -364,7 +364,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -453,7 +453,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     },
 
@@ -462,7 +462,7 @@ export default {
         try {
             const { error } = validateJoiSchema(ValidateVendorAssignmentQuery, req.query);
             if (error) {
-                return httpError(next, error, req, 422);
+                return httpError(next, new Error(error), req, 422);
             }
 
             const {
@@ -531,7 +531,7 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            httpError(next, new Error(error), req, 500)
         }
     }
 }

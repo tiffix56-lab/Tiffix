@@ -287,7 +287,10 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+
+            const errorMessage = error.message || 'Internal server error while processing vendor request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -387,7 +390,9 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+            const errorMessage = error.message || 'Internal server error while processing vendor request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -603,7 +608,10 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+
+            const errorMessage = error.message || 'Internal server error while processing vendor request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 

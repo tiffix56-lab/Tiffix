@@ -2,7 +2,7 @@
 
 # Base URL
 @baseURL = http://localhost:4000/v1
-@accessToke = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIzMzI2OWUxZTUwZWJlNmY0ZDZkYTkiLCJlbWFpbCI6InVzZXIyQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoidXNlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU2NTc0MzI5LCJleHAiOjE3NTY2NjA3Mjl9.dpLcQX_SuS_9hkcn_zLzYHAacQFahZKJoeNYf6TXPHw
 
 
 
@@ -11,11 +11,10 @@
 ### Initiate Subscription Purchase (Requires Authentication)
 POST {{baseURL}}/subscription-purchase/initiate
 Content-Type: application/json
-Authorization: Bearer {{accessToke}}
+Authorization: Bearer {{accessToken}}
 
 {
-  "subscriptionId": "60f7b3b3b3b3b3b3b3b3b3b3",
-  "promoCode": "WELCOME10",
+  "subscriptionId": "68b2ba105d778fa67180c131",
   "deliveryAddress": {
     "street": "123 Main Street, Apartment 4B",
     "city": "Mumbai",
@@ -38,46 +37,46 @@ Authorization: Bearer {{accessToke}}
       "time": "20:00"
     }
   },
-  "startDate": "2025-03-01T00:00:00.000Z"
+  "startDate": "2025-09-01T00:00:00.000Z"
 }
 
 ### Verify Payment (Requires Authentication)
 POST {{baseURL}}/subscription-purchase/verify-payment
 Content-Type: application/json
-Authorization: Bearer {{accessToke}}
+Authorization: Bearer {{accessToken}}
 
 {
-  "razorpay_order_id": "order_XXXXXXXXXXXXXXX",
-  "razorpay_payment_id": "pay_XXXXXXXXXXXXXXX",
-  "razorpay_signature": "signature_XXXXXXXXXXXXXXX",
-  "userSubscriptionId": "60f7b3b3b3b3b3b3b3b3b3b3"
+  "razorpay_order_id": "order_RBcvBOQrUpgmug",
+  "razorpay_payment_id": "pay_test_payment_12345",
+  "razorpay_signature": "test_signature_for_development",
+  "userSubscriptionId": "68b33354927d9f0b0616a84b"
 }
 
 ### Get My Subscriptions (Requires Authentication)
 GET {{baseURL}}/my-subscriptions?page=1&limit=10&status=active
-Authorization: Bearer {{accessToke}}
+Authorization: Bearer {{accessToken}}
 
 ### Get My Subscriptions with Filters
 GET {{baseURL}}/my-subscriptions?page=1&limit=5&status=active&category=home_chef&startDate=2024-01-01&endDate=2024-12-31
-Authorization: Bearer {{accessToke}}
+Authorization: Bearer {{accessToken}}
 
 ### Get Subscription by ID (Requires Authentication)
-GET {{baseURL}}/my-subscriptions/60f7b3b3b3b3b3b3b3b3b3b3
-Authorization: Bearer {{accessToke}}
+GET {{baseURL}}/my-subscriptions/68b33354927d9f0b0616a84b
+Authorization: Bearer {{accessToken}}
 
 ### Cancel Subscription (Requires Authentication)
-POST {{baseURL}}/my-subscriptions/60f7b3b3b3b3b3b3b3b3b3b3/cancel
+POST {{baseURL}}/my-subscriptions/68b33354927d9f0b0616a84b/cancel
 Content-Type: application/json
-Authorization: Bearer {{accessToke}}
+Authorization: Bearer {{accessToken}}
 
 {
   "reason": "Not satisfied with the food quality and delivery timing"
 }
 
 ### Request Vendor Switch (Requires Authentication)
-POST {{baseURL}}/my-subscriptions/60f7b3b3b3b3b3b3b3b3b3b3/request-vendor-switch
+POST {{baseURL}}/my-subscriptions/68b33354927d9f0b0616a84b/request-vendor-switch
 Content-Type: application/json
-Authorization: Bearer {{accessToke}}
+Authorization: Bearer {{accessToken}}
 
 {
   "reason": "Current vendor has inconsistent delivery times and food quality issues"
