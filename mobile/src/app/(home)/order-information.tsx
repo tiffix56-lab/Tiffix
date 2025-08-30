@@ -1,46 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator, Alert } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import RazorpayCheckout from 'react-native-razorpay';
-import { orderService, RazorpayOrderResponse } from '@/services/order.service';
 import { MenuItem } from '@/types/menu.types';
 import { Subscription } from '@/services/subscription.service';
 import { Address } from '@/types/address.types';
-
-interface OrderData {
-  menuId: string;
-  subscriptionId: string;
-  selectedMenu: MenuItem;
-  selectedSubscription: Subscription;
-  deliveryAddress: Address;
-  deliveryDate: string;
-  lunchTime: string;
-  dinnerTime: string;
-  lunchEnabled: boolean;
-  dinnerEnabled: boolean;
-}
+import { orderStore, OrderData } from '@/utils/order-store';
 
 const OrderInformation = () => {
   const { colorScheme } = useColorScheme();
-  const { orderData } = useLocalSearchParams();
   const [parsedOrderData, setParsedOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(false);
 
-
   useEffect(() => {
-    if (orderData) {
+    const loadOrderData = async () => {
       try {
-        const parsed = JSON.parse(orderData as string);
-        setParsedOrderData(parsed);
+        const data = await orderStore.getOrderData();
+        if (data) {
+          setParsedOrderData(data);
+        } else {
+          Alert.alert('Error', 'Order data not found');
+          router.back();
+        }
       } catch (err) {
-        console.error('Failed to parse order data:', err);
-        Alert.alert('Error', 'Invalid order data');
+        console.error('Failed to load order data:', err);
+        Alert.alert('Error', 'Failed to load order data');
         router.back();
       }
-    }
-  }, [orderData]);
+    };
+
+    loadOrderData();
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return `₹${amount.toLocaleString('en-IN')}`;
@@ -50,130 +41,12 @@ const OrderInformation = () => {
     return Math.round(price * 0.18); // 18% GST
   };
 
-  const convertTo24Hour = (time12h: string): string => {
-    const [time, modifier] = time12h.split(' ');
-    let [hours, minutes] = time.split(':');
-    if (hours === '12') {
-      hours = '00';
+  const handleProceedToPayment = () => {
+    if (!parsedOrderData) {
+      return;
     }
-    if (modifier === 'PM') {
-      hours = String(parseInt(hours, 10) + 12);
-    }
-    return `${hours}:${minutes}`;
-  };
 
-  const handleConfirmOrder = async () => {
-    if (!parsedOrderData) return;
-
-    try {
-      setLoading(true);
-
-      // Step 1: Initiate purchase to get Razorpay order
-      const orderPayload = {
-        subscriptionId: parsedOrderData.subscriptionId,
-        deliveryAddress: {
-          label: parsedOrderData.deliveryAddress.label,
-          street: parsedOrderData.deliveryAddress.street,
-          city: parsedOrderData.deliveryAddress.city,
-          state: parsedOrderData.deliveryAddress.state,
-          zipCode: parsedOrderData.deliveryAddress.zipCode,
-          coordinates: parsedOrderData.deliveryAddress.coordinates,
-        },
-        mealTimings: {
-          lunch: {
-            enabled: parsedOrderData.lunchEnabled,
-            time: parsedOrderData.lunchEnabled ? convertTo24Hour(parsedOrderData.lunchTime) : '',
-          },
-          dinner: {
-            enabled: parsedOrderData.dinnerEnabled,
-            time: parsedOrderData.dinnerEnabled ? convertTo24Hour(parsedOrderData.dinnerTime) : '',
-          },
-        },
-        startDate: parsedOrderData.deliveryDate,
-      };
-
-      const response = await orderService.initiatePurchase(orderPayload);
-
-      if (response.success && response.data) {
-        const { orderId, amount, currency, razorpayKey, userSubscriptionId } = response.data;
-
-        // Step 2: Open Razorpay payment gateway
-        const options = {
-          description: `${parsedOrderData.selectedSubscription.planName} Subscription`,
-          image: 'https://your-logo-url.com/logo.png', // Replace with your app logo
-          currency: currency,
-          key: razorpayKey,
-          amount: amount,
-          name: 'Tiffix',
-          order_id: orderId,
-          prefill: {
-            email: '', // Get from user context if available
-            contact: '', // Get from user context if available
-            name: '', // Get from user context if available
-          },
-          theme: { color: '#000000' },
-        };
-
-        RazorpayCheckout.open(options)
-          .then((data: any) => {
-            // Step 3: Payment successful - verify with backend
-            handlePaymentSuccess(data, userSubscriptionId);
-          })
-          .catch((error: any) => {
-            // Payment failed or cancelled
-            console.error('Razorpay payment error:', error);
-            if (error.description !== 'Payment cancelled by user') {
-              Alert.alert('Payment Failed', error.description || 'Payment could not be processed');
-            }
-            setLoading(false);
-          });
-      } else {
-        Alert.alert('Order Failed', response.message || 'Failed to initiate payment');
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Order confirmation error:', error);
-      Alert.alert('Error', 'Something went wrong while placing your order');
-      setLoading(false);
-    }
-  };
-
-  const handlePaymentSuccess = async (paymentData: any, userSubscriptionId: string) => {
-    try {
-      const verificationData = {
-        userSubscriptionId,
-        razorpay_order_id: paymentData.razorpay_order_id,
-        razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_signature: paymentData.razorpay_signature,
-      };
-
-      const verificationResponse = await orderService.verifyPayment(verificationData);
-
-      if (verificationResponse.success && verificationResponse.data?.success) {
-        // Payment verified successfully
-        router.push({
-          pathname: '/order-confirmed',
-          params: {
-            subscriptionId: verificationResponse.data.userSubscriptionId,
-            userSubscriptionId: userSubscriptionId,
-            paymentId: paymentData.razorpay_payment_id,
-          }
-        });
-      } else {
-        Alert.alert(
-          'Payment Verification Failed',
-          'Your payment was processed but could not be verified. Please contact support.'
-        );
-      }
-    } catch (error) {
-      console.error('Payment verification error:', error);
-      Alert.alert(
-        'Verification Error',
-        'Payment verification failed. Please contact support if amount was deducted.'
-      );
-    } finally {
-      setLoading(false);
-    }
+    router.push('/(home)/payment');
   };
 
   if (!parsedOrderData) {
@@ -371,7 +244,7 @@ const OrderInformation = () => {
       {/* Confirm Order Button */}
       <View className="px-6 pb-6">
         <TouchableOpacity
-          onPress={handleConfirmOrder}
+          onPress={handleProceedToPayment}
           disabled={loading}
           className={`rounded-xl py-4 ${
             loading 
@@ -391,7 +264,7 @@ const OrderInformation = () => {
             <Text
               className="text-center text-lg font-semibold text-white dark:text-black"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Confirm Order
+              Proceed to Payment
             </Text>
           )}
         </TouchableOpacity>

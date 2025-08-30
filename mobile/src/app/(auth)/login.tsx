@@ -39,7 +39,7 @@ const Login = () => {
     const result = await login(data);
 
     if (result.success) {
-      router.replace('/home');
+      router.replace('/(tabs)/home');
     } else {
       setError(result.message);
     }

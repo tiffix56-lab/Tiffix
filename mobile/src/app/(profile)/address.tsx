@@ -5,9 +5,10 @@ import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { addressService } from '@/services/address.service';
 import { Address as AddressType } from '@/types/address.types';
-import * as Location from 'expo-location';
 
 const Address = () => {
+  console.log('🏠 Address component mounted');
+  
   const { colorScheme } = useColorScheme();
   const [addresses, setAddresses] = useState<AddressType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,26 +20,42 @@ const Address = () => {
     city: '',
     state: '',
     zipCode: '',
-    isDefault: false
+    isDefault: false,
+    coordinates: { latitude: 0, longitude: 0 }
   });
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
 
   useEffect(() => {
+    console.log('🔄 useEffect triggered - calling fetchAddresses');
     fetchAddresses();
   }, []);
 
   const fetchAddresses = async () => {
     try {
+      console.log('🔄 Fetching addresses...');
       setLoading(true);
       const response = await addressService.getAllAddresses();
       
-      if (response.success && response.data) {
-        setAddresses(response.data.addresses);
+      console.log('📡 Address service response:', response);
+      
+      if (response.success && response.data && response.data.addresses) {
+        const addresses = response.data.addresses || [];
+        console.log('📍 Raw addresses:', addresses);
+        
+        // Filter out addresses with invalid data
+        const validAddresses = Array.isArray(addresses) ? addresses.filter(addr => 
+          addr && addr.label && addr.street
+        ) : [];
+        console.log('✅ Valid addresses:', validAddresses);
+        setAddresses(validAddresses);
       } else {
-        setError('Failed to load addresses');
+        console.log('❌ Failed to load addresses:', response.message);
+        setAddresses([]); // Set empty array instead of showing error for new users
+        setError('');
       }
     } catch (err) {
+      console.log('❌ Address fetch error:', err);
       setError('Failed to load addresses');
       console.error('Error fetching addresses:', err);
     } finally {
@@ -54,7 +71,11 @@ const Address = () => {
 
     try {
       setAdding(true);
-      const response = await addressService.addAddress(newAddress);
+      const addressPayload = {
+        ...newAddress,
+        coordinates: newAddress.coordinates
+      };
+      const response = await addressService.addAddress(addressPayload);
       
       if (response.success) {
         Alert.alert('Success', 'Address added successfully');
@@ -65,7 +86,8 @@ const Address = () => {
           city: '',
           state: '',
           zipCode: '',
-          isDefault: false
+          isDefault: false,
+          coordinates: { latitude: 0, longitude: 0 }
         });
         fetchAddresses();
       } else {
@@ -111,42 +133,70 @@ const Address = () => {
     );
   };
 
-  const getCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required');
+  const handlePlaceSelect = (data: any, details: any) => {
+    console.log('📍 Place selected:', data);
+    console.log('📍 Place details:', details);
+    
+    if (details) {
+      const addressComponents = details.address_components;
+      let street = '', city = '', state = '', zipCode = '', country = '';
+      
+      addressComponents.forEach((component: any) => {
+        if (component.types.includes('street_number') || component.types.includes('route')) {
+          street += component.long_name + ' ';
+        }
+        if (component.types.includes('locality') || component.types.includes('sublocality')) {
+          city = component.long_name;
+        }
+        if (component.types.includes('administrative_area_level_1')) {
+          state = component.long_name;
+        }
+        if (component.types.includes('postal_code')) {
+          zipCode = component.long_name;
+        }
+        if (component.types.includes('country')) {
+          country = component.short_name;
+        }
+      });
+
+      // Validate Indian address
+      if (country !== 'IN') {
+        Alert.alert('Location Not Supported', 'Currently, we only deliver to addresses in India. Please select an Indian address.');
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      const addressResponse = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      if (addressResponse.length > 0) {
-        const address = addressResponse[0];
-        setNewAddress(prev => ({
-          ...prev,
-          street: address.street || '',
-          city: address.city || '',
-          state: address.region || '',
-          zipCode: address.postalCode || '',
-        }));
+      if (!zipCode || !/^[0-9]{6}$/.test(zipCode)) {
+        Alert.alert('Invalid Address', 'Please select an address with a valid 6-digit Indian pincode.');
+        return;
       }
-    } catch (error) {
-      Alert.alert('Error', 'Unable to get current location');
-      console.error('Location error:', error);
+
+      setNewAddress(prev => ({
+        ...prev,
+        street: street.trim() || details.formatted_address,
+        city: city || 'Unknown City',
+        state: state || 'Unknown State',
+        zipCode: zipCode,
+        coordinates: {
+          latitude: details.geometry.location.lat,
+          longitude: details.geometry.location.lng
+        }
+      }));
+      console.log('✅ Valid Indian address set');
     }
   };
 
-  return (
-    <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+  try {
+    console.log('🎨 Rendering Address component');
+    console.log('📊 Current state:', { 
+      loading, 
+      addressesCount: addresses?.length || 0, 
+      error, 
+      showAddForm 
+    });
+
+    return (
+      <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
+        <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
       <View className="bg-zinc-50 px-6 pb-6 pt-24 dark:bg-neutral-900">
@@ -207,21 +257,14 @@ const Address = () => {
                     style={{ fontFamily: 'Poppins_400Regular' }}
                   />
                   
-                  <View className="flex-row">
-                    <TextInput
-                      className="flex-1 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                      placeholder="Street Address"
-                      placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                      value={newAddress.street}
-                      onChangeText={(text) => setNewAddress(prev => ({ ...prev, street: text }))}
-                      style={{ fontFamily: 'Poppins_400Regular' }}
-                    />
-                    <TouchableOpacity
-                      onPress={getCurrentLocation}
-                      className="ml-2 rounded-lg bg-black p-3 dark:bg-white">
-                      <Feather name="navigation" size={16} color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
-                    </TouchableOpacity>
-                  </View>
+                  <TextInput
+                    className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                    placeholder="Enter your full address"
+                    placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+                    value={newAddress.street}
+                    onChangeText={(text) => setNewAddress(prev => ({ ...prev, street: text }))}
+                    style={{ fontFamily: 'Poppins_400Regular' }}
+                  />
                   
                   <View className="flex-row space-x-2">
                     <TextInput
@@ -310,7 +353,7 @@ const Address = () => {
             )}
 
             {/* Address List */}
-            {addresses.length === 0 ? (
+            {!addresses || addresses.length === 0 ? (
               <View className="flex-1 items-center justify-center py-20">
                 <Feather name="map-pin" size={48} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
                 <Text className="mt-4 text-center text-lg font-medium text-zinc-600 dark:text-zinc-300">
@@ -328,7 +371,7 @@ const Address = () => {
               </View>
             ) : (
               <View className="space-y-4">
-                {addresses.map((address, index) => (
+                {Array.isArray(addresses) && addresses.map((address, index) => (
                   <View key={index} className="rounded-lg border border-zinc-100 p-4 dark:border-zinc-800">
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1">
@@ -351,7 +394,7 @@ const Address = () => {
                         <Text
                           className="mt-1 text-sm text-gray-600 dark:text-gray-300"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
-                          {address.street}, {address.city}, {address.state} {address.zipCode}
+                          {[address?.street, address?.city, address?.state, address?.zipCode].filter(Boolean).join(', ')}
                         </Text>
                       </View>
                       <TouchableOpacity
@@ -370,13 +413,48 @@ const Address = () => {
               </View>
             )}
 
+            {/* Add Address Button */}
+            <View className="px-6 py-4">
+              <TouchableOpacity
+                onPress={() => setShowAddForm(true)}
+                className="flex-row items-center justify-center rounded-xl bg-black py-4 dark:bg-white">
+                <Feather name="plus" size={20} color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
+                <Text
+                  className="ml-2 text-lg font-semibold text-white dark:text-black"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  Add New Address
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Bottom Spacing */}
             <View className="h-20" />
           </ScrollView>
         )}
       </View>
+
     </View>
   );
+  } catch (renderError) {
+    console.log('💥 Address component render error:', renderError);
+    console.error('Address component crash:', renderError);
+    
+    return (
+      <View className="flex-1 bg-zinc-50 dark:bg-neutral-900 items-center justify-center">
+        <Text className="text-red-500 text-center p-4">
+          Error loading addresses. Please try again.
+        </Text>
+        <TouchableOpacity 
+          onPress={() => {
+            console.log('🔄 Retry button pressed');
+            fetchAddresses();
+          }}
+          className="mt-4 bg-black px-6 py-3 rounded-xl">
+          <Text className="text-white font-medium">Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 };
 
 export default Address;

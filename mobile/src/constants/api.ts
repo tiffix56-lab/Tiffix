@@ -27,6 +27,9 @@ export const API_ENDPOINTS = {
     GET_BY_ID: '/subscriptions',
     PURCHASE: '/subscription-purchase',
   },
+  DELIVERY: {
+    SAVE_INFO: '/delivery-info',
+  },
 } as const;
 
 export const HTTP_STATUS = {

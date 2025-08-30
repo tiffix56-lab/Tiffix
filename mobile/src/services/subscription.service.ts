@@ -24,7 +24,7 @@ export interface Subscription {
   userSkipMealPerPlan: number;
   originalPrice: number;
   discountedPrice: number;
-  category: 'vendor' | 'home_chef';
+  category: 'food_vendor' | 'home_chef';
   freeDelivery: boolean;
   description: string;
   features: string[];
@@ -41,8 +41,9 @@ export interface SubscriptionResponse {
   pagination?: {
     currentPage: number;
     totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
+    totalSubscriptions: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
   };
 }
 
@@ -55,8 +56,18 @@ export interface TimeSlot {
 }
 
 class SubscriptionService {
-  async getActiveSubscriptions(): Promise<ApiResponse<SubscriptionResponse>> {
-    return await apiService.get<SubscriptionResponse>(`${API_ENDPOINTS.SUBSCRIPTION.GET_ALL}`);
+  async getActiveSubscriptions(params?: { page?: number; limit?: number; category?: string }): Promise<ApiResponse<SubscriptionResponse>> {
+    const queryParams = new URLSearchParams();
+    
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.category) queryParams.append('category', params.category);
+    
+    const url = queryParams.toString() 
+      ? `${API_ENDPOINTS.SUBSCRIPTION.GET_ALL}?${queryParams.toString()}`
+      : API_ENDPOINTS.SUBSCRIPTION.GET_ALL;
+      
+    return await apiService.get<SubscriptionResponse>(url);
   }
 
   async getSubscriptionById(id: string): Promise<ApiResponse<{ subscription: Subscription }>> {

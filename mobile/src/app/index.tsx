@@ -16,11 +16,11 @@ const SplashScreen = () => {
       
       const timer = setTimeout(async () => {
         if (isAuthenticated) {
-          router.replace('/home');
+          router.replace('/(tabs)/home');
         } else {
           const onboardingCompleted = await storageService.getOnboardingCompleted();
           if (onboardingCompleted) {
-            router.replace('/welcome');
+            router.replace('/(auth)/welcome');
           } else {
             router.replace('/onboarding');
           }

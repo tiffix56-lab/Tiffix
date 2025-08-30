@@ -21,13 +21,19 @@ class ApiService {
 
   async post<T>(url: string, data?: any): Promise<ApiResponse<T>> {
     try {
+      console.log('🌐 API POST request to:', url);
+      console.log('📦 Request payload:', JSON.stringify(data, null, 2));
+      
       const response: AxiosResponse = await api.post(url, data);
+      
+      console.log('✅ API POST response:', response.data);
       return {
         success: true,
         message: response.data.message || 'Success',
         data: response.data.data || response.data,
       };
     } catch (error) {
+      console.log('❌ API POST error:', error);
       return errorHandler.handleApiError(error);
     }
   }

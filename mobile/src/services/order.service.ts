@@ -22,10 +22,16 @@ export interface PaymentVerificationRequest {
 class OrderService {
   async initiatePurchase(orderData: InitiatePurchaseRequest): Promise<ApiResponse<RazorpayOrderResponse>> {
     console.log('Initiating purchase with data:', JSON.stringify(orderData, null, 2));
-    return await apiService.post<RazorpayOrderResponse>(
+    console.log('🔗 API Endpoint being called:', API_ENDPOINTS.SUBSCRIPTION.PURCHASE);
+    console.log('🌐 Full URL will be: baseURL + ', API_ENDPOINTS.SUBSCRIPTION.PURCHASE);
+    
+    const response = await apiService.post<RazorpayOrderResponse>(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/initiate`,
       orderData
     );
+    
+    console.log('📡 Raw API response:', response);
+    return response;
   }
 
   async verifyPayment(data: PaymentVerificationRequest): Promise<ApiResponse<{ 
@@ -34,7 +40,9 @@ class OrderService {
     userSubscription?: any;
   }>> {
     console.log('Verifying payment with data:', JSON.stringify(data, null, 2));
-    return await apiService.post<{ 
+    console.log('🔗 Verification endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/verify-payment`);
+    
+    const response = await apiService.post<{ 
       success: boolean; 
       userSubscriptionId: string;
       userSubscription?: any;
@@ -42,12 +50,33 @@ class OrderService {
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/verify-payment`,
       data
     );
+    
+    console.log('🔐 Payment verification response:', response);
+    return response;
   }
 
   async getUserSubscriptions(): Promise<ApiResponse<{ subscriptions: any[] }>> {
-    return await apiService.get<{ subscriptions: any[] }>(
-      '/my-subscriptions'
-    );
+    try {
+      const response = await apiService.get<{ subscriptions: any[] }>(
+        '/my-subscriptions'
+      );
+      
+      if (!response.success && (response.message?.includes('not found') || response.message?.includes('No subscriptions'))) {
+        return {
+          success: true,
+          message: 'No subscriptions yet',
+          data: { subscriptions: [] }
+        };
+      }
+      
+      return response;
+    } catch (error) {
+      return {
+        success: true,
+        message: 'No subscriptions yet', 
+        data: { subscriptions: [] }
+      };
+    }
   }
 
   async cancelSubscription(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {

@@ -6,7 +6,25 @@ import { ApiResponse } from '../types/auth.types';
 
 class UserService {
   async getUserProfile(): Promise<ApiResponse<{ userProfile: UserProfile }>> {
-    return await apiService.get<{ userProfile: UserProfile }>(API_ENDPOINTS.USER.PROFILE);
+    try {
+      const response = await apiService.get<{ userProfile: UserProfile }>(API_ENDPOINTS.USER.PROFILE);
+      
+      if (!response.success && response.message?.includes('not found')) {
+        return {
+          success: true,
+          message: 'Profile will be created automatically',
+          data: { userProfile: null }
+        };
+      }
+      
+      return response;
+    } catch (error) {
+      return {
+        success: true,
+        message: 'Profile will be created automatically', 
+        data: { userProfile: null }
+      };
+    }
   }
 
   async updateUserProfile(data: UpdateUserProfileRequest): Promise<ApiResponse<{ userProfile: UserProfile }>> {

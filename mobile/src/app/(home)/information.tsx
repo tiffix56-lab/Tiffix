@@ -12,7 +12,6 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import * as Location from 'expo-location';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { addressService } from '@/services/address.service';
 import { subscriptionService } from '@/services/subscription.service';
@@ -20,6 +19,9 @@ import { menuService } from '@/services/menu.service';
 import { Address } from '@/types/address.types';
 import { MenuItem } from '@/types/menu.types';
 import { Subscription } from '@/services/subscription.service';
+import { mapsService } from '@/services/maps.service';
+import { orderStore } from '@/utils/order-store';
+import * as Location from 'expo-location';
 
 const Information = () => {
   const { colorScheme } = useColorScheme();
@@ -32,8 +34,8 @@ const Information = () => {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   
   // Form states
-  const [currentLocation, setCurrentLocation] = useState('');
-  const [newAddress, setNewAddress] = useState('');
+  const [addressQuery, setAddressQuery] = useState('');
+  const [addressResults, setAddressResults] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [lunchTime, setLunchTime] = useState('12:00 PM');
   const [dinnerTime, setDinnerTime] = useState('08:00 PM');
@@ -42,7 +44,7 @@ const Information = () => {
   
   // UI states
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
+  const [saving, setSaving] = useState(false);
 
   // Date and Time picker states
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -78,8 +80,14 @@ const Information = () => {
       
       // Handle addresses
       if (addressResponse.success && addressResponse.data) {
-        setSavedAddresses(addressResponse.data.addresses);
-        const defaultAddress = addressResponse.data.addresses.find(addr => addr.isDefault);
+        const addresses = addressResponse.data.addresses || [];
+        // Ensure addresses have proper coordinate format
+        const validAddresses = addresses.filter(addr => 
+          addr && addr.coordinates && 
+          (addr.coordinates.coordinates || addr.coordinates.latitude !== undefined)
+        );
+        setSavedAddresses(validAddresses);
+        const defaultAddress = validAddresses.find(addr => addr.isDefault);
         if (defaultAddress) {
           setSelectedAddress(defaultAddress);
         }
@@ -87,10 +95,13 @@ const Information = () => {
       
       // Handle subscription
       if (subscriptionResponse && subscriptionResponse.success && subscriptionResponse.data) {
+        console.log('Subscription data:', JSON.stringify(subscriptionResponse.data.subscription, null, 2));
         setSelectedSubscription(subscriptionResponse.data.subscription);
-        // Set default meal timings based on subscription availability
+        // Auto-enable available meal timings
         setLunchEnabled(subscriptionResponse.data.subscription.mealTimings.isLunchAvailable);
         setDinnerEnabled(subscriptionResponse.data.subscription.mealTimings.isDinnerAvailable);
+      } else {
+        console.log('No subscription data or failed to load subscription');
       }
       
       // Handle menu
@@ -99,56 +110,94 @@ const Information = () => {
       }
       
     } catch (err) {
-      setError('Failed to load order data');
       console.error('Error fetching order data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Get current location
+  // Search places using Google Maps Autocomplete
+  const searchAddress = async (query: string) => {
+    setAddressQuery(query);
+    if (query.length < 2) {
+      setAddressResults([]);
+      return;
+    }
+    try {
+      const results = await mapsService.searchPlaces(query);
+      setAddressResults(results);
+    } catch (error) {
+      console.error('Error searching places:', error);
+    }
+  };
+
+  // Get current GPS location using Expo Location
   const getCurrentLocation = async () => {
     try {
-      // Request location permissions
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission denied',
-          'Location permission is required to get your current location.'
-        );
-        return;
-      }
+      const location = await mapsService.getCurrentLocation();
+      if (location) {
+        setAddressQuery('Getting current location...');
+        
+        // Use Expo's reverse geocoding (no API key needed)
+        const addresses = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
 
-      // Get current position
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      // Reverse geocode to get address
-      const addressResponse = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      if (addressResponse.length > 0) {
-        const address = addressResponse[0];
-        const fullAddress = [
-          address.street,
-          address.district,
-          address.city,
-          address.region,
-          address.postalCode,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        setCurrentLocation(fullAddress);
+        if (addresses.length > 0) {
+          const addr = addresses[0];
+          const currentAddress: Address = {
+            _id: 'current_' + Date.now(),
+            label: 'Current Location',
+            street: `${addr.streetNumber || ''} ${addr.street || ''}`.trim() || 'Current Location',
+            city: addr.city || 'Current Area',
+            state: addr.region || 'India',
+            zipCode: addr.postalCode || '000000',
+            isDefault: false,
+            coordinates: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude
+            }
+          };
+          
+          setSelectedAddress(currentAddress);
+          setAddressQuery(`${currentAddress.street}, ${currentAddress.city}`);
+          console.log('📍 Created current location address:', currentAddress);
+        } else {
+          throw new Error('No address data returned');
+        }
       } else {
-        setCurrentLocation(`${location.coords.latitude}, ${location.coords.longitude}`);
+        Alert.alert('Error', 'Unable to get your current location. Please search manually.');
       }
     } catch (error) {
+      setAddressQuery('');
       Alert.alert('Error', 'Unable to get your current location. Please try again.');
       console.error('Location error:', error);
+    }
+  };
+
+  // Select place from autocomplete results
+  const selectAddress = async (result: any) => {
+    try {
+      const placeDetails = await mapsService.getPlaceDetails(result.place_id);
+      if (placeDetails) {
+        const address: Address = {
+          _id: 'selected_' + Date.now(),
+          label: placeDetails.street ? 'Selected Address' : 'Current Location',
+          street: placeDetails.street,
+          city: placeDetails.city,
+          state: placeDetails.state,
+          zipCode: placeDetails.zipCode,
+          isDefault: false,
+          coordinates: placeDetails.coordinates
+        };
+        setSelectedAddress(address);
+        setAddressQuery(result.description);
+        setAddressResults([]);
+      }
+    } catch (error) {
+      console.error('Error selecting place:', error);
+      Alert.alert('Error', 'Unable to select this location. Please try again.');
     }
   };
 
@@ -202,7 +251,7 @@ const Information = () => {
         <View className="flex-row items-center">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800">
+            className="h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-zinc-800">
             <Feather
               name="arrow-left"
               size={20}
@@ -283,7 +332,7 @@ const Information = () => {
                                 : 'text-zinc-500 dark:text-zinc-400'
                             }`}
                             style={{ fontFamily: 'Poppins_400Regular' }}>
-                            {address.street}, {address.city}, {address.state} {address.zipCode}
+                            {[address.street, address.city, address.state, address.zipCode].filter(Boolean).join(', ')}
                           </Text>
                         </View>
                         <View className={`h-5 w-5 rounded-full border-2 ${
@@ -301,47 +350,55 @@ const Information = () => {
                 </View>
               )}
 
-              {/* Add New Address */}
+              {/* Address Search with Autocomplete */}
               <View className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
                 <View className="flex-row items-center">
                   <Feather
-                    name="plus-circle"
+                    name="search"
                     size={20}
                     color={colorScheme === 'dark' ? '#FFFFFF' : '#6B7280'}
                   />
                   <TextInput
                     className="ml-3 flex-1 text-base text-black dark:text-white"
-                    placeholder="Add new address"
+                    placeholder="Search for delivery address"
                     placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                    value={newAddress}
-                    onChangeText={setNewAddress}
-                    style={{ fontFamily: 'Poppins_400Regular' }}
-                  />
-                </View>
-              </View>
-
-              {/* Current Location */}
-              <View className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
-                <View className="flex-row items-center">
-                  <Feather
-                    name="map-pin"
-                    size={20}
-                    color={colorScheme === 'dark' ? '#FFFFFF' : '#6B7280'}
-                  />
-                  <TextInput
-                    className="ml-3 flex-1 text-base text-black dark:text-white"
-                    placeholder="Use current location"
-                    placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                    value={currentLocation}
-                    onChangeText={setCurrentLocation}
+                    value={addressQuery}
+                    onChangeText={searchAddress}
                     style={{ fontFamily: 'Poppins_400Regular' }}
                   />
                   <TouchableOpacity
                     onPress={getCurrentLocation}
-                    className="rounded-full bg-black p-2 dark:bg-white">
+                    className="rounded-full bg-black p-2 dark:bg-white ml-2">
                     <Feather name="navigation" size={16} color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
                   </TouchableOpacity>
                 </View>
+                
+                {/* Search Results */}
+                {addressResults.length > 0 && (
+                  <View className="mt-3 border-t border-zinc-200 dark:border-zinc-700 pt-3">
+                    <ScrollView className="max-h-40">
+                      {addressResults.map((result, index) => (
+                        <TouchableOpacity
+                          key={result.place_id}
+                          onPress={() => selectAddress(result)}
+                          className="py-2 border-b border-zinc-100 dark:border-zinc-800">
+                          <Text
+                            className="text-black dark:text-white font-medium"
+                            style={{ fontFamily: 'Poppins_500Medium' }}
+                            numberOfLines={1}>
+                            {result.structured_formatting?.main_text || result.description}
+                          </Text>
+                          <Text
+                            className="text-zinc-500 dark:text-zinc-400 text-sm"
+                            style={{ fontFamily: 'Poppins_400Regular' }}
+                            numberOfLines={1}>
+                            {result.structured_formatting?.secondary_text || ''}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -400,7 +457,7 @@ const Information = () => {
                           lunchEnabled ? 'bg-green-500' : 'bg-zinc-300 dark:bg-zinc-600'
                         }`}>
                         <View
-                          className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                          className={`h-5 w-5 rounded-full bg-white transition-transform ${
                             lunchEnabled ? 'translate-x-5' : 'translate-x-0.5'
                           } mt-0.5`}
                         />
@@ -452,7 +509,7 @@ const Information = () => {
                           dinnerEnabled ? 'bg-green-500' : 'bg-zinc-300 dark:bg-zinc-600'
                         }`}>
                         <View
-                          className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                          className={`h-5 w-5 rounded-full bg-white transition-transform ${
                             dinnerEnabled ? 'translate-x-5' : 'translate-x-0.5'
                           } mt-0.5`}
                         />
@@ -526,37 +583,108 @@ const Information = () => {
         />
       )}
 
+
+
       {/* Confirm Button */}
-      {!loading && selectedAddress && selectedDate && (lunchEnabled || dinnerEnabled) && (
+      {!loading  && (
         <View className="px-6 pb-6">
           <TouchableOpacity
-            onPress={() => {
-              const orderData = {
-                menuId: menuId as string,
-                subscriptionId: subscriptionId as string,
-                selectedMenu,
-                selectedSubscription,
-                deliveryAddress: selectedAddress,
-                deliveryDate: selectedDate,
-                lunchTime: lunchEnabled ? lunchTime : '',
-                dinnerTime: dinnerEnabled ? dinnerTime : '',
-                lunchEnabled,
-                dinnerEnabled
-              };
+            onPress={async () => {
+              console.log('🚀 Continue to Order button pressed');
+              console.log('📍 Selected Address:', selectedAddress);
+              console.log('📅 Selected Date:', selectedDate);
+              console.log('🍽️ Lunch Enabled:', lunchEnabled, 'Time:', lunchTime);
+              console.log('🍽️ Dinner Enabled:', dinnerEnabled, 'Time:', dinnerTime);
+              console.log('📋 Subscription ID:', subscriptionId);
+              console.log('🍔 Menu ID:', menuId);
               
-              router.push({
-                pathname: '/order-information',
-                params: {
-                  orderData: JSON.stringify(orderData)
-                }
-              });
+              // Use selected address (which now includes both saved addresses and searched addresses)
+              const deliveryAddress = selectedAddress;
+
+              console.log('📍 Final delivery address:', deliveryAddress);
+
+              if (!deliveryAddress || !selectedDate) {
+                console.log('❌ Missing information - Address:', !!deliveryAddress, 'Date:', !!selectedDate);
+                Alert.alert('Missing Information', 'Please select an address and delivery date.');
+                return;
+              }
+
+              // Validate address has all required fields
+              if (!deliveryAddress.label || !deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.state || !deliveryAddress.zipCode) {
+                console.log('❌ Incomplete address fields:', {
+                  label: deliveryAddress.label,
+                  street: deliveryAddress.street,
+                  city: deliveryAddress.city,
+                  state: deliveryAddress.state,
+                  zipCode: deliveryAddress.zipCode
+                });
+                Alert.alert('Incomplete Address', 'The selected address is missing required information. Please select a complete saved address or add a new one.');
+                return;
+              }
+
+              // Validate address coordinates
+              if (!deliveryAddress.coordinates || 
+                  typeof deliveryAddress.coordinates.latitude !== 'number' || 
+                  typeof deliveryAddress.coordinates.longitude !== 'number') {
+                console.log('❌ Invalid address coordinates:', deliveryAddress.coordinates);
+                Alert.alert('Invalid Address', 'Selected address is missing location data. Please select a different address.');
+                return;
+              }
+
+              if (!lunchEnabled && !dinnerEnabled) {
+                console.log('❌ No meal times enabled');
+                Alert.alert('Missing Information', 'Please enable at least one meal time.');
+                return;
+              }
+
+              try {
+                setSaving(true);
+                console.log('💾 Preparing order data...');
+                
+                const deliveryInfo = {
+                  subscriptionId: subscriptionId as string,
+                  menuId: menuId as string,
+                  deliveryAddress,
+                  deliveryDate: selectedDate,
+                  lunchTime: lunchEnabled ? lunchTime : '',
+                  dinnerTime: dinnerEnabled ? dinnerTime : '',
+                  lunchEnabled,
+                  dinnerEnabled
+                };
+                
+                console.log('📦 Delivery info payload:', deliveryInfo);
+                
+                // Skip delivery service since endpoint doesn't exist, go directly to order information
+                const orderData = {
+                  ...deliveryInfo,
+                  selectedMenu,
+                  selectedSubscription
+                };
+                
+                console.log('📋 Order data for navigation:', orderData);
+                console.log('🚀 Saving order data and navigating...');
+                
+                await orderStore.saveOrderData(orderData);
+                router.push('/(home)/order-information');
+              } catch (error) {
+                console.log('❌ Navigation error:', error);
+                Alert.alert('Error', 'Failed to proceed to order information. Please try again.');
+                console.error('Navigation error:', error);
+              } finally {
+                setSaving(false);
+              }
             }}
-            className="rounded-xl bg-black py-4 dark:bg-white">
-            <Text
-              className="text-center text-lg font-semibold text-white dark:text-black"
-              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Continue to Order
-            </Text>
+            className="rounded-xl bg-black py-4 dark:bg-white"
+            disabled={saving}>
+            {saving ? (
+              <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
+            ) : (
+              <Text
+                className="text-center text-lg font-semibold text-white dark:text-black"
+                style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                Continue to Order
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       )}

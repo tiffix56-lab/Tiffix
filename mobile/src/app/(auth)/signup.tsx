@@ -67,7 +67,7 @@ const Signup = () => {
           params: { email: data.emailAddress },
         });
       } else {
-        router.replace('/home');
+        router.replace('/(tabs)/home');
       }
     } else {
       setError(result.message);

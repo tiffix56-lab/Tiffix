@@ -10,11 +10,11 @@ export interface OrderData {
   mealTimings: {
     lunch: {
       enabled: boolean;
-      time: string;
+      time?: string;
     };
     dinner: {
       enabled: boolean;
-      time: string;
+      time?: string;
     };
   };
 }
@@ -29,18 +29,18 @@ export interface InitiatePurchaseRequest {
     state: string;
     zipCode: string;
     coordinates: {
-      type: 'Point';
-      coordinates: [number, number];
+      latitude: number;
+      longitude: number;
     };
   };
   mealTimings: {
     lunch: {
       enabled: boolean;
-      time: string;
+      time?: string;
     };
     dinner: {
       enabled: boolean;
-      time: string;
+      time?: string;
     };
   };
   startDate: string;

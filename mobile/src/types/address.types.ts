@@ -1,12 +1,13 @@
 export interface Address {
+  _id?: string;
   label: string;
   street: string;
   city: string;
   state: string;
   zipCode: string;
   coordinates: {
-    type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
+    latitude: number;
+    longitude: number;
   };
   isDefault: boolean;
 }
@@ -18,8 +19,8 @@ export interface AddAddressRequest {
   state: string;
   zipCode: string;
   coordinates?: {
-    type: 'Point';
-    coordinates: [number, number];
+    latitude: number;
+    longitude: number;
   };
   isDefault?: boolean;
 }

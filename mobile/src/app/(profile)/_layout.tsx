@@ -7,7 +7,6 @@ export default function ProfileLayout() {
         headerShown: false,
         animation: 'slide_from_right',
       }}>
-      <Stack.Screen name="profile" />
       <Stack.Screen name="edit-profile" />
       <Stack.Screen name="my-subscription" />
       <Stack.Screen name="address" />

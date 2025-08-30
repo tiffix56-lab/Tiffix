@@ -21,14 +21,22 @@
     },
     "assetBundlePatterns": ["src/assets/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.rutwik187.tiffix"
+      "package": "com.rutwik187.tiffix",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
+        }
+      }
     },
     "entryPoint": "expo-router/entry",
     "extra": {

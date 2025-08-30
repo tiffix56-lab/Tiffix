@@ -20,14 +20,18 @@ const Subscription = () => {
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
-      const response = await subscriptionService.getActiveSubscriptions();
+      const response = await subscriptionService.getActiveSubscriptions({ limit: 50 });
       
       if (response.success && response.data) {
-        const activeSubscriptions = response.data.subscriptions.filter(sub => sub.isActive);
-        setSubscriptions(activeSubscriptions);
+        const subscriptions = response.data.subscriptions;
+        console.log('Fetched subscriptions:', subscriptions);
+        setSubscriptions(subscriptions);
         // Auto-select first subscription
-        if (activeSubscriptions.length > 0) {
-          setSelectedPlan(activeSubscriptions[0]._id);
+        if (subscriptions.length > 0) {
+          setSelectedPlan(subscriptions[0]._id);
+        } else {
+          console.log('No subscriptions found');
+          setError('No subscription plans available');
         }
       } else {
         setError(response.message || 'Failed to load subscription plans');
@@ -308,7 +312,7 @@ const Subscription = () => {
         <View className="px-6 pb-6">
           <TouchableOpacity
             onPress={() => router.push({
-              pathname: '/information',
+              pathname: '/(home)/information',
               params: {
                 subscriptionId: selectedPlan,
                 menuId: menuId || ''

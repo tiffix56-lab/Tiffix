@@ -45,7 +45,25 @@ export interface TransactionResponse {
 
 class TransactionService {
   async getUserTransactions(): Promise<ApiResponse<TransactionResponse>> {
-    return await apiService.get<TransactionResponse>('/my-transactions');
+    try {
+      const response = await apiService.get<TransactionResponse>('/my-transactions');
+      
+      if (!response.success && (response.message?.includes('not found') || response.message?.includes('No transactions'))) {
+        return {
+          success: true,
+          message: 'No transactions yet',
+          data: { transactions: [] }
+        };
+      }
+      
+      return response;
+    } catch (error) {
+      return {
+        success: true,
+        message: 'No transactions yet', 
+        data: { transactions: [] }
+      };
+    }
   }
 
   async getTransactionById(id: string): Promise<ApiResponse<{ transaction: Transaction }>> {

@@ -10,6 +10,7 @@ export default function HomeLayout() {
       <Stack.Screen name="meal-details" />
       <Stack.Screen name="order-confirmed" />
       <Stack.Screen name="order-information" />
+      <Stack.Screen name="payment" />
       <Stack.Screen name="vendor-food" />
       <Stack.Screen name="home-chef" />
       <Stack.Screen name="information" />
