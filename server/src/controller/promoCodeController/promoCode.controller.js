@@ -56,7 +56,8 @@ export default {
                 message: 'Promo code created successfully'
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -133,7 +134,8 @@ export default {
                 }
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -160,7 +162,8 @@ export default {
                 remainingUses: stats.remainingUses
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -211,7 +214,8 @@ export default {
                 message: 'Promo code updated successfully'
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -235,7 +239,8 @@ export default {
                 message: 'Promo code deleted successfully'
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -256,7 +261,8 @@ export default {
                 message: `Promo code ${promoCode.isActive ? 'activated' : 'deactivated'} successfully`
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -297,7 +303,8 @@ export default {
                 }
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -310,7 +317,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, stats)
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -328,7 +336,8 @@ export default {
                 daysThreshold: parseInt(days)
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -359,7 +368,8 @@ export default {
                 message: `${createdPromoCodes.length} promo codes created successfully`
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 }

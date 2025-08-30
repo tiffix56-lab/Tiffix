@@ -17,7 +17,8 @@ export default {
         try {
             httpResponse(req, res, 200, responseMessage.SUCCESS);
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -40,7 +41,7 @@ export default {
             const isPasswordValid = await user.comparePassword(password);
 
             if (!isPasswordValid) {
-                return httpError(next, new Error(responseMessage.AUTH.PASSWORD_NOT_MATCH), req, 401);
+                return httpError(next, new Error(responseMessage.customMessage("Invalid Credentials")), req, 401);
             }
 
             if (!user.isAccountConfirmed()) {
@@ -75,7 +76,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -165,7 +167,8 @@ export default {
                 requiresVerification: true
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -174,7 +177,8 @@ export default {
             res.clearCookie('accessToken');
             httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Logged out successfully' });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -205,7 +209,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Password changed successfully' });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -286,7 +291,8 @@ export default {
                 accessToken
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -323,7 +329,8 @@ export default {
                 message: 'New verification code sent to your email'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -363,7 +370,8 @@ export default {
                 message: 'Password reset code sent to your email'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -398,7 +406,8 @@ export default {
                 message: 'Password reset successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -423,7 +432,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -468,7 +478,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -502,7 +513,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -513,7 +525,8 @@ export default {
                 message: "Failed Authentication"
             })
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -564,7 +577,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -605,7 +619,7 @@ export default {
             if (userProfile) {
                 // Check if user has no default address or no addresses at all
                 const hasDefaultAddress = userProfile.addresses && userProfile.addresses.some(addr => addr.isDefault);
-                
+
                 if (!hasDefaultAddress || userProfile.addresses.length === 0) {
                     // Create a new address from location data and mark as default
                     const newAddress = {
@@ -647,7 +661,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };

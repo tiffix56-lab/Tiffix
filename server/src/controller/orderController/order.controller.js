@@ -83,7 +83,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -145,7 +146,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -206,7 +208,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -280,7 +283,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -304,6 +308,32 @@ export default {
             const order = await Order.findById(orderId);
             if (!order) {
                 return httpError(next, new Error(responseMessage.ERROR.NOT_FOUND('Order')), req, 404);
+            }
+
+            // Check if order is in a final state (cannot be updated)
+            const finalStates = [EOrderStatus.SKIPPED, EOrderStatus.CANCELLED];
+            if (finalStates.includes(order.status)) {
+                return httpError(next, new Error(`Cannot update order status. Order is already ${order.status}.`), req, 400);
+            }
+
+            // Prevent setting order to final states through this endpoint
+            if (finalStates.includes(status)) {
+                return httpError(next, new Error(`Cannot set order status to ${status}. Use skipOrder or cancelOrder endpoints instead.`), req, 400);
+            }
+
+            // Validate logical status progression (prevent going backwards in delivery flow)
+            const statusProgression = {
+                [EOrderStatus.UPCOMING]: [EOrderStatus.PREPARING],
+                [EOrderStatus.PREPARING]: [EOrderStatus.OUT_FOR_DELIVERY],
+                [EOrderStatus.OUT_FOR_DELIVERY]: [EOrderStatus.DELIVERED],
+                [EOrderStatus.DELIVERED]: [] // Final state, no progression allowed
+            };
+
+            if (order.status !== status) {
+                const allowedNextStates = statusProgression[order.status] || [];
+                if (!allowedNextStates.includes(status)) {
+                    return httpError(next, new Error(`Invalid status transition from ${order.status} to ${status}. Allowed transitions: ${allowedNextStates.join(', ') || 'none'}.`), req, 400);
+                }
             }
 
             // Vendors can only update their own orders
@@ -334,7 +364,8 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, { order: updatedOrder });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -415,7 +446,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -450,7 +482,8 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, { order: updatedOrder });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -509,7 +542,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };

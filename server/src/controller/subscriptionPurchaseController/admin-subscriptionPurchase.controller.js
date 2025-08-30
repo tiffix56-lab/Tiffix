@@ -306,7 +306,7 @@ export default {
                 .populate('vendorDetails.vendorsAssignedHistory.assignedBy', 'name');
 
             if (!subscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             // Get related vendor assignment requests

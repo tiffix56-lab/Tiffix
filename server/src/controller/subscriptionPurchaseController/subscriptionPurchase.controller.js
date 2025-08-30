@@ -40,7 +40,7 @@ export default {
 
             const subscription = await Subscription.findById(subscriptionId);
             if (!subscription || !subscription.isActive) {
-                return httpError(next, 'Subscription plan not found or inactive', req, 404);
+                return httpError(next, new Error('Subscription plan not found or inactive'), req, 404);
             }
             console.log("Delivery");
 
@@ -164,7 +164,7 @@ export default {
                     discountApplied = promoResult.discountAmount;
                     promoCodeData = promoResult.promoCode;
                 } catch (error) {
-                    return httpError(next, error.message, req, 400);
+                    return httpError(next, new Error(error.message), req, 400);
                 }
             }
 
@@ -174,7 +174,7 @@ export default {
 
             const today = TimezoneUtil.startOfDay();
             if (TimezoneUtil.startOfDay(subscriptionStartDate) < today) {
-                return httpError(next, 'Subscription start date cannot be in the past', req, 400);
+                return httpError(next, new Error('Subscription start date cannot be in the past'), req, 400);
             }
 
             const subscriptionEndDate = TimezoneUtil.addDays(subscription.durationDays, subscriptionStartDate);
@@ -508,7 +508,7 @@ export default {
                 .populate('transactionId', 'amount paymentId completedAt');
 
             if (!userSubscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             // Get vendor assignment history if available
@@ -561,11 +561,11 @@ export default {
             });
 
             if (!userSubscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             if (userSubscription.status !== 'active') {
-                return httpError(next, 'Only active subscriptions can be cancelled', req, 400);
+                return httpError(next, new Error('Only active subscriptions can be cancelled'), req, 400);
             }
 
             // Check if cancellation is allowed (e.g., within 24 hours of purchase) using IST
@@ -575,7 +575,7 @@ export default {
             const hoursDiff = timeDiff / (1000 * 60 * 60);
 
             if (hoursDiff > 24) {
-                return httpError(next, 'Subscription can only be cancelled within 24 hours of purchase', req, 400);
+                return httpError(next, new Error('Subscription can only be cancelled within 24 hours of purchase'), req, 400);
             }
 
             // Cancel the subscription (using IST)

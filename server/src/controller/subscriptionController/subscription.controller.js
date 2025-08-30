@@ -52,7 +52,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while fetching active subscriptions';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -66,7 +67,7 @@ export default {
             }).select('planName duration durationDays mealTimings mealsPerPlan userSkipMealPerPlan originalPrice discountedPrice category freeDelivery description features terms');
 
             if (!subscription) {
-                return httpError(next, 'Subscription not found or inactive', req, 404);
+                return httpError(next, new Error('Subscription not found or inactive'), req, 404);
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
@@ -74,7 +75,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while fetching subscription for user';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
     // Create new subscription plan (Admin only)
@@ -105,7 +107,7 @@ export default {
 
             const existingSubscription = await Subscription.findOne({ planName });
             if (existingSubscription) {
-                return httpError(next, 'Subscription plan with this name already exists', req, 409);
+                return httpError(next, new Error('Subscription plan with this name already exists'), req, 409);
             }
 
             const newSubscription = new Subscription({
@@ -133,7 +135,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while creating subscription';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -195,7 +198,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while fetching all subscriptions';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -208,7 +212,7 @@ export default {
                 .populate('planMenus', 'foodTitle foodImage price category vendorType');
 
             if (!subscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
@@ -216,7 +220,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while fetching subscription by ID';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -231,7 +236,7 @@ export default {
 
             const subscription = await Subscription.findById(subscriptionId);
             if (!subscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             if (req.body.planName && req.body.planName !== subscription.planName) {
@@ -240,7 +245,7 @@ export default {
                     _id: { $ne: subscriptionId }
                 });
                 if (existingSubscription) {
-                    return httpError(next, 'Subscription plan with this name already exists', req, 409);
+                    return httpError(next, new Error('Subscription plan with this name already exists'), req, 409);
                 }
             }
 
@@ -268,7 +273,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while updating subscription';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -279,7 +285,7 @@ export default {
 
             const subscription = await Subscription.findById(subscriptionId);
             if (!subscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             const activePurchases = await UserSubscription.countDocuments({
@@ -288,7 +294,7 @@ export default {
             });
 
             if (activePurchases > 0) {
-                return httpError(next, 'Cannot delete subscription with active purchases', req, 400);
+                return httpError(next, new Error('Cannot delete subscription with active purchases'), req, 400);
             }
 
             await Subscription.findByIdAndDelete(subscriptionId);
@@ -296,7 +302,8 @@ export default {
             httpResponse(req, res, 200, responseMessage.customMessage("Subscription Deleted"));
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while deleting subscription';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -307,7 +314,7 @@ export default {
 
             const subscription = await Subscription.findById(subscriptionId);
             if (!subscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             subscription.isActive = !subscription.isActive;
@@ -322,7 +329,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while toggling subscription status';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -376,7 +384,8 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            const errorMessage = error.message || 'Internal server error while fetching subscription statistics';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };
