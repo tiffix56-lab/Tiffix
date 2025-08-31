@@ -17,19 +17,25 @@ export default {
                 return httpError(next, new Error('Referral code is required'), req, 400);
             }
 
+            // Validate referral code format
+            if (referralCode.length < 6 || referralCode.length > 10) {
+                return httpError(next, new Error('Invalid referral code format'), req, 400);
+            }
 
-            const referrer = await User.findOne({
-                'referral.userReferralCode': referralCode.toUpperCase()
-            }).select('name');
+            const validationResult = await referralService.validateReferralCode(referralCode);
 
-            if (!referrer) {
-                return httpError(next, new Error('Invalid referral code'), req, 404);
+            if (!validationResult.valid) {
+                return httpError(next, new Error(validationResult.message), req, 404);
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 valid: true,
-                referrerName: referrer.name,
-                message: 'Valid referral code'
+                referrerName: validationResult.referrerName,
+                message: validationResult.message,
+                rewards: {
+                    newUserBonus: 100,
+                    referrerBonus: 50
+                }
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
@@ -42,12 +48,18 @@ export default {
      */
     generateReferralLink: async (req, res, next) => {
         try {
-            const { userId } = req.authenticatedUser;
+            const { userId, role } = req.authenticatedUser;
+
+            // Check if user can generate referral links
+            if (role !== 'USER') {
+                return httpError(next, new Error('Only regular users can generate referral links'), req, 403);
+            }
 
             const referralData = await referralService.generateReferralLink(userId);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                referralData
+                success: true,
+                ...referralData
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
@@ -60,12 +72,14 @@ export default {
      */
     getReferralStats: async (req, res, next) => {
         try {
-            const { userId } = req.authenticatedUser;
+            const { userId, role } = req.authenticatedUser;
 
             const stats = await referralService.getReferralStats(userId);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                referralStats: stats
+                success: true,
+                userRole: role,
+                ...stats
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
@@ -74,16 +88,21 @@ export default {
     },
 
     /**
-     * Get referral leaderboard
+     * Get referral leaderboard (Public for motivation)
      */
     getReferralLeaderboard: async (req, res, next) => {
         try {
             const { limit = 10 } = req.query;
+            const limitNumber = Math.min(parseInt(limit) || 10, 50); // Max 50 entries
 
-            const leaderboard = await referralService.getReferralLeaderboard(parseInt(limit));
+            const leaderboard = await referralService.getReferralLeaderboard(limitNumber);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                leaderboard
+                success: true,
+                leaderboard,
+                totalEntries: leaderboard.length,
+                limit: limitNumber,
+                lastUpdated: new Date().toISOString()
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
@@ -151,7 +170,6 @@ export default {
                         emailAddress: 1,
                         'referral.userReferralCode': 1,
                         'referral.totalreferralCredits': 1,
-                        'referral.referralCreditsUsed': 1,
                         totalReferrals: 1,
                         successfulReferrals: 1,
                         createdAt: 1
@@ -182,7 +200,6 @@ export default {
                             $sum: { $cond: [{ $gt: ['$referral.totalreferralCredits', 0] }, 1, 0] }
                         },
                         totalCreditsAwarded: { $sum: '$referral.totalreferralCredits' },
-                        totalCreditsUsed: { $sum: '$referral.referralCreditsUsed' },
                         totalReferrals: {
                             $sum: { $cond: [{ $ne: ['$referral.referredBy', null] }, 1, 0] }
                         },
@@ -233,7 +250,6 @@ export default {
                     totalUsers: 0,
                     totalReferrers: 0,
                     totalCreditsAwarded: 0,
-                    totalCreditsUsed: 0,
                     totalReferrals: 0,
                     avgCreditsPerReferrer: 0,
                     avgReferralsPerUser: 0
@@ -254,5 +270,111 @@ export default {
             const errorMessage = err.message || 'Internal server error';
             httpError(next, new Error(errorMessage), req, 500);
         }
-    }
+    },
+
+    /**
+     * Get system-wide referral statistics (Admin only)
+     */
+    getSystemReferralStats: async (req, res, next) => {
+        try {
+            const systemStats = await referralService.getSystemReferralStats();
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                success: true,
+                systemStats,
+                generatedAt: new Date().toISOString()
+            });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    /**
+     * Disable user referral capability (Admin only)
+     */
+    disableUserReferrals: async (req, res, next) => {
+        try {
+            const { userId } = req.params;
+            const { reason } = req.body;
+
+            if (!userId) {
+                return httpError(next, new Error('User ID is required'), req, 400);
+            }
+
+            const result = await referralService.disableUserReferrals(userId, reason);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                success: true,
+                message: result.message,
+                userId,
+                disabledBy: req.authenticatedUser.userId,
+                reason: reason || 'No reason provided',
+                timestamp: new Date().toISOString()
+            });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    /**
+     * Enable user referral capability (Admin only)
+     */
+    enableUserReferrals: async (req, res, next) => {
+        try {
+            const { userId } = req.params;
+
+            if (!userId) {
+                return httpError(next, new Error('User ID is required'), req, 400);
+            }
+
+            const result = await referralService.enableUserReferrals(userId);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                success: true,
+                message: result.message,
+                userId,
+                enabledBy: req.authenticatedUser.userId,
+                timestamp: new Date().toISOString()
+            });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    /**
+     * Process referral reward manually (Admin only)
+     */
+    processReferralReward: async (req, res, next) => {
+        try {
+            const { userId } = req.params;
+            const { subscriptionAmount } = req.body;
+
+            if (!userId) {
+                return httpError(next, new Error('User ID is required'), req, 400);
+            }
+
+            const result = await referralService.processReferralReward(userId, subscriptionAmount);
+
+            if (!result.success) {
+                return httpError(next, new Error(result.message), req, 400);
+            }
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                success: true,
+                message: result.message,
+                referrerCredits: result.referrerCredits,
+                newUserCredits: result.newUserCredits,
+                referrerName: result.referrerName,
+                processedBy: req.authenticatedUser.userId,
+                timestamp: new Date().toISOString()
+            });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
 };

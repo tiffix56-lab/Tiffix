@@ -186,6 +186,19 @@ export const ValidateReferralCode = Joi.object({
 });
 
 
+export const ValidateProcessReferralReward = Joi.object({
+    subscriptionAmount: Joi.number().positive().optional()
+});
+
+export const ValidateDisableUserReferrals = Joi.object({
+    reason: Joi.string().min(5).max(500).trim().optional()
+});
+
+export const ValidateReferralLeaderboardQuery = Joi.object({
+    limit: Joi.number().positive().max(50).optional()
+});
+
+
 
 /**
  * ************ MENU VALIDATION ***********************

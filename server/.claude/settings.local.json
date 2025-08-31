@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(D:\\11_Freelancing\\14_Tiffix\\apis/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

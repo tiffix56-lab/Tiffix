@@ -128,7 +128,9 @@ export default {
                     timestamp: TimezoneUtil.now()
                 },
                 referral: {
-                    userReferralCode: quicker.generateReferralCode()
+                    userReferralCode: await userModel.generateUniqueReferralCode(),
+                    referralCodeGeneratedAt: TimezoneUtil.now(),
+                    canRefer: true
                 }
             };
 
@@ -255,6 +257,19 @@ export default {
                 console.warn('User profile creation failed:', profileError.message);
             }
 
+            // Process referral rewards after email verification
+            let referralRewardMessage = '';
+            if (user.referral.referredBy && !user.referral.isReferralUsed) {
+                try {
+                    const referralResult = await referralService.processReferralReward(user._id);
+                    if (referralResult.success) {
+                        referralRewardMessage = ` 🎉 Referral bonus: You got ${referralResult.newUserCredits} credits and your referrer got ${referralResult.referrerCredits} credits!`;
+                    }
+                } catch (referralError) {
+                    console.warn('Referral reward processing failed:', referralError.message);
+                }
+            }
+
             try {
                 await emailService.sendWelcomeEmail(user.emailAddress, user.name, user.role);
             } catch (emailError) {
@@ -280,15 +295,18 @@ export default {
             });
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: 'Email verified successfully!',
+                message: `Email verified successfully!${referralRewardMessage}`,
                 user: {
                     id: user._id,
                     email: user.emailAddress,
                     name: user.name,
                     role: user.role,
-                    isAccountConfirmed: true
+                    isAccountConfirmed: true,
+                    referralCode: user.referral.userReferralCode,
+                    canRefer: user.referral.canRefer
                 },
-                accessToken
+                accessToken,
+                hasReferralReward: !!referralRewardMessage
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';

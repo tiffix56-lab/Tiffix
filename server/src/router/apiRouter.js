@@ -75,15 +75,20 @@ router.route('/user-profiles/preferences').patch(authentication, userProfileCont
 
 
 // ############### REFERRAL ROUTES ####################
+// Public referral routes
 router.route('/referral/validate/:referralCode').get(referralController.validateReferralCode)
+router.route('/referral/leaderboard').get(referralController.getReferralLeaderboard)
 
 // User referral routes
-router.route('/referral/generate-link').get(authentication, referralController.generateReferralLink)
+router.route('/referral/generate-link').get(authentication, authorization([EUserRole.USER]), referralController.generateReferralLink)
 router.route('/referral/stats').get(authentication, referralController.getReferralStats)
 
 // Admin referral routes
 router.route('/admin/referral/analytics').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralAnalytics)
-router.route('/admin/referral/leaderboard').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralLeaderboard)
+router.route('/admin/referral/system-stats').get(authentication, authorization([EUserRole.ADMIN]), referralController.getSystemReferralStats)
+router.route('/admin/referral/users/:userId/disable').post(authentication, authorization([EUserRole.ADMIN]), referralController.disableUserReferrals)
+router.route('/admin/referral/users/:userId/enable').post(authentication, authorization([EUserRole.ADMIN]), referralController.enableUserReferrals)
+router.route('/admin/referral/users/:userId/process-reward').post(authentication, authorization([EUserRole.ADMIN]), referralController.processReferralReward)
 
 
 // ############### MENU ROUTES ####################
