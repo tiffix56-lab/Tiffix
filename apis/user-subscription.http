@@ -15,6 +15,7 @@ Authorization: Bearer {{accessToken}}
 
 {
   "subscriptionId": "68b2ba105d778fa67180c131",
+  "promoCode":"WELCOME100",
   "deliveryAddress": {
     "street": "789 Pine St",
     "city": "Mumbai",

@@ -156,6 +156,36 @@ class EmailService {
         }
     }
 
+    async sendWelcomeReferralEmail(email, name, credits, referrerName) {
+        if (config.env !== EApplicationEnvironment.PRODUCTION) {
+            logger.info("YOUR IN THE DEVELOPMENT MODE", {
+                message: "Welcome referral email sent successfully"
+            })
+            return { success: true, messageId: "00000" };
+        }
+        try {
+            const html = this.generateWelcomeReferralEmailTemplate(name, credits, referrerName);
+
+            const mailOptions = {
+                from: config.email.from,
+                to: email,
+                subject: config.email.templates.welcomeReferralSubject,
+                html: html
+            };
+
+            const result = await transporter.sendMail(mailOptions);
+
+            logger.info(`Welcome referral email sent to ${email}`, { messageId: result.messageId });
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            logger.error('Failed to send welcome referral email', {
+                email,
+                error: error.message
+            });
+            throw new Error('Failed to send welcome referral email');
+        }
+    }
+
 
     async sendVendorVerificationEmail(email, name, businessName, isApproved) {
         if (config.env !== EApplicationEnvironment.PRODUCTION) {
@@ -345,6 +375,58 @@ class EmailService {
                     </div>
                     <p>These credits have been added to your account and can be used for future purchases.</p>
                     <p>Keep sharing your referral code to earn more rewards!</p>
+                </div>
+                <div class="footer">
+                    <p>&copy; 2024 Tiffin Management System. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
+    }
+
+    generateWelcomeReferralEmailTemplate(name, credits, referrerName) {
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Welcome & Referral Bonus</title>
+            <style>
+                .container { max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; }
+                .header { background: #FF6B35; color: white; padding: 20px; text-align: center; }
+                .content { padding: 30px; background: #f9f9f9; }
+                .welcome-box { background: #FF6B35; color: white; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0; }
+                .bonus-box { background: #28a745; color: white; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0; }
+                .cta-button { background: #FF6B35; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0; }
+                .footer { padding: 20px; text-align: center; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🍽️ Welcome to Tiffin Management System!</h1>
+                </div>
+                <div class="content">
+                    <h2>Hello ${name}!</h2>
+                    <div class="welcome-box">
+                        <h3>Welcome aboard! 🎉</h3>
+                        <p>Thanks for joining us through ${referrerName}'s referral!</p>
+                    </div>
+                    <p>We're excited to have you as part of our community! As a new member, you can:</p>
+                    <ul>
+                        <li>Browse delicious homemade tiffin options</li>
+                        <li>Subscribe to meal plans that fit your needs</li>
+                        <li>Enjoy fresh food delivered to your doorstep</li>
+                        <li>Refer friends and earn more credits</li>
+                    </ul>
+                    <div class="bonus-box">
+                        <h3>🎁 Referral Bonus: ${credits} Credits Added!</h3>
+                        <p>Use these credits on your first order!</p>
+                    </div>
+                    <p>Ready to explore delicious meal options? Click below to get started:</p>
+                    <a href="${config.client.url}" class="cta-button">Start Exploring</a>
+                    <p><small>Pro tip: Complete your first subscription to unlock more benefits and help ${referrerName} earn their referral bonus too!</small></p>
                 </div>
                 <div class="footer">
                     <p>&copy; 2024 Tiffin Management System. All rights reserved.</p>

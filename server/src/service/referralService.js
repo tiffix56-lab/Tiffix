@@ -3,10 +3,11 @@ import UserProfile from '../models/userProfile.model.js';
 import emailService from './emailService.js';
 import logger from '../util/logger.js';
 import quicker from '../util/quicker.js';
+import config from '../config/config.js';
 
 class ReferralService {
 
-    async processReferralReward(userId, subscriptionAmount) {
+    async processReferralReward(userId, subscriptionAmount = null) {
         try {
             const user = await User.findById(userId);
             if (!user) {
@@ -25,30 +26,47 @@ class ReferralService {
                 return { success: false, message: 'Referrer not found' };
             }
 
-            // Calculate credits to award
-            const creditsToAward = quicker.calculateReferralCredits(subscriptionAmount);
+            // Check if referrer can still refer (only USER role can refer)
+            if (!referrer.referral.canRefer || referrer.role !== 'USER') {
+                logger.warn(`Referrer cannot refer anymore: ${referrer._id}`);
+                return { success: false, message: 'Referrer is not eligible to receive rewards' };
+            }
 
-            // Update referrer's credits
-            referrer.referral.totalreferralCredits += creditsToAward;
+            // Enhanced reward system: 50 points for referrer, 100 points for new user
+            const referrerCredits = 50;
+            const newUserCredits = 100;
+
+            // Update referrer's credits and stats
+            referrer.referral.totalreferralCredits += referrerCredits;
+            referrer.referral.referralStats.successfulReferrals += 1;
+            referrer.referral.referralStats.pendingReferrals = Math.max(0, referrer.referral.referralStats.pendingReferrals - 1);
             await referrer.save();
 
             // Update referrer's profile credits
             const referrerProfile = await UserProfile.findOne({ userId: referrer._id });
             if (referrerProfile) {
-                referrerProfile.credits += creditsToAward;
+                referrerProfile.credits += referrerCredits;
                 await referrerProfile.save();
             }
 
-            // Mark referral as used
+            // Update new user's credits
+            const newUserProfile = await UserProfile.findOne({ userId: user._id });
+            if (newUserProfile) {
+                newUserProfile.credits += newUserCredits;
+                await newUserProfile.save();
+            }
+
+            // Mark referral as used and update timestamp
             user.referral.isReferralUsed = true;
+            user.referral.referralUsedAt = new Date();
             await user.save();
 
-            // Send notification email to referrer
+            // Send notification emails
             try {
                 await emailService.sendReferralRewardEmail(
                     referrer.emailAddress,
                     referrer.name,
-                    creditsToAward,
+                    referrerCredits,
                     user.name
                 );
             } catch (emailError) {
@@ -58,18 +76,34 @@ class ReferralService {
                 });
             }
 
+            try {
+                await emailService.sendWelcomeReferralEmail(
+                    user.emailAddress,
+                    user.name,
+                    newUserCredits,
+                    referrer.name
+                );
+            } catch (emailError) {
+                logger.error('Failed to send welcome referral email', {
+                    userId: user._id,
+                    error: emailError.message
+                });
+            }
+
             logger.info('Referral reward processed successfully', {
                 userId,
                 referrerId: referrer._id,
-                creditsAwarded: creditsToAward,
+                referrerCredits,
+                newUserCredits,
                 subscriptionAmount
             });
 
             return {
                 success: true,
-                creditsAwarded: creditsToAward,
+                referrerCredits,
+                newUserCredits,
                 referrerName: referrer.name,
-                message: 'Referral reward processed successfully'
+                message: 'Referral rewards processed successfully'
             };
 
         } catch (error) {
@@ -86,9 +120,7 @@ class ReferralService {
     async validateAndLinkReferral(referralCode, newUserId) {
         try {
             // Find the referrer by referral code
-            const referrer = await User.findOne({
-                'referral.userReferralCode': referralCode.toUpperCase()
-            });
+            const referrer = await User.findByReferralCode(referralCode);
 
             if (!referrer) {
                 return {
@@ -97,11 +129,27 @@ class ReferralService {
                 };
             }
 
+            // Check if referrer can refer (only USER role can refer)
+            if (!referrer.referral.canRefer || referrer.role !== 'USER') {
+                return {
+                    success: false,
+                    message: 'This referral code is not valid for referrals'
+                };
+            }
+
+            // Check if referrer is active and not banned
+            if (!referrer.isActive || referrer.isBanned) {
+                return {
+                    success: false,
+                    message: 'This referral code is no longer active'
+                };
+            }
+
             // Check if user is trying to refer themselves
             if (referrer._id.toString() === newUserId) {
                 return {
                     success: false,
-                    message: 'Cannot use your own referral code'
+                    message: 'You cannot use your own referral code'
                 };
             }
 
@@ -115,7 +163,7 @@ class ReferralService {
             if (newUser.referral.referredBy) {
                 return {
                     success: false,
-                    message: 'Referral code already used'
+                    message: 'You have already used a referral code'
                 };
             }
 
@@ -123,6 +171,11 @@ class ReferralService {
             newUser.referral.referredBy = referrer._id;
             newUser.referral.usedReferralCode = referralCode.toUpperCase();
             await newUser.save();
+
+            // Update referrer's stats
+            referrer.referral.referralStats.totalReferrals += 1;
+            referrer.referral.referralStats.pendingReferrals += 1;
+            await referrer.save();
 
             logger.info('Referral linked successfully', {
                 newUserId,
@@ -133,7 +186,7 @@ class ReferralService {
             return {
                 success: true,
                 referrerName: referrer.name,
-                message: 'Referral code applied successfully'
+                message: 'Referral code applied successfully! You will receive bonus credits upon verification.'
             };
 
         } catch (error) {
@@ -149,38 +202,64 @@ class ReferralService {
 
     async getReferralStats(userId) {
         try {
-            const user = await User.findById(userId);
+            const user = await User.findById(userId).populate({
+                path: 'referral.referredBy',
+                select: 'name emailAddress'
+            });
+
             if (!user) {
                 throw new Error('User not found');
             }
 
-            // Count referred users
+            // Check if user can refer
+            const canRefer = user.referral.canRefer && user.role === 'USER';
+
+            // Count referred users with detailed info
             const referredUsers = await User.find({
                 'referral.referredBy': userId
-            }).select('name emailAddress referral.isReferralUsed createdAt');
+            }).select('name emailAddress referral.isReferralUsed referral.referralUsedAt createdAt').sort({ createdAt: -1 });
 
             // Count successful referrals (users who made purchases)
             const successfulReferrals = referredUsers.filter(u => u.referral.isReferralUsed);
+            const pendingReferrals = referredUsers.filter(u => !u.referral.isReferralUsed);
 
             // Calculate total earnings
             const totalCreditsEarned = user.referral.totalreferralCredits;
-            const creditsUsed = user.referral.referralCreditsUsed;
-            const availableCredits = totalCreditsEarned - creditsUsed;
+            const availableCredits = totalCreditsEarned;
+
+            // Calculate this month's referrals
+            const currentMonth = new Date();
+            currentMonth.setDate(1);
+            currentMonth.setHours(0, 0, 0, 0);
+
+            const thisMonthReferrals = referredUsers.filter(u => new Date(u.createdAt) >= currentMonth);
 
             return {
-                referralCode: user.referral.userReferralCode,
+                canRefer,
+                referralCode: user.referral.userReferralCode || null,
+                referralCodeGeneratedAt: user.referral.referralCodeGeneratedAt,
                 totalReferrals: referredUsers.length,
                 successfulReferrals: successfulReferrals.length,
-                pendingReferrals: referredUsers.length - successfulReferrals.length,
+                pendingReferrals: pendingReferrals.length,
+                thisMonthReferrals: thisMonthReferrals.length,
                 totalCreditsEarned,
-                creditsUsed,
                 availableCredits,
-                referredUsers: referredUsers.map(u => ({
+                referredBy: user.referral.referredBy ? {
+                    name: user.referral.referredBy.name,
+                    email: user.referral.referredBy.emailAddress,
+                    usedReferralCode: user.referral.usedReferralCode,
+                    isReferralUsed: user.referral.isReferralUsed,
+                    referralUsedAt: user.referral.referralUsedAt
+                } : null,
+                recentReferrals: referredUsers.slice(0, 10).map(u => ({
                     name: u.name,
                     email: u.emailAddress,
                     joinedAt: u.createdAt,
-                    hasUsedReferral: u.referral.isReferralUsed
-                }))
+                    hasUsedReferral: u.referral.isReferralUsed,
+                    referralUsedAt: u.referral.referralUsedAt,
+                    status: u.referral.isReferralUsed ? 'completed' : 'pending'
+                })),
+                conversionRate: referredUsers.length > 0 ? ((successfulReferrals.length / referredUsers.length) * 100).toFixed(2) + '%' : '0%'
             };
 
         } catch (error) {
@@ -195,108 +274,19 @@ class ReferralService {
 
     async getReferralLeaderboard(limit = 10) {
         try {
-            const topReferrers = await User.aggregate([
-                {
-                    $match: {
-                        'referral.totalreferralCredits': { $gt: 0 }
-                    }
-                },
-                {
-                    $project: {
-                        name: 1,
-                        'referral.totalreferralCredits': 1,
-                        'referral.userReferralCode': 1
-                    }
-                },
-                {
-                    $sort: { 'referral.totalreferralCredits': -1 }
-                },
-                {
-                    $limit: limit
-                }
-            ]);
+            const leaderboard = await User.getReferralLeaderboard(limit);
 
-            // Get referral counts for each user
-            const leaderboard = await Promise.all(
-                topReferrers.map(async (user) => {
-                    const referralCount = await User.countDocuments({
-                        'referral.referredBy': user._id
-                    });
-
-                    const successfulReferrals = await User.countDocuments({
-                        'referral.referredBy': user._id,
-                        'referral.isReferralUsed': true
-                    });
-
-                    return {
-                        name: user.name,
-                        referralCode: user.referral.userReferralCode,
-                        totalReferrals: referralCount,
-                        successfulReferrals,
-                        totalCreditsEarned: user.referral.totalreferralCredits
-                    };
-                })
-            );
-
-            return leaderboard;
+            return leaderboard.map(user => ({
+                name: user.name,
+                referralCode: user.referral.userReferralCode,
+                totalReferrals: user.totalReferrals,
+                successfulReferrals: user.successfulReferrals,
+                totalCreditsEarned: user.referral.totalreferralCredits,
+                joinedAt: user.createdAt
+            }));
 
         } catch (error) {
             logger.error('Error getting referral leaderboard', {
-                error: error.message
-            });
-            throw error;
-        }
-    }
-
-
-    async useReferralCredits(userId, creditsToUse) {
-        try {
-            const user = await User.findById(userId);
-            if (!user) {
-                throw new Error('User not found');
-            }
-
-            const userProfile = await UserProfile.findOne({ userId });
-            if (!userProfile) {
-                throw new Error('User profile not found');
-            }
-
-            const availableCredits = user.referral.totalreferralCredits - user.referral.referralCreditsUsed;
-
-            if (creditsToUse > availableCredits) {
-                return {
-                    success: false,
-                    message: 'Insufficient referral credits',
-                    availableCredits
-                };
-            }
-
-            // Deduct credits from user's referral account
-            user.referral.referralCreditsUsed += creditsToUse;
-            await user.save();
-
-            // Add credits to user's profile (they can be used like regular credits)
-            userProfile.credits += creditsToUse;
-            await userProfile.save();
-
-            logger.info('Referral credits used successfully', {
-                userId,
-                creditsUsed: creditsToUse,
-                remainingReferralCredits: availableCredits - creditsToUse
-            });
-
-            return {
-                success: true,
-                creditsUsed: creditsToUse,
-                remainingReferralCredits: availableCredits - creditsToUse,
-                newTotalCredits: userProfile.credits,
-                message: 'Referral credits applied successfully'
-            };
-
-        } catch (error) {
-            logger.error('Error using referral credits', {
-                userId,
-                creditsToUse,
                 error: error.message
             });
             throw error;
@@ -311,20 +301,245 @@ class ReferralService {
                 throw new Error('User not found');
             }
 
+            // Check if user can refer
+            if (!user.referral.canRefer || user.role !== 'USER') {
+                throw new Error('You are not eligible to generate referral links');
+            }
+
+            // Generate referral code if not exists
+            if (!user.referral.userReferralCode) {
+                user.referral.userReferralCode = await User.generateUniqueReferralCode();
+                user.referral.referralCodeGeneratedAt = new Date();
+                await user.save();
+            }
+
             const referralCode = user.referral.userReferralCode;
-            const referralLink = `${process.env.CLIENT_URL}/register?ref=${referralCode}`;
+            const referralLink = `${config.client.url}/register?ref=${referralCode}`;
 
             return {
                 referralCode,
                 referralLink,
-                shareMessage: `Join Tiffin Management System using my referral code ${referralCode} and get amazing deals on fresh, homemade food! ${referralLink}`,
-                whatsappMessage: `Hey! I'm using Tiffin Management System for delicious homemade food delivery. Join using my code ${referralCode} and get special offers! ${referralLink}`,
-                emailSubject: 'Join me on Tiffin Management System!',
-                emailMessage: `I've been using Tiffin Management System for fresh, homemade food delivery and thought you'd love it too! Use my referral code ${referralCode} when you sign up to get special offers. ${referralLink}`
+                shareMessage: `🍽️ Join Tiffin Management System using my referral code ${referralCode} and get 100 bonus credits! Enjoy fresh, homemade food delivered to your doorstep. ${referralLink}`,
+                whatsappMessage: `Hey! 🍴 I'm using Tiffin Management System for delicious homemade food delivery. Join using my code ${referralCode} and get 100 bonus credits plus I'll get 50 credits too! Win-win! 😊 ${referralLink}`,
+                emailSubject: '🍽️ Join me on Tiffin Management System - Get 100 Bonus Credits!',
+                emailMessage: `Hi there!\n\nI've been using Tiffin Management System for fresh, homemade food delivery and absolutely love it! 🍛\n\nUse my referral code ${referralCode} when you sign up to get 100 bonus credits that you can use for your orders. Plus, I'll get 50 credits too - it's a win-win! 🎉\n\nJoin here: ${referralLink}\n\nHappy eating!\n${user.name}`,
+                twitterMessage: `🍽️ Just discovered amazing homemade food delivery with @TiffinSystem! Use my code ${referralCode} for 100 bonus credits. Fresh food, delivered daily! ${referralLink} #TiffinDelivery #HomeCookedMeals`,
+                stats: {
+                    totalReferrals: user.referral.referralStats.totalReferrals,
+                    successfulReferrals: user.referral.referralStats.successfulReferrals,
+                    pendingReferrals: user.referral.referralStats.pendingReferrals,
+                    totalCreditsEarned: user.referral.totalreferralCredits,
+                    availableCredits: user.referral.totalreferralCredits
+                }
             };
 
         } catch (error) {
             logger.error('Error generating referral link', {
+                userId,
+                error: error.message
+            });
+            throw error;
+        }
+    }
+
+    async validateReferralCode(referralCode) {
+        try {
+            if (!referralCode || referralCode.length < 6 || referralCode.length > 10) {
+                return {
+                    valid: false,
+                    message: 'Referral code must be between 6-10 characters'
+                };
+            }
+
+            const referrer = await User.findByReferralCode(referralCode);
+
+            if (!referrer) {
+                return {
+                    valid: false,
+                    message: 'Invalid referral code'
+                };
+            }
+
+            // Check if referrer can refer
+            if (!referrer.referral.canRefer || referrer.role !== 'USER') {
+                return {
+                    valid: false,
+                    message: 'This referral code is not valid'
+                };
+            }
+
+            // Check if referrer is active
+            if (!referrer.isActive || referrer.isBanned) {
+                return {
+                    valid: false,
+                    message: 'This referral code is no longer active'
+                };
+            }
+
+            return {
+                valid: true,
+                referrerName: referrer.name,
+                referrerEmail: referrer.emailAddress,
+                message: 'Valid referral code! You will get 100 bonus credits upon registration.'
+            };
+
+        } catch (error) {
+            logger.error('Error validating referral code', {
+                referralCode,
+                error: error.message
+            });
+            throw error;
+        }
+    }
+
+    async getSystemReferralStats() {
+        try {
+            const stats = await User.getReferralStats();
+
+            // Get recent referrals (last 7 days)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const recentReferrals = await User.countDocuments({
+                'referral.referredBy': { $ne: null },
+                createdAt: { $gte: sevenDaysAgo }
+            });
+
+            // Get top referrers this month
+            const currentMonth = new Date();
+            currentMonth.setDate(1);
+            currentMonth.setHours(0, 0, 0, 0);
+
+            const topThisMonth = await User.aggregate([
+                {
+                    $match: {
+                        'referral.canRefer': true,
+                        role: 'USER'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        let: { userId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: { $eq: ['$referral.referredBy', '$$userId'] },
+                                    createdAt: { $gte: currentMonth }
+                                }
+                            }
+                        ],
+                        as: 'thisMonthReferrals'
+                    }
+                },
+                {
+                    $addFields: {
+                        thisMonthCount: { $size: '$thisMonthReferrals' }
+                    }
+                },
+                {
+                    $match: { thisMonthCount: { $gt: 0 } }
+                },
+                {
+                    $sort: { thisMonthCount: -1 }
+                },
+                {
+                    $limit: 5
+                },
+                {
+                    $project: {
+                        name: 1,
+                        'referral.userReferralCode': 1,
+                        thisMonthCount: 1
+                    }
+                }
+            ]);
+
+            return {
+                overall: stats[0] || {
+                    totalUsers: 0,
+                    totalReferrers: 0,
+                    totalReferralUsers: 0,
+                    totalCreditsAwarded: 0,
+                    activeReferrers: 0
+                },
+                recent: {
+                    last7Days: recentReferrals
+                },
+                topThisMonth: topThisMonth.map(user => ({
+                    name: user.name,
+                    referralCode: user.referral.userReferralCode,
+                    referralsThisMonth: user.thisMonthCount
+                })),
+                conversionRate: stats[0] ? ((stats[0].totalReferralUsers / stats[0].totalUsers) * 100).toFixed(2) + '%' : '0%',
+                avgCreditsPerReferrer: stats[0] && stats[0].totalReferrers > 0 ? (stats[0].totalCreditsAwarded / stats[0].totalReferrers).toFixed(0) : 0
+            };
+
+        } catch (error) {
+            logger.error('Error getting system referral stats', {
+                error: error.message
+            });
+            throw error;
+        }
+    }
+
+    async disableUserReferrals(userId, reason = 'Admin action') {
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            user.referral.canRefer = false;
+            await user.save();
+
+            logger.info('User referral capability disabled', {
+                userId,
+                reason,
+                timestamp: new Date()
+            });
+
+            return {
+                success: true,
+                message: 'User referral capability disabled successfully'
+            };
+
+        } catch (error) {
+            logger.error('Error disabling user referrals', {
+                userId,
+                error: error.message
+            });
+            throw error;
+        }
+    }
+
+    async enableUserReferrals(userId) {
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            // Only USER role can refer
+            if (user.role !== 'USER') {
+                throw new Error('Only regular users can be enabled for referrals');
+            }
+
+            user.referral.canRefer = true;
+            await user.save();
+
+            logger.info('User referral capability enabled', {
+                userId,
+                timestamp: new Date()
+            });
+
+            return {
+                success: true,
+                message: 'User referral capability enabled successfully'
+            };
+
+        } catch (error) {
+            logger.error('Error enabling user referrals', {
                 userId,
                 error: error.message
             });
