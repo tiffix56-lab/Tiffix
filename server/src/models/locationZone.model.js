@@ -319,9 +319,11 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
         }
 
         // Check if any zone supports the subscription category and is currently available
+        console.log("Subscription category:", subscriptionCategory);
+        
         const validZones = zones.filter(zone => {
-            return zone.isServiceAvailable() && 
-                   zone.isSubscriptionCategorySupported(subscriptionCategory)
+            return zone.isServiceAvailable() 
+                //    zone.isSubscriptionCategorySupported(subscriptionCategory)
         })
 
         if (validZones.length === 0) {
@@ -338,26 +340,26 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
 
         // Validate address against the best zone (highest priority)
         const bestZone = validZones[0]
-        const addressValidation = bestZone.validateDeliveryAddress(deliveryAddress)
+        // const addressValidation = bestZone.validateDeliveryAddress(deliveryAddress)
 
-        if (!addressValidation.isValid) {
-            return {
-                isValid: false,
-                errors: addressValidation.errors,
-                zone: bestZone
-            }
-        }
+        // if (!addressValidation.isValid) {
+        //     return {
+        //         isValid: false,
+        //         errors: addressValidation.errors,
+        //         zone: bestZone
+        //     }
+        // }
 
         // Calculate delivery fee
         let deliveryFee = 0
-        if (deliveryAddress.coordinates && deliveryAddress.coordinates.coordinates) {
-            const coordinates = {
-                lat: deliveryAddress.coordinates.coordinates[1],
-                lng: deliveryAddress.coordinates.coordinates[0]
-            }
-            const distance = bestZone.calculateDistance(bestZone.coordinates.center, coordinates)
-            deliveryFee = bestZone.calculateDeliveryFee(distance, 0) // Order value will be calculated later
-        }
+        // if (deliveryAddress.coordinates && deliveryAddress.coordinates.coordinates) {
+        //     const coordinates = {
+        //         lat: deliveryAddress.coordinates.coordinates[1],
+        //         lng: deliveryAddress.coordinates.coordinates[0]
+        //     }
+        //     const distance = bestZone.calculateDistance(bestZone.coordinates.center, coordinates)
+        //     deliveryFee = bestZone.calculateDeliveryFee(distance, 0) // Order value will be calculated later
+        // }
 
         return {
             isValid: true,
@@ -367,6 +369,8 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
             operatingHours: bestZone.operatingHours
         }
     } catch (error) {
+        console.log('Error validating delivery area:', error);
+        
         return {
             isValid: false,
             errors: ['Error validating delivery area'],

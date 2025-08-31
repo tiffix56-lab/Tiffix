@@ -157,4 +157,3 @@ Authorization: Bearer {{accessToke}}
 ### Get Current User Location (Requires Authentication)
 GET {{baseURL}}/auth/location
 Authorization: Bearer {{accessToke}}
-

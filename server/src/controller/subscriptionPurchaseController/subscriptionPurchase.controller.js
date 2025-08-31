@@ -23,10 +23,16 @@ export default {
     // Initiate subscription purchase
     initiatePurchase: async (req, res, next) => {
         try {
+            console.log('=== INITIATE PURCHASE START ===');
+            console.log('Request body:', JSON.stringify(req.body, null, 2));
+            console.log('User ID:', req.authenticatedUser?._id);
+            
             const { error } = validateJoiSchema(ValidateInitiatePurchase, req.body);
             if (error) {
+                console.log('❌ Validation error:', error.message || error);
                 return httpError(next, error, req, 422);
             }
+            console.log('✅ Validation passed');
 
             const {
                 subscriptionId,
@@ -36,37 +42,49 @@ export default {
                 startDate
             } = req.body;
             const userId = req.authenticatedUser._id;
+            console.log('📝 Processing purchase for user:', userId, 'subscription:', subscriptionId);
 
             const subscription = await Subscription.findById(subscriptionId);
+            console.log('📦 Subscription found:', !!subscription, 'Active:', subscription?.isActive);
             if (!subscription || !subscription.isActive) {
+                console.log('❌ Subscription not found or inactive');
                 return httpError(next, 'Subscription plan not found or inactive', req, 404);
             }
+            console.log('✅ Subscription validated:', subscription.planName, 'Price:', subscription.discountedPrice);
 
             // Validate delivery address and check service availability
+            console.log('🏠 Validating delivery address:', deliveryAddress);
             const deliveryValidation = await LocationZone.validateDeliveryForSubscription(
                 deliveryAddress,
                 subscription.category
             );
+            console.log('📍 Delivery validation result:', deliveryValidation);
 
             if (!deliveryValidation.isValid) {
+                console.log('❌ Delivery validation failed:', deliveryValidation.errors);
                 return httpError(next, {
                     message: 'Delivery not available to this address',
                     errors: deliveryValidation.errors,
                     suggestedZones: deliveryValidation.suggestedZones
                 }, req, 400);
             }
+            console.log('✅ Delivery validation passed, zone:', deliveryValidation.zone?.name);
 
             // Check if user already has an active subscription (using IST)
+            console.log('🔍 Checking for existing active subscriptions');
             const currentIST = TimezoneUtil.now();
             const existingSubscription = await UserSubscription.findOne({
                 userId,
                 status: 'active',
                 endDate: { $gte: currentIST }
             });
+            console.log('📊 Existing subscription check:', !!existingSubscription);
 
             if (existingSubscription) {
+                console.log('❌ User already has active subscription:', existingSubscription._id);
                 return httpError(next, 'You already have an active subscription', req, 400);
             }
+            console.log('✅ No existing active subscriptions found');
 
             // Validate meal timings against subscription plan
             const planMealTimings = subscription.mealTimings;
@@ -95,14 +113,20 @@ export default {
             }
 
             if (!mealTimings.lunch.enabled && !mealTimings.dinner.enabled) {
+                console.log('❌ No meal timings selected');
                 return httpError(next, 'At least one meal timing must be selected', req, 400);
             }
+            console.log('✅ Meal timings validated:', {
+                lunch: mealTimings.lunch.enabled,
+                dinner: mealTimings.dinner.enabled
+            });
 
             let finalPrice = subscription.discountedPrice;
             let discountApplied = 0;
             let promoCodeData = null;
 
             if (promoCode) {
+                console.log('🎫 Applying promo code:', promoCode);
                 try {
                     const promoResult = await promoCodeService.validateAndApplyPromoCode(
                         promoCode,
@@ -110,13 +134,21 @@ export default {
                         finalPrice,
                         subscriptionId
                     );
+                    console.log('💰 Promo code applied:', {
+                        originalPrice: finalPrice,
+                        finalPrice: promoResult.finalAmount,
+                        discount: promoResult.discountAmount
+                    });
 
                     finalPrice = promoResult.finalAmount;
                     discountApplied = promoResult.discountAmount;
                     promoCodeData = promoResult.promoCode;
                 } catch (error) {
+                    console.log('❌ Promo code error:', error.message);
                     return httpError(next, error.message, req, 400);
                 }
+            } else {
+                console.log('💰 No promo code applied, final price:', finalPrice);
             }
 
             const subscriptionStartDate = startDate ?
@@ -151,11 +183,15 @@ export default {
                 subscriptionId,
                 orderId: paymentOrder.id,
                 amount: finalPrice,
+                finalAmount: finalPrice,
+                transactionId: paymentOrder.id,
+                gatewayTransactionId: paymentOrder.id,
                 originalAmount: subscription.discountedPrice,
                 discountApplied,
                 promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
-                type: 'subscription_purchase',
+                type: 'purchase',
+                paymentMethod: 'upi',
                 paymentGateway: 'razorpay'
             });
 

@@ -2,6 +2,7 @@
 
 # Base URL
 @baseURL = http://localhost:4000/v1
+<<<<<<< HEAD
 @adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
 @userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODllMmE1ZTI2NzQyODAwODMyMjA0NGMiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTY0ODg5MTIsImV4cCI6MTc1NjU3NTMxMn0.ypPz0vnNm88NSKocreRMliVswuz-4tjQjsPl02BoOKc
 @subscriptionId = 689ddbd8bd0e72f74f580a4c
@@ -12,72 +13,33 @@
 @razorpayOrderId = order_689247b921ca814950b20382
 @razorpayPaymentId = pay_689247b921ca814950b20383
 @razorpaySignature = sig_689247b921ca814950b20384
+=======
+@accessToke = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+>>>>>>> 82f9d3043cf8cac2502166b057287f382723cb9d
 
-## ===========================
-## SUBSCRIPTION PURCHASE FLOW
-## ===========================
 
+<<<<<<< HEAD
 ### Purchase a Subscription without Promo Code (User)
+=======
+
+### ============== SUBSCRIPTION PURCHASE & MANAGEMENT APIs ==============
+
+### Initiate Subscription Purchase (Requires Authentication)
+>>>>>>> 82f9d3043cf8cac2502166b057287f382723cb9d
 POST {{baseURL}}/subscription-purchase/initiate
 Content-Type: application/json
-Authorization: Bearer {{userToken}}
+Authorization: Bearer {{accessToke}}
 
 {
-  "subscriptionId": "{{subscriptionId}}",
-  "deliveryZoneId": "{{deliveryZoneId}}",
-  "billingAddress": {
-    "street": "123 Main St",
-    "city": "Mumbai",
-    "state": "Maharashtra",
-    "country": "India",
-    "postalCode": "400001"
-  },
+  "subscriptionId": "60f7b3b3b3b3b3b3b3b3b3b3",
+  "promoCode": "WELCOME10",
   "deliveryAddress": {
-    "street": "456 Elm St",
+    "street": "123 Main Street, Apartment 4B",
     "city": "Mumbai",
     "state": "Maharashtra",
     "country": "India",
-    "postalCode": "400002",
-    "coordinates": {
-      "type": "Point",
-      "coordinates": [72.8777, 19.0760]
-    }
-  },
-  "mealTimings": {
-    "lunch": {
-      "enabled": true,
-      "time": "12:30"
-    },
-    "dinner": {
-      "enabled": true,
-      "time": "19:30"
-    }
-  },
-  "startDate": "2025-08-24"
-}
-
-### Purchase a Subscription with Promo Code (User)
-POST {{baseURL}}/subscriptions/purchase
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "subscriptionId": "{{subscriptionId}}",
-  "promoCode": "{{promoCode}}",
-  "deliveryZoneId": "{{deliveryZoneId}}",
-  "billingAddress": {
-    "street": "123 Main St",
-    "city": "Mumbai",
-    "state": "Maharashtra",
-    "country": "India",
-    "postalCode": "400001"
-  },
-  "deliveryAddress": {
-    "street": "789 Pine St",
-    "city": "Mumbai",
-    "state": "Maharashtra",
-    "country": "India",
-    "postalCode": "400002",
+    "zipCode": "400001",
+    "landmark": "Near Metro Station",
     "coordinates": {
       "type": "Point",
       "coordinates": [72.8777, 19.0760]
@@ -93,83 +55,48 @@ Authorization: Bearer {{userToken}}
       "time": "20:00"
     }
   },
-  "startDate": "2025-08-24"
+  "startDate": "2025-03-01T00:00:00.000Z"
 }
 
-### Verify Payment for Subscription Purchase (User)
-POST {{baseURL}}/subscriptions/verify-payment
+### Verify Payment (Requires Authentication)
+POST {{baseURL}}/subscription-purchase/verify-payment
 Content-Type: application/json
-Authorization: Bearer {{userToken}}
+Authorization: Bearer {{accessToke}}
 
 {
-  "razorpay_order_id": "{{razorpayOrderId}}",
-  "razorpay_payment_id": "{{razorpayPaymentId}}",
-  "razorpay_signature": "{{razorpaySignature}}",
-  "userSubscriptionId": "{{userSubscriptionId}}"
+  "razorpay_order_id": "order_XXXXXXXXXXXXXXX",
+  "razorpay_payment_id": "pay_XXXXXXXXXXXXXXX",
+  "razorpay_signature": "signature_XXXXXXXXXXXXXXX",
+  "userSubscriptionId": "60f7b3b3b3b3b3b3b3b3b3b3"
 }
 
-### Get User Subscription Details (User)
-GET {{baseURL}}/subscriptions/me/{{userSubscriptionId}}
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
+### Get My Subscriptions (Requires Authentication)
+GET {{baseURL}}/my-subscriptions?page=1&limit=10&status=active
+Authorization: Bearer {{accessToke}}
 
-### Update Subscription Preferences (User)
-PATCH {{baseURL}}/subscriptions/me/{{userSubscriptionId}}/preferences
+### Get My Subscriptions with Filters
+GET {{baseURL}}/my-subscriptions?page=1&limit=5&status=active&category=home_chef&startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{accessToke}}
+
+### Get Subscription by ID (Requires Authentication)
+GET {{baseURL}}/my-subscriptions/60f7b3b3b3b3b3b3b3b3b3b3
+Authorization: Bearer {{accessToke}}
+
+### Cancel Subscription (Requires Authentication)
+POST {{baseURL}}/my-subscriptions/60f7b3b3b3b3b3b3b3b3b3b3/cancel
 Content-Type: application/json
-Authorization: Bearer {{userToken}}
+Authorization: Bearer {{accessToke}}
 
 {
-  "deliveryPreferences": {
-    "preferredDeliveryTime": "evening",
-    "deliveryInstructions": "Leave at doorstep if not available"
-  },
-  "autoRenew": false
+  "reason": "Not satisfied with the food quality and delivery timing"
 }
 
-### Cancel Subscription (User)
-PATCH {{baseURL}}/subscriptions/me/{{userSubscriptionId}}/cancel
+### Request Vendor Switch (Requires Authentication)
+POST {{baseURL}}/my-subscriptions/60f7b3b3b3b3b3b3b3b3b3b3/request-vendor-switch
 Content-Type: application/json
-Authorization: Bearer {{userToken}}
+Authorization: Bearer {{accessToke}}
 
 {
-  "cancellationReason": "No longer needed"
+  "reason": "Current vendor has inconsistent delivery times and food quality issues"
 }
 
-### Request Vendor Switch (User)
-POST {{baseURL}}/subscriptions/me/{{userSubscriptionId}}/vendor-switch
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "reason": "Unsatisfactory vendor service",
-  "preferredVendorId": null
-}
-
-## ===========================
-## ADMIN SUBSCRIPTION MANAGEMENT
-## ===========================
-
-### Get All User Subscriptions (Admin)
-GET {{baseURL}}/admin/subscriptions?page=1&limit=10&status=active&sortBy=startDate&sortOrder=desc&category=home_chef
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-### Get User Subscription Details by ID (Admin)
-GET {{baseURL}}/admin/subscriptions/{{userSubscriptionId}}
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-### Get User Subscription Analytics (Admin)
-GET {{baseURL}}/admin/subscriptions/analytics?startDate=2025-08-01&endDate=2025-08-23
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-### Update User Subscription Status (Admin)
-PATCH {{baseURL}}/admin/subscriptions/{{userSubscriptionId}}/status
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "status": "paused",
-  "adminNotes": "Paused due to payment issues"
-}
