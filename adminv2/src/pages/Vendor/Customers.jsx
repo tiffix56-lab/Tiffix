@@ -9,7 +9,11 @@ import {
   TrendingUp, 
   ChevronDown,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Clock,
+  CreditCard,
+  Package,
+  Phone
 } from 'lucide-react';
 import { getVendorCustomersApi, getVendorCustomerAnalyticsApi } from '../../service/api.service';
 import { toast } from 'react-hot-toast';
@@ -131,10 +135,10 @@ function Customers() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      active: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-400' },
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-400' },
-      expired: { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-400' },
-      cancelled: { bg: 'bg-gray-100', text: 'text-gray-800', dot: 'bg-gray-400' }
+      active: { bg: 'bg-green-900/50', text: 'text-green-300', dot: 'bg-green-400' },
+      pending: { bg: 'bg-yellow-900/50', text: 'text-yellow-300', dot: 'bg-yellow-400' },
+      expired: { bg: 'bg-red-900/50', text: 'text-red-300', dot: 'bg-red-400' },
+      cancelled: { bg: 'bg-gray-700/50', text: 'text-gray-400', dot: 'bg-gray-400' }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -374,22 +378,22 @@ function Customers() {
             <thead className="bg-gray-700">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Customer
+                  Customer & Plan
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Status
+                  Status & Credits
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Amount
+                  Amount & Duration
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Delivery Address
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Created Date
+                  Meal Timing
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  End Date
+                  Subscription Period
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Actions
@@ -420,36 +424,113 @@ function Customers() {
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center">
                           <span className="text-white text-sm font-semibold">
-                            {customer.user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                            {customer.userId?.name?.charAt(0)?.toUpperCase() || 'U'}
                           </span>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-white">
-                            {customer.user?.name || 'Unknown User'}
+                            {customer.userId?.name || 'Unknown User'}
                           </div>
-                          <div className="text-sm text-gray-400">
-                            {customer.user?.email}
+                          <div className="text-sm text-gray-400 flex items-center gap-2">
+                            {customer.userId?.emailAddress || 'No email'}
+                          </div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                            <Phone className="w-3 h-3" />
+                            {customer.userId?.phoneNumber?.internationalNumber || 'No phone'}
+                          </div>
+                          <div className="text-xs text-blue-400 flex items-center gap-1 mt-1">
+                            <Package className="w-3 h-3" />
+                            {customer.subscriptionId?.planName || 'No plan'} ({customer.subscriptionId?.category?.replace('_', ' ') || 'N/A'})
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(customer.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {formatCurrency(customer.finalPrice || customer.amount || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-300">
-                        <MapPin className="w-4 h-4 mr-1 text-gray-500" />
-                        {customer.deliveryAddress || 'Not specified'}
+                      <div className="space-y-2">
+                        {getStatusBadge(customer.status)}
+                        <div className="flex items-center gap-1 text-xs">
+                          <CreditCard className="w-3 h-3 text-yellow-400" />
+                          <span className="text-white">{customer.creditsGranted - customer.creditsUsed}</span>
+                          <span className="text-gray-400">/ {customer.creditsGranted}</span>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {customer.creditsRemainingPercentage}% remaining
+                        </div>
+                        {customer.skipCreditAvailable > 0 && (
+                          <div className="text-xs text-purple-400">
+                            {customer.skipCreditAvailable} skip credits
+                          </div>
+                        )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {formatDate(customer.createdAt)}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm">
+                        <div className="text-white font-medium">
+                          {formatCurrency(customer.finalPrice || customer.amount || 0)}
+                        </div>
+                        {customer.originalPrice !== customer.finalPrice && (
+                          <div className="text-xs text-gray-400 line-through">
+                            {formatCurrency(customer.originalPrice)}
+                          </div>
+                        )}
+                        <div className="text-xs text-blue-400 mt-1">
+                          {customer.subscriptionId?.duration} ({customer.subscriptionId?.durationDays} days)
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {customer.daysRemaining} days left
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {customer.endDate ? formatDate(customer.endDate) : 'N/A'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-300">
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-1 text-gray-500" />
+                          <div>
+                            <div className="text-white text-xs">{customer.deliveryAddress?.street || 'No street'}</div>
+                            <div className="text-gray-400 text-xs">
+                              {customer.deliveryAddress?.city}, {customer.deliveryAddress?.state}
+                            </div>
+                            <div className="text-gray-500 text-xs">{customer.deliveryAddress?.zipCode}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm space-y-1">
+                        {customer.mealTiming?.lunch?.enabled && (
+                          <div className="flex items-center gap-1 text-yellow-400">
+                            <Clock className="w-3 h-3" />
+                            <span className="text-xs">Lunch: {customer.mealTiming.lunch.time}</span>
+                          </div>
+                        )}
+                        {customer.mealTiming?.dinner?.enabled && (
+                          <div className="flex items-center gap-1 text-orange-400">
+                            <Clock className="w-3 h-3" />
+                            <span className="text-xs">Dinner: {customer.mealTiming.dinner.time}</span>
+                          </div>
+                        )}
+                        {(!customer.mealTiming?.lunch?.enabled && !customer.mealTiming?.dinner?.enabled) && (
+                          <span className="text-xs text-gray-500">No meals configured</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-300">
+                        <div className="text-white text-xs">
+                          <strong>Start:</strong> {formatDate(customer.startDate)}
+                        </div>
+                        <div className="text-white text-xs">
+                          <strong>End:</strong> {formatDate(customer.endDate)}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Created: {formatDate(customer.createdAt)}
+                        </div>
+                        {customer.vendorDetails?.currentVendor?.assignedAt && (
+                          <div className="text-xs text-green-400">
+                            Assigned: {formatDate(customer.vendorDetails.currentVendor.assignedAt)}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button className="text-green-400 hover:text-green-300 transition-colors">

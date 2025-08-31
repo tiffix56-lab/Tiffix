@@ -340,3 +340,45 @@ export const getVendorAssignmentStatsApi = async (params) => {
 }
 
 
+// SUBSCRIPTION PURCHASES
+
+export const getSubscriptionPurchasesApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/subscription-purchases', {
+        params
+    });
+    return response.data;
+}
+
+export const getSubscriptionPurchaseByIdApi = async (purchaseId) => {
+    const response = await servicesAxiosInstance.get(`/admin/subscription-purchases/${purchaseId}`);
+    return response.data;
+}
+
+export const getSubscriptionPurchaseStatsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/subscription-purchases/stats', {
+        params
+    });
+    return response.data;
+}
+
+
+// VENDOR ORDERS
+
+export const getVendorOrdersApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/vendor/orders', {
+        params
+    });
+    return response.data;
+}
+
+export const updateOrderStatusApi = async (orderId, body) => {
+    const response = await servicesAxiosInstance.patch(`/orders/${orderId}/status`, body);
+    return response.data;
+}
+
+export const getOrderByIdApi = async (orderId) => {
+    const response = await servicesAxiosInstance.get(`/orders/${orderId}`);
+    return response.data;
+}
+
+

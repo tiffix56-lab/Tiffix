@@ -16,6 +16,7 @@ function AdminLayout() {
     { name: 'Subscriptions', href: '/subscriptions', icon: Menu },
     { name: 'Vendor Management', href: '/vendor-management', icon: Menu },
     { name: 'Vendor Assignment', href: '/vendor-assignment', icon: Menu },
+    { name: 'Purchases', href: '/purchases', icon: Menu },
   ];
 
   const isActive = (path) => {

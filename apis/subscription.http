@@ -12,7 +12,7 @@
 ### ========================================
 
 ### Get Active Subscriptions with Filters (User)
-GET {{baseUrl}}/subscriptions?page=1&limit=10&category=home_chef&duration=monthly&minPrice=500&maxPrice=2000
+GET {{baseUrl}}/subscriptions?page=1&limit=10&category=food_vendor&duration=monthly&minPrice=500&maxPrice=2000
 Content-Type: application/json
 Authorization: Bearer {{token}}
 

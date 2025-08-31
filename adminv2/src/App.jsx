@@ -14,6 +14,8 @@ import Vendor from "./pages/Admin/Vendor";
 import UserManagement from "./pages/Admin/UserManagement";
 import Customers from "./pages/Vendor/Customers";
 import VendorAssignment from "./pages/Admin/VendorAssignment";
+import Purchases from "./pages/Admin/Purchases";
+import Orders from "./pages/Vendor/Orders";
 
 
 
@@ -37,6 +39,7 @@ function App() {
             <Route path="/subscriptions" element={<Subscription />} />
             <Route path="/vendor-management" element={<Vendor />} />
             <Route path="/vendor-assignment" element={<VendorAssignment />} />
+            <Route path="/purchases" element={<Purchases />} />
           </Route>
 
           {/* Vendor Routes */}
@@ -47,7 +50,7 @@ function App() {
           }>
             <Route path="/vendor" element={<h1>Vendor Dashboard</h1>} />
             <Route path="/vendor/menu" element={<h1>My Menu</h1>} />
-            <Route path="/vendor/orders" element={<h1>Orders</h1>} />
+            <Route path="/vendor/orders" element={<Orders />} />
             <Route path="/vendor/analytics" element={<h1>Analytics</h1>} />
             <Route path="/vendor/profile" element={<h1>Profile</h1>} />
             <Route path="/vendor/customers" element={<Customers />} />
