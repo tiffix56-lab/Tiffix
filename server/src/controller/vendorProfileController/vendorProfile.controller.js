@@ -40,6 +40,7 @@ export default {
                 password: value.user.password,
                 role: EUserRole.VENDOR,
                 isActive: true,
+                isVerified: true,
                 accountConfirmation: {
                     status: true,
                     otp: '000000'
@@ -69,7 +70,8 @@ export default {
                 message: 'Vendor created successfully with user account'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -155,7 +157,8 @@ export default {
                 stats
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -182,7 +185,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { vendorProfile: updatedProfile });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -210,7 +214,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Vendor profile deleted successfully' });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -239,7 +244,8 @@ export default {
                 message: `Vendor ${value.isVerified ? 'verified' : 'unverified'} successfully`
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -263,7 +269,8 @@ export default {
                 message: `Vendor ${vendor.isAvailable ? 'is now available' : 'is now unavailable'}`
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -291,7 +298,8 @@ export default {
                 message: 'Vendor capacity updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -314,7 +322,8 @@ export default {
                 message: 'Daily capacity reset successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -342,7 +351,8 @@ export default {
                 message: 'Rating updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -357,7 +367,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { vendorProfile });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
     updateMyProfile: async (req, res, next) => {
@@ -408,7 +419,8 @@ export default {
                 message: 'Profile updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -448,7 +460,8 @@ export default {
                 message: 'Address updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -485,7 +498,8 @@ export default {
                 message: 'Address updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 

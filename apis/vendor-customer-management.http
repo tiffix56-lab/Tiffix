@@ -1,7 +1,7 @@
 ### Vendor Customer Management API Testing
 
 @baseURL = http://localhost:4000/v1
-@vendorToken = your_vendor_access_token_here
+@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTRiNjcwMTU1MzVkODE0MmQ2MWIiLCJlbWFpbCI6InNwaWNlLnJlc3RhdXJhbnRAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTY1ODMyMTksImV4cCI6MTc1NjY2OTYxOX0.iPg6M4lXOEVQOzNmCSJ6Lov6s_FCSt8F-utAbdGYKHY
 
 ### Get all my customers - basic
 GET {{baseURL}}/vendor/customers

@@ -321,7 +321,11 @@ userSubscriptionSchema.methods.useVendorSwitch = function () {
 }
 
 userSubscriptionSchema.methods.canSwitchVendor = function () {
-    return !this.vendorDetails.vendorSwitchUsed && this.isActive()
+    return !this.vendorDetails.vendorSwitchUsed && 
+           this.isActive() && 
+           this.vendorDetails.isVendorAssigned && 
+           this.vendorDetails.currentVendor && 
+           this.vendorDetails.currentVendor.vendorId
 }
 
 userSubscriptionSchema.methods.getDailyMealCount = function () {

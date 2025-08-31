@@ -93,7 +93,8 @@ const orderSchema = new mongoose.Schema(
                 },
                 coordinates: {
                     type: [Number],
-                    required: true
+                    required: false,  // Make coordinates optional since they might not always be available
+                    default: [0, 0]   // Default coordinates if not provided
                 }
             }
         },
@@ -202,17 +203,58 @@ orderSchema.index({ status: 1, deliveryDate: 1 })
 
 // Pre-save hook to generate order number
 orderSchema.pre('save', async function(next) {
-    if (this.isNew) {
-        const date = TimezoneUtil.format(this.orderDate, 'date').replace(/\//g, '')
-        const count = await this.constructor.countDocuments({
-            orderDate: {
-                $gte: TimezoneUtil.startOfDay(this.orderDate),
-                $lte: TimezoneUtil.endOfDay(this.orderDate)
+    try {
+        if (this.isNew && !this.orderNumber) {
+            console.log('🔢 Generating order number for new order...', {
+                orderDate: this.orderDate,
+                userId: this.userId,
+                mealType: this.mealType
+            })
+            
+            if (!this.orderDate) {
+                console.error('❌ orderDate is missing for order number generation')
+                throw new Error('orderDate is required to generate orderNumber')
             }
-        })
-        this.orderNumber = `TFX-${date}-${(count + 1).toString().padStart(4, '0')}`
+
+            let date, count;
+            try {
+                // Try using TimezoneUtil first
+                date = TimezoneUtil.format(this.orderDate, 'date').replace(/\//g, '')
+                count = await this.constructor.countDocuments({
+                    orderDate: {
+                        $gte: TimezoneUtil.startOfDay(this.orderDate),
+                        $lte: TimezoneUtil.endOfDay(this.orderDate)
+                    }
+                })
+            } catch (timezoneError) {
+                console.error('❌ TimezoneUtil error, using fallback:', timezoneError)
+                // Fallback to basic date formatting
+                const orderDate = new Date(this.orderDate)
+                date = orderDate.getFullYear().toString() + 
+                       (orderDate.getMonth() + 1).toString().padStart(2, '0') + 
+                       orderDate.getDate().toString().padStart(2, '0')
+                
+                const startOfDay = new Date(orderDate)
+                startOfDay.setHours(0, 0, 0, 0)
+                const endOfDay = new Date(orderDate)
+                endOfDay.setHours(23, 59, 59, 999)
+                
+                count = await this.constructor.countDocuments({
+                    orderDate: {
+                        $gte: startOfDay,
+                        $lte: endOfDay
+                    }
+                })
+            }
+            
+            this.orderNumber = `TFX-${date}-${(count + 1).toString().padStart(4, '0')}`
+            console.log(`✅ Generated order number: ${this.orderNumber}`)
+        }
+        next()
+    } catch (error) {
+        console.error('❌ Error generating order number:', error)
+        next(error)
     }
-    next()
 })
 
 // Instance methods

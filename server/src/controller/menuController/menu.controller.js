@@ -19,7 +19,8 @@ export default {
 
             httpResponse(req, res, 201, responseMessage.SUCCESS, { menu: savedMenu });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -95,7 +96,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -110,7 +112,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { menu });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -135,7 +138,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { menu: updatedMenu });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -150,7 +154,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Menu item deleted successfully' });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -171,7 +176,8 @@ export default {
                 message: `Menu item ${menu.isAvailable ? 'enabled' : 'disabled'} successfully`
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -196,7 +202,8 @@ export default {
                 message: 'Rating updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -218,7 +225,8 @@ export default {
                 modifiedCount: result.modifiedCount
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 };

@@ -96,7 +96,8 @@ export default {
                 }
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -117,7 +118,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { transaction })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -183,7 +185,8 @@ export default {
                 }
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -358,7 +361,8 @@ export default {
                 generatedAt: TimezoneUtil.format(TimezoneUtil.now(), 'datetime')
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -400,7 +404,8 @@ export default {
                 message: 'Refund processed successfully'
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -460,7 +465,8 @@ export default {
                 }
             })
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -522,7 +528,8 @@ export default {
                 })
             }
         } catch (err) {
-            httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 }

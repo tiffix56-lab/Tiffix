@@ -33,14 +33,18 @@ export default {
 
             const allMenuIds = [...lunchMenuIds, ...dinnerMenuIds];
             if (allMenuIds.length > 0) {
+                // Remove duplicates to handle cases where same menu is used for lunch and dinner
+                const uniqueMenuIds = [...new Set(allMenuIds)];
+                
                 const validMenus = await Menu.find({
-                    _id: { $in: allMenuIds },
+                    _id: { $in: uniqueMenuIds },
                     vendorCategory: subscription.category,
                     isActive: true,
                     isAvailable: true
                 });
+                console.log(validMenus.length, uniqueMenuIds.length);
 
-                if (validMenus.length !== allMenuIds.length) {
+                if (validMenus.length !== uniqueMenuIds.length) {
                     return httpError(next, new Error('Some menus are invalid or not available'), req, 400);
                 }
             }
@@ -88,7 +92,8 @@ export default {
             return httpResponse(req, res, 201, 'Daily meal created successfully. New meal set for this subscription and date.', responseData);
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -193,7 +198,8 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, responseData);
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -224,7 +230,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -250,7 +257,8 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, result);
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -264,8 +272,8 @@ export default {
             }
 
             const result = await orderCreationService.retryFailedOrder(
-                logId, 
-                parseInt(failedOrderIndex), 
+                logId,
+                parseInt(failedOrderIndex),
                 userId
             );
 
@@ -276,7 +284,8 @@ export default {
             }
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -291,12 +300,13 @@ export default {
 
             // This will be implemented to manually create orders for failed cases
             // For now, just return success
-            httpResponse(req, res, 200, responseMessage.SUCCESS, { 
-                message: 'Manual order creation feature coming soon' 
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                message: 'Manual order creation feature coming soon'
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };

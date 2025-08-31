@@ -1,10 +1,10 @@
 ### Order Management API Testing
 
 @baseURL = http://localhost:4000/v1
-@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
-@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzYiLCJlbWFpbCI6InZlbmRvckBnbWFpbC5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.VendorTokenExample
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzciLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.AdminTokenExample
-@orderId = 674c8e5b123456789012345a
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIzMzI2OWUxZTUwZWJlNmY0ZDZkYTkiLCJlbWFpbCI6InVzZXIyQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoidXNlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU2NTc0MzI5LCJleHAiOjE3NTY2NjA3Mjl9.dpLcQX_SuS_9hkcn_zLzYHAacQFahZKJoeNYf6TXPHw
+@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTRiNjcwMTU1MzVkODE0MmQ2MWIiLCJlbWFpbCI6InNwaWNlLnJlc3RhdXJhbnRAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTY1ODMyMTksImV4cCI6MTc1NjY2OTYxOX0.iPg6M4lXOEVQOzNmCSJ6Lov6s_FCSt8F-utAbdGYKHY
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY1Njg3NjcsImV4cCI6MTc1NjY1NTE2N30.wda5z6YQ3sO3C1hh_7fsmowjo-GEqIxCNk01Ve1MkLM
+@orderId = 68b35970a24e266b6f31e31d
 
 ############### USER ORDER MANAGEMENT ###############
 
@@ -123,5 +123,5 @@ Authorization: Bearer {{adminToken}}
 
 {
   "notes": "Delivery confirmed by admin",
-  "photos": ["delivery-photo-1.jpg", "delivery-photo-2.jpg"]
+  "photos": ["https://delivery-photo-1.jpg", "https://delivery-photo-2.jpg"]
 }

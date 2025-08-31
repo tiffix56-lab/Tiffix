@@ -163,108 +163,243 @@ locationZoneSchema.pre('save', function (next) {
     next()
 })
 
-locationZoneSchema.methods.isServiceAvailable = function (vendorType = null) {
-    if (!this.isActive) return false
+locationZoneSchema.methods.isServiceAvailable = function (vendorType = null, skipOperatingHours = false) {
+    if (!this.isActive) {
+        console.log("Zone not active:", this.zoneName);
+        return false;
+    }
 
-    // Check operating hours using IST
-    const currentTime = TimezoneUtil.getTimeString()
-    
-    if (!TimezoneUtil.isTimeInRange(currentTime, this.operatingHours.start, this.operatingHours.end)) {
-        return false
+    // Skip operating hours check for subscription validation (since subscriptions are for future delivery)
+    if (!skipOperatingHours) {
+        // Check operating hours using IST
+        const currentTime = TimezoneUtil.getTimeString();
+        
+        if (!TimezoneUtil.isTimeInRange(currentTime, this.operatingHours.start, this.operatingHours.end)) {
+            console.log("Outside operating hours:", {
+                currentTime,
+                operatingHours: this.operatingHours,
+                zoneName: this.zoneName
+            });
+            return false;
+        }
+    } else {
+        console.log("Skipping operating hours check for subscription validation:", this.zoneName);
     }
 
     if (vendorType && !this.supportedVendorTypes.includes(vendorType)) {
-        return false
+        console.log("Vendor type not supported:", {
+            vendorType,
+            supportedVendorTypes: this.supportedVendorTypes,
+            zoneName: this.zoneName
+        });
+        return false;
     }
 
-    return true
+    console.log("Service available for zone:", this.zoneName);
+    return true;
 }
 
 // New method to validate delivery address
 locationZoneSchema.methods.validateDeliveryAddress = function (address) {
-    const errors = []
+    const errors = [];
+
+    // Validate address object
+    if (!address || typeof address !== 'object') {
+        errors.push('Invalid delivery address format');
+        return {
+            isValid: false,
+            errors: errors
+        };
+    }
 
     // Check pincode
-    if (!this.isPincodeSupported(address.zipCode)) {
-        errors.push('Delivery not available to this pincode')
+    if (!address.zipCode) {
+        errors.push('Zip code is required');
+    } else if (!this.isPincodeSupported(address.zipCode)) {
+        errors.push('Delivery not available to this pincode');
     }
 
     // Check coordinates if provided
     if (address.coordinates && address.coordinates.coordinates) {
-        const coordinates = {
-            lat: address.coordinates.coordinates[1],
-            lng: address.coordinates.coordinates[0]
-        }
-        
-        if (!this.isInServiceRadius(coordinates)) {
-            errors.push('Delivery address is outside service area')
+        if (!Array.isArray(address.coordinates.coordinates) || address.coordinates.coordinates.length !== 2) {
+            errors.push('Invalid coordinates format');
+        } else {
+            const coordinates = {
+                lat: address.coordinates.coordinates[1],
+                lng: address.coordinates.coordinates[0]
+            };
+            
+            // Validate coordinate values
+            if (typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
+                errors.push('Invalid coordinate values');
+            } else if (coordinates.lat < -90 || coordinates.lat > 90 || coordinates.lng < -180 || coordinates.lng > 180) {
+                errors.push('Coordinates out of valid range');
+            } else if (!this.isInServiceRadius(coordinates)) {
+                errors.push('Delivery address is outside service area');
+            }
         }
     }
 
     return {
         isValid: errors.length === 0,
         errors: errors
-    }
+    };
 }
 
 // Method to check if subscription category is supported
 locationZoneSchema.methods.isSubscriptionCategorySupported = function (subscriptionCategory) {
+    console.log("Checking subscription category support:", {
+        subscriptionCategory,
+        supportedVendorTypes: this.supportedVendorTypes,
+        serviceType: this.serviceType,
+        zoneName: this.zoneName
+    });
+    
+    // Handle specific subscription categories
     if (subscriptionCategory === 'home_chef') {
-        return this.supportedVendorTypes.includes('home_chef')
+        const isSupported = this.supportedVendorTypes.includes('home_chef');
+        console.log("Home chef support:", isSupported);
+        return isSupported;
     } else if (subscriptionCategory === 'food_vendor') {
-        return this.supportedVendorTypes.includes('food_vendor')
+        const isSupported = this.supportedVendorTypes.includes('food_vendor');
+        console.log("Food vendor support:", isSupported);
+        return isSupported;
     }
-    return false
+    
+    // Handle service type mapping for backwards compatibility
+    if (subscriptionCategory === 'both_vendor_home_chef') {
+        const isSupported = this.serviceType === 'both_vendor_home_chef' || 
+                           (this.supportedVendorTypes.includes('home_chef') && 
+                            this.supportedVendorTypes.includes('food_vendor'));
+        console.log("Both vendor types support:", isSupported);
+        return isSupported;
+    }
+    
+    // Also check if the subscription category matches the service type directly
+    if (this.serviceType === subscriptionCategory) {
+        console.log("Direct service type match:", true);
+        return true;
+    }
+    
+    console.log("Unknown subscription category:", subscriptionCategory);
+    return false;
 }
 
 locationZoneSchema.methods.isPincodeSupported = function (pincode) {
-    return this.pincodes.includes(pincode)
+    if (!pincode) return false;
+    
+    // Convert to string and ensure it's a valid 6-digit pincode
+    const pincodeStr = String(pincode).trim();
+    if (!/^[0-9]{6}$/.test(pincodeStr)) return false;
+    
+    return this.pincodes.includes(pincodeStr);
 }
 
-locationZoneSchema.methods.calculateDeliveryFee = function (distance, orderValue) {
+locationZoneSchema.methods.calculateDeliveryFee = function (distance, orderValue = 0) {
+    // Validate inputs
+    distance = parseFloat(distance) || 0;
+    orderValue = parseFloat(orderValue) || 0;
+    
+    if (distance < 0) distance = 0;
+    if (orderValue < 0) orderValue = 0;
+    
+    // Check for free delivery
     if (this.deliveryFee.freeDeliveryAbove && orderValue >= this.deliveryFee.freeDeliveryAbove) {
-        return 0
+        return 0;
     }
 
-    return this.deliveryFee.baseCharge + (distance * this.deliveryFee.perKmCharge)
+    const baseCharge = this.deliveryFee.baseCharge || 0;
+    const perKmCharge = this.deliveryFee.perKmCharge || 0;
+    
+    return Math.round((baseCharge + (distance * perKmCharge)) * 100) / 100; // Round to 2 decimal places
 }
 
 locationZoneSchema.methods.isInServiceRadius = function (coordinates) {
-    const distance = this.calculateDistance(this.coordinates.center, coordinates)
-    return distance <= this.serviceRadius
+    if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
+        return false;
+    }
+    
+    if (!this.coordinates || !this.coordinates.center) {
+        return false;
+    }
+    
+    const distance = this.calculateDistance(this.coordinates.center, coordinates);
+    return distance <= (this.serviceRadius || 0);
 }
 
 locationZoneSchema.methods.calculateDistance = function (coord1, coord2) {
-    const R = 6371
-    const dLat = (coord2.lat - coord1.lat) * Math.PI / 180
-    const dLon = (coord2.lng - coord1.lng) * Math.PI / 180
+    // Validate input coordinates
+    if (!coord1 || !coord2 || 
+        typeof coord1.lat !== 'number' || typeof coord1.lng !== 'number' ||
+        typeof coord2.lat !== 'number' || typeof coord2.lng !== 'number') {
+        return Infinity; // Return large distance for invalid coordinates
+    }
+    
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
+    const dLon = (coord2.lng - coord1.lng) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return Math.round(distance * 100) / 100; // Round to 2 decimal places
 }
 
 locationZoneSchema.methods.getAvailableVendorTypes = function () {
-    return this.supportedVendorTypes.filter(type => this.isServiceAvailable(type))
+    if (!Array.isArray(this.supportedVendorTypes)) {
+        return [];
+    }
+    return this.supportedVendorTypes.filter(type => this.isServiceAvailable(type));
 }
 
 // Static methods
 locationZoneSchema.statics.findByPincode = function (pincode) {
+    if (!pincode) return Promise.resolve([]);
+    
+    const pincodeStr = String(pincode).trim();
+    if (!/^[0-9]{6}$/.test(pincodeStr)) {
+        return Promise.resolve([]);
+    }
+    
     return this.find({
-        pincodes: pincode,
+        pincodes: pincodeStr,
         isActive: true
-    }).sort({ priority: -1 })
+    }).sort({ priority: -1 });
 }
 
 locationZoneSchema.statics.findByCity = function (city) {
+    if (!city || typeof city !== 'string') {
+        return Promise.resolve([]);
+    }
+    
+    const cityStr = city.trim();
+    if (cityStr.length === 0) {
+        return Promise.resolve([]);
+    }
+    
     return this.find({
-        city: new RegExp(city, 'i'),
+        city: new RegExp(cityStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), // Escape special regex characters
         isActive: true
-    }).sort({ priority: -1 })
+    }).sort({ priority: -1 });
 }
 
 locationZoneSchema.statics.findByCoordinates = function (coordinates, radius = 50) {
+    if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
+        return Promise.resolve([]);
+    }
+    
+    // Validate coordinate ranges
+    if (coordinates.lat < -90 || coordinates.lat > 90 || coordinates.lng < -180 || coordinates.lng > 180) {
+        return Promise.resolve([]);
+    }
+    
+    const radiusNum = parseFloat(radius);
+    if (isNaN(radiusNum) || radiusNum <= 0) {
+        return Promise.resolve([]);
+    }
+    
     return this.find({
         'coordinates.center': {
             $near: {
@@ -272,11 +407,11 @@ locationZoneSchema.statics.findByCoordinates = function (coordinates, radius = 5
                     type: 'Point',
                     coordinates: [coordinates.lng, coordinates.lat]
                 },
-                $maxDistance: radius * 1000 // Convert km to meters
+                $maxDistance: radiusNum * 1000 // Convert km to meters
             }
         },
         isActive: true
-    }).sort({ priority: -1 })
+    }).sort({ priority: -1 });
 }
 
 locationZoneSchema.statics.findActiveZones = function () {
@@ -300,31 +435,79 @@ locationZoneSchema.statics.findSupportingVendorType = function (vendorType) {
 
 locationZoneSchema.statics.checkServiceAvailability = function (pincode, vendorType = null) {
     return this.findByPincode(pincode).then(zones => {
-        return zones.some(zone => zone.isServiceAvailable(vendorType))
-    })
+        if (!Array.isArray(zones) || zones.length === 0) {
+            return false;
+        }
+        return zones.some(zone => zone.isServiceAvailable(vendorType));
+    }).catch(error => {
+        console.error('Error checking service availability:', error);
+        return false;
+    });
 }
 
 // Static method to validate delivery for subscription purchase
 locationZoneSchema.statics.validateDeliveryForSubscription = async function (deliveryAddress, subscriptionCategory) {
     try {
+        // Validate input parameters
+        if (!deliveryAddress || typeof deliveryAddress !== 'object') {
+            return {
+                isValid: false,
+                errors: ['Invalid delivery address provided'],
+                suggestedZones: []
+            };
+        }
+
+        if (!subscriptionCategory || typeof subscriptionCategory !== 'string') {
+            return {
+                isValid: false,
+                errors: ['Invalid subscription category provided'],
+                suggestedZones: []
+            };
+        }
+
+        if (!deliveryAddress.zipCode) {
+            return {
+                isValid: false,
+                errors: ['Zip code is required in delivery address'],
+                suggestedZones: []
+            };
+        }
+
+        console.log("Validating delivery for subscription:", {
+            zipCode: deliveryAddress.zipCode,
+            subscriptionCategory: subscriptionCategory
+        });
+
         // Find zones by pincode
-        const zones = await this.findByPincode(deliveryAddress.zipCode)
+        const zones = await this.findByPincode(deliveryAddress.zipCode);
         
-        if (zones.length === 0) {
+        console.log("Found zones:", zones.length);
+
+        if (!Array.isArray(zones) || zones.length === 0) {
             return {
                 isValid: false,
                 errors: ['Delivery not available to this pincode'],
                 suggestedZones: []
-            }
+            };
         }
 
-        // Check if any zone supports the subscription category and is currently available
-        console.log("Subscription category:", subscriptionCategory);
-        
+        // Check if any zone supports the subscription category and is available for subscriptions
+        // Skip operating hours check since subscriptions are for future delivery
         const validZones = zones.filter(zone => {
-            return zone.isServiceAvailable() 
-                //    zone.isSubscriptionCategorySupported(subscriptionCategory)
-        })
+            const isServiceAvailable = zone.isServiceAvailable(null, true); // Skip operating hours check
+            const isSubscriptionSupported = zone.isSubscriptionCategorySupported(subscriptionCategory);
+            
+            console.log("Zone filtering for subscription:", {
+                zoneName: zone.zoneName,
+                isServiceAvailable,
+                isSubscriptionSupported,
+                subscriptionCategory,
+                supportedVendorTypes: zone.supportedVendorTypes,
+                serviceType: zone.serviceType
+            });
+            
+            return isServiceAvailable && isSubscriptionSupported;
+        });
 
         if (validZones.length === 0) {
             return {
@@ -332,50 +515,69 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
                 errors: [`${subscriptionCategory} service not available in this area`],
                 suggestedZones: zones.map(zone => ({
                     zoneName: zone.zoneName,
-                    supportedTypes: zone.supportedVendorTypes,
-                    operatingHours: zone.operatingHours
+                    supportedTypes: Array.isArray(zone.supportedVendorTypes) ? zone.supportedVendorTypes : [],
+                    operatingHours: zone.operatingHours,
+                    serviceType: zone.serviceType,
+                    isActive: zone.isActive
                 }))
-            }
+            };
         }
 
         // Validate address against the best zone (highest priority)
-        const bestZone = validZones[0]
-        // const addressValidation = bestZone.validateDeliveryAddress(deliveryAddress)
+        const bestZone = validZones[0];
+        const addressValidation = bestZone.validateDeliveryAddress(deliveryAddress);
 
-        // if (!addressValidation.isValid) {
-        //     return {
-        //         isValid: false,
-        //         errors: addressValidation.errors,
-        //         zone: bestZone
-        //     }
-        // }
+        if (!addressValidation.isValid) {
+            return {
+                isValid: false,
+                errors: addressValidation.errors,
+                zone: {
+                    zoneName: bestZone.zoneName,
+                    supportedTypes: bestZone.supportedVendorTypes,
+                    operatingHours: bestZone.operatingHours
+                }
+            };
+        }
 
         // Calculate delivery fee
-        let deliveryFee = 0
-        // if (deliveryAddress.coordinates && deliveryAddress.coordinates.coordinates) {
-        //     const coordinates = {
-        //         lat: deliveryAddress.coordinates.coordinates[1],
-        //         lng: deliveryAddress.coordinates.coordinates[0]
-        //     }
-        //     const distance = bestZone.calculateDistance(bestZone.coordinates.center, coordinates)
-        //     deliveryFee = bestZone.calculateDeliveryFee(distance, 0) // Order value will be calculated later
-        // }
+        let deliveryFee = 0;
+        if (deliveryAddress.coordinates && deliveryAddress.coordinates.coordinates && 
+            Array.isArray(deliveryAddress.coordinates.coordinates) && 
+            deliveryAddress.coordinates.coordinates.length >= 2) {
+            
+            const coordinates = {
+                lat: deliveryAddress.coordinates.coordinates[1],
+                lng: deliveryAddress.coordinates.coordinates[0]
+            };
+            
+            if (typeof coordinates.lat === 'number' && typeof coordinates.lng === 'number') {
+                const distance = bestZone.calculateDistance(bestZone.coordinates.center, coordinates);
+                if (distance !== Infinity) {
+                    deliveryFee = bestZone.calculateDeliveryFee(distance, 0); // Order value will be calculated later
+                }
+            }
+        }
 
         return {
             isValid: true,
             zone: bestZone,
             deliveryFee: deliveryFee,
-            supportedVendorTypes: bestZone.supportedVendorTypes,
+            supportedVendorTypes: Array.isArray(bestZone.supportedVendorTypes) ? bestZone.supportedVendorTypes : [],
             operatingHours: bestZone.operatingHours
-        }
+        };
     } catch (error) {
-        console.log('Error validating delivery area:', error);
+        console.error("Error in validateDeliveryForSubscription:", {
+            error: error.message,
+            stack: error.stack,
+            deliveryAddress,
+            subscriptionCategory
+        });
         
         return {
             isValid: false,
             errors: ['Error validating delivery area'],
             error: error.message
-        }
+        };
     }
 }
 

@@ -199,7 +199,9 @@ class OrderCreationService {
             : userSubscription.mealTiming.dinner.time
 
         // Create the order
-        const newOrder = new Order({
+        console.log(`🚀 Creating ${mealType} order for user ${userSubscription.userId.name}...`)
+        
+        const orderData = {
             userId,
             userSubscriptionId: userSubscription._id,
             dailyMealId: dailyMeal._id,
@@ -214,9 +216,100 @@ class OrderCreationService {
                 vendorType: userSubscription.vendorDetails.currentVendor.vendorType
             },
             status: EOrderStatus.UPCOMING
+        }
+
+        console.log('📋 Order data:', {
+            userId: orderData.userId,
+            mealType: orderData.mealType,
+            orderDate: orderData.orderDate,
+            deliveryDate: orderData.deliveryDate,
+            deliveryTime: orderData.deliveryTime,
+            selectedMenus: orderData.selectedMenus,
+            vendorId: orderData.vendorDetails.vendorId
         })
 
+        // Validate required fields before creating order
+        if (!orderData.userId) throw new Error('userId is required')
+        if (!orderData.userSubscriptionId) throw new Error('userSubscriptionId is required')
+        if (!orderData.dailyMealId) throw new Error('dailyMealId is required')
+        if (!orderData.orderDate) throw new Error('orderDate is required')
+        if (!orderData.deliveryDate) throw new Error('deliveryDate is required')
+        if (!orderData.mealType) throw new Error('mealType is required')
+        if (!orderData.deliveryTime) throw new Error('deliveryTime is required')
+        
+        // Validate deliveryTime format (HH:MM)
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+        if (!timeRegex.test(orderData.deliveryTime)) {
+            throw new Error(`deliveryTime must be in HH:MM format, got: ${orderData.deliveryTime}`)
+        }
+        if (!orderData.selectedMenus || orderData.selectedMenus.length === 0) throw new Error('selectedMenus is required')
+        if (!orderData.vendorDetails?.vendorId) throw new Error('vendorDetails.vendorId is required')
+        if (!orderData.deliveryAddress) throw new Error('deliveryAddress is required')
+        
+        // Validate deliveryAddress required fields
+        if (!orderData.deliveryAddress.street) throw new Error('deliveryAddress.street is required')
+        if (!orderData.deliveryAddress.city) throw new Error('deliveryAddress.city is required') 
+        if (!orderData.deliveryAddress.zipCode) throw new Error('deliveryAddress.zipCode is required')
+        
+        // Set default country if not provided
+        if (!orderData.deliveryAddress.country) {
+            orderData.deliveryAddress.country = 'India'
+        }
+        
+        // Ensure coordinates exist with default values if not provided
+        if (!orderData.deliveryAddress.coordinates) {
+            orderData.deliveryAddress.coordinates = {
+                type: 'Point',
+                coordinates: [0, 0]
+            }
+        }
+
+        const newOrder = new Order(orderData)
+        
+        // Manual orderNumber generation as backup (in case pre-save hook fails)
+        if (!newOrder.orderNumber) {
+            console.log('🔧 Manually generating order number as backup...')
+            try {
+                const date = TimezoneUtil.format(orderData.orderDate, 'date').replace(/\//g, '')
+                const count = await Order.countDocuments({
+                    orderDate: {
+                        $gte: TimezoneUtil.startOfDay(orderData.orderDate),
+                        $lte: TimezoneUtil.endOfDay(orderData.orderDate)
+                    }
+                })
+                newOrder.orderNumber = `TFX-${date}-${(count + 1).toString().padStart(4, '0')}`
+                console.log(`🔧 Manually generated order number: ${newOrder.orderNumber}`)
+            } catch (error) {
+                console.error('❌ Error in manual order number generation:', error)
+                // Final fallback using timestamp
+                const timestamp = Date.now().toString().slice(-8)
+                newOrder.orderNumber = `TFX-${timestamp}`
+                console.log(`🔧 Using timestamp fallback order number: ${newOrder.orderNumber}`)
+            }
+        }
+        
+        // Check if orderNumber was set
+        console.log('🔍 Pre-save order check:', {
+            hasOrderNumber: !!newOrder.orderNumber,
+            orderNumber: newOrder.orderNumber,
+            orderDate: newOrder.orderDate,
+            isNew: newOrder.isNew
+        })
+        
+        // Manual validation to get better error messages
+        const validationError = newOrder.validateSync()
+        if (validationError) {
+            console.error('❌ Validation error details:', {
+                message: validationError.message,
+                errors: validationError.errors,
+                orderNumber: newOrder.orderNumber
+            })
+            throw new Error(`Order validation failed: ${validationError.message}`)
+        }
+
+        console.log('✅ Order validation passed, attempting to save...')
         await newOrder.save()
+        console.log('✅ Order saved successfully with orderNumber:', newOrder.orderNumber)
 
         // Add to successful orders log
         await log.addSuccessfulOrder(
