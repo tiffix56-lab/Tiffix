@@ -21,6 +21,7 @@ interface AuthContextType extends AuthState {
   forgotPassword: (data: ForgotPasswordData) => Promise<{ success: boolean; message: string }>;
   resetPassword: (data: ResetPasswordData) => Promise<{ success: boolean; message: string }>;
   changePassword: (data: ChangePasswordData) => Promise<{ success: boolean; message: string }>;
+  deleteAccount: () => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -375,7 +376,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      await storageService.clearAuthData();
+      await storageService.clearAll();
       dispatch({ type: 'LOGOUT' });
       
       Toast.show({
@@ -383,6 +384,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         text1: 'Logged out',
         text2: 'You have been logged out successfully',
       });
+    }
+  };
+
+  const deleteAccount = async () => {
+    try {
+      const response = await authService.deleteAccount();
+      
+      if (response.success) {
+        await storageService.clearAll();
+        dispatch({ type: 'LOGOUT' });
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Account Deleted',
+          text2: 'Your account has been permanently deleted',
+        });
+        
+        return { success: true, message: response.message };
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Delete Failed',
+          text2: response.message,
+        });
+        
+        return { success: false, message: response.message };
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Delete Failed',
+        text2: 'Something went wrong',
+      });
+      
+      return { success: false, message: 'Account deletion failed' };
     }
   };
 
@@ -407,6 +443,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     forgotPassword,
     resetPassword,
     changePassword,
+    deleteAccount,
     logout,
     refreshProfile,
   };

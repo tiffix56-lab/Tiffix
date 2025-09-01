@@ -33,18 +33,18 @@ const Signup = () => {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterCredentials>({
+  } = useForm({
     resolver: yupResolver(registerSchema),
     defaultValues: {
       name: '',
       emailAddress: '',
       password: '',
       phoneNumber: '',
-      referralCode: '',
+      referralCode: undefined,
     },
   });
 
-  const onSubmit = async (data: RegisterCredentials) => {
+  const onSubmit = async (data: any) => {
     setError('');
     
     const formattedData = {

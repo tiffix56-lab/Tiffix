@@ -38,14 +38,14 @@ class MenuService {
     return {
       success: false,
       message: 'Menu not found',
-      data: null
-    } as ApiResponse<{ menu: MenuItem }>;
+      data: undefined
+    };
   }
 
   async getVendorMenus(query?: Omit<MenuQuery, 'vendorCategory'>): Promise<ApiResponse<MenuResponse>> {
     return await this.getMenus({
       ...query,
-      vendorCategory: 'food_vendor',
+      vendorCategory: 'vendor',
     });
   }
 

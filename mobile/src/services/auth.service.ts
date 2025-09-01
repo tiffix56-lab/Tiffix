@@ -105,6 +105,10 @@ class AuthService {
   async getSocialLoginUrl(provider: 'google' | 'facebook'): Promise<string> {
     return `${API_BASE_URL}${provider === 'google' ? API_ENDPOINTS.AUTH.GOOGLE : API_ENDPOINTS.AUTH.FACEBOOK}`;
   }
+
+  async deleteAccount(): Promise<ApiResponse> {
+    return await apiService.delete(API_ENDPOINTS.AUTH.DELETE_ACCOUNT);
+  }
 }
 
 export const authService = new AuthService();

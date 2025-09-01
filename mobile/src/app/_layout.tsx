@@ -17,6 +17,7 @@ import { useEffect } from 'react';
 import { enableScreens } from 'react-native-screens';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from '@/context/AuthContext';
+import { toastConfig } from '@/components/ui/ToastConfig';
 import '../global.css';
 
 // Enable react-native-screens
@@ -58,7 +59,7 @@ export default function RootLayout() {
         <Stack.Screen name="(home)" options={{ headerShown: false }} />
         <Stack.Screen name="(profile)" options={{ headerShown: false }} />
       </Stack>
-      <Toast />
+      <Toast config={toastConfig} />
     </AuthProvider>
   );
 }

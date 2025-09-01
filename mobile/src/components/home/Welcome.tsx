@@ -22,7 +22,7 @@ const Welcome = () => {
       try {
         const response = await userService.getUserProfile();
         if (response.success && response.data) {
-          setUserData(response.data.user);
+          setUserData(response.data.userProfile);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);

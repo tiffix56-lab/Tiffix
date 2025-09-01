@@ -1,11 +1,36 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { useAuth } from '../../context/AuthContext';
 
 const DeleteAccount = () => {
   const { colorScheme } = useColorScheme();
+  const { deleteAccount, isLoading } = useAuth();
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you absolutely sure you want to delete your account? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deleteAccount();
+            if (result.success) {
+              router.replace('/');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -54,11 +79,16 @@ const DeleteAccount = () => {
           </View>
 
           {/* Delete Button */}
-          <TouchableOpacity className="rounded-lg bg-red-500 py-4">
+          <TouchableOpacity 
+            onPress={handleDeleteAccount}
+            disabled={isLoading}
+            className={`rounded-lg py-4 ${
+              isLoading ? 'bg-red-300' : 'bg-red-500'
+            }`}>
             <Text
               className="text-center text-base font-medium text-white"
               style={{ fontFamily: 'Poppins_500Medium' }}>
-              Delete Account
+              {isLoading ? 'Deleting...' : 'Delete Account'}
             </Text>
           </TouchableOpacity>
 

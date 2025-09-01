@@ -3,12 +3,51 @@ import { View, Text, TouchableOpacity, ScrollView, StatusBar, TextInput } from '
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { supportService } from '../../services/support.service';
+import Toast from 'react-native-toast-message';
 
 const Complain = () => {
   const { colorScheme } = useColorScheme();
   const [selectedComplaintType, setSelectedComplaintType] = useState('Therapist not Professional');
   const [complaintText, setComplaintText] = useState('');
   const [showComplaintTypeDropdown, setShowComplaintTypeDropdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitComplaint = async () => {
+    if (complaintText.length < 10) return;
+
+    setIsSubmitting(true);
+    try {
+      const result = await supportService.submitComplaint({
+        complaintType: selectedComplaintType,
+        description: complaintText,
+      });
+
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Complaint Submitted',
+          text2: 'Your complaint has been submitted successfully',
+        });
+        setComplaintText('');
+        router.back();
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Submission Failed',
+          text2: result.message,
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Submission Failed',
+        text2: 'Something went wrong',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const complaintTypes = [
     'Therapist not Professional',
@@ -116,18 +155,19 @@ const Complain = () => {
 
           {/* Submit Button */}
           <TouchableOpacity
+            onPress={handleSubmitComplaint}
             className={`rounded-lg py-4 ${
-              complaintText.length >= 10 ? 'bg-black dark:bg-white' : 'bg-gray-300 dark:bg-gray-600'
+              complaintText.length >= 10 && !isSubmitting ? 'bg-black dark:bg-white' : 'bg-gray-300 dark:bg-gray-600'
             }`}
-            disabled={complaintText.length < 10}>
+            disabled={complaintText.length < 10 || isSubmitting}>
             <Text
               className={`text-center text-base font-medium ${
-                complaintText.length >= 10
+                complaintText.length >= 10 && !isSubmitting
                   ? 'text-white dark:text-black'
                   : 'text-gray-500 dark:text-gray-400'
               }`}
               style={{ fontFamily: 'Poppins_500Medium' }}>
-              Submit
+              {isSubmitting ? 'Submitting...' : 'Submit'}
             </Text>
           </TouchableOpacity>
 

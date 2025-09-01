@@ -24,6 +24,7 @@ export interface AuthState {
 export interface LoginCredentials {
   emailAddress: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterCredentials {
@@ -50,9 +51,8 @@ export interface ResetPasswordData {
 }
 
 export interface ChangePasswordData {
-  currentPassword: string;
+  oldPassword: string;
   newPassword: string;
-  confirmPassword: string;
 }
 
 export interface AuthResponse {

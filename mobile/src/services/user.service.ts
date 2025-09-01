@@ -13,7 +13,7 @@ class UserService {
         return {
           success: true,
           message: 'Profile will be created automatically',
-          data: { userProfile: null }
+          data: { userProfile: null as any }
         };
       }
       
@@ -22,7 +22,7 @@ class UserService {
       return {
         success: true,
         message: 'Profile will be created automatically', 
-        data: { userProfile: null }
+        data: { userProfile: null as any }
       };
     }
   }

@@ -3,15 +3,41 @@ import { View, Text, TouchableOpacity, ScrollView, StatusBar, TextInput } from '
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { useAuth } from '../../context/AuthContext';
 
 const ChangePassword = () => {
   const { colorScheme } = useColorScheme();
+  const { changePassword, isLoading } = useAuth();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      return;
+    }
+
+    const result = await changePassword({
+      oldPassword,
+      newPassword,
+    });
+
+    if (result.success) {
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      router.back();
+    }
+  };
+
+  const isFormValid = oldPassword && newPassword && confirmPassword && newPassword === confirmPassword;
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -110,11 +136,22 @@ const ChangePassword = () => {
           </View>
 
           {/* Save Button */}
-          <TouchableOpacity className="mt-8 rounded-lg bg-black py-4 dark:bg-white">
+          <TouchableOpacity 
+            onPress={handleChangePassword}
+            disabled={!isFormValid || isLoading}
+            className={`mt-8 rounded-lg py-4 ${
+              isFormValid && !isLoading 
+                ? 'bg-black dark:bg-white' 
+                : 'bg-gray-300 dark:bg-gray-600'
+            }`}>
             <Text
-              className="text-center text-base font-medium text-white dark:text-black"
+              className={`text-center text-base font-medium ${
+                isFormValid && !isLoading
+                  ? 'text-white dark:text-black'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
               style={{ fontFamily: 'Poppins_500Medium' }}>
-              Save
+              {isLoading ? 'Saving...' : 'Save'}
             </Text>
           </TouchableOpacity>
 

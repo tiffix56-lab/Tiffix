@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, StatusBar, TextInput } from '
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { supportService } from '../../services/support.service';
+import Toast from 'react-native-toast-message';
 
 const ContactUs = () => {
   const { colorScheme } = useColorScheme();
@@ -10,6 +12,50 @@ const ContactUs = () => {
   const [email, setEmail] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitContact = async () => {
+    if (!name || !email || !mobileNumber || !message) return;
+
+    setIsSubmitting(true);
+    try {
+      const result = await supportService.submitContact({
+        name,
+        email,
+        mobileNumber,
+        message,
+      });
+
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Message Sent',
+          text2: 'Your message has been sent successfully',
+        });
+        setName('');
+        setEmail('');
+        setMobileNumber('');
+        setMessage('');
+        router.back();
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Send Failed',
+          text2: result.message,
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Send Failed',
+        text2: 'Something went wrong',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isFormValid = name && email && mobileNumber && message;
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -153,11 +199,22 @@ const ContactUs = () => {
             </View>
 
             {/* Send Message Button */}
-            <TouchableOpacity className="mt-4 rounded-lg bg-black py-4 dark:bg-white ">
+            <TouchableOpacity 
+              onPress={handleSubmitContact}
+              disabled={!isFormValid || isSubmitting}
+              className={`mt-4 rounded-lg py-4 ${
+                isFormValid && !isSubmitting 
+                  ? 'bg-black dark:bg-white' 
+                  : 'bg-gray-300 dark:bg-gray-600'
+              }`}>
               <Text
-                className="text-center text-base font-medium text-white dark:text-black"
+                className={`text-center text-base font-medium ${
+                  isFormValid && !isSubmitting
+                    ? 'text-white dark:text-black'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}
                 style={{ fontFamily: 'Poppins_500Medium' }}>
-                Send Message
+                {isSubmitting ? 'Sending...' : 'Send Message'}
               </Text>
             </TouchableOpacity>
           </View>

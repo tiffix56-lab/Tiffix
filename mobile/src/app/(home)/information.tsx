@@ -62,21 +62,21 @@ const Information = () => {
     try {
       setLoading(true);
       
-      // Fetch all required data in parallel
-      const promises = [
-        addressService.getAllAddresses(),
-      ];
+      // Fetch addresses first
+      const addressResponse = await addressService.getAllAddresses();
       
+      // Initialize other responses as null
+      let subscriptionResponse: any = null;
+      let menuResponse: any = null;
+      
+      // Fetch subscription and menu data separately
       if (subscriptionId) {
-        promises.push(subscriptionService.getSubscriptionById(subscriptionId as string));
+        subscriptionResponse = await subscriptionService.getSubscriptionById(subscriptionId as string);
       }
       
       if (menuId) {
-        promises.push(menuService.getMenuById(menuId as string));
+        menuResponse = await menuService.getMenuById(menuId as string);
       }
-      
-      const responses = await Promise.all(promises);
-      const [addressResponse, subscriptionResponse, menuResponse] = responses;
       
       // Handle addresses
       if (addressResponse.success && addressResponse.data) {
@@ -84,7 +84,7 @@ const Information = () => {
         // Ensure addresses have proper coordinate format
         const validAddresses = addresses.filter(addr => 
           addr && addr.coordinates && 
-          (addr.coordinates.coordinates || addr.coordinates.latitude !== undefined)
+          addr.coordinates.latitude !== undefined
         );
         setSavedAddresses(validAddresses);
         const defaultAddress = validAddresses.find(addr => addr.isDefault);

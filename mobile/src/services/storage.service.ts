@@ -52,6 +52,8 @@ class StorageService {
       STORAGE_KEYS.ACCESS_TOKEN,
       STORAGE_KEYS.USER_DATA,
       STORAGE_KEYS.REMEMBER_ME,
+      STORAGE_KEYS.ONBOARDING_COMPLETED,
+      '@order_data',
     ]);
   }
 
