@@ -658,9 +658,9 @@ export const ValidateInitiatePurchase = Joi.object({
 });
 
 export const ValidateVerifyPayment = Joi.object({
-    razorpay_order_id: Joi.string().required(),
-    razorpay_payment_id: Joi.string().required(),
-    razorpay_signature: Joi.string().required(),
+    phonepe_transaction_id: Joi.string().required(),
+    phonepe_merchant_id: Joi.string().required(),
+    phonepe_checksum: Joi.string().required(),
     userSubscriptionId: Joi.string().hex().length(24).required()
 });
 
@@ -720,7 +720,7 @@ export const ValidateTransactionQuery = Joi.object({
     page: Joi.number().positive().optional(),
     limit: Joi.number().positive().max(100).optional(),
     status: Joi.string().valid('pending', 'processing', 'success', 'failed', 'cancelled', 'refunded').optional(),
-    paymentMethod: Joi.string().valid('razorpay', 'upi', 'card', 'netbanking', 'wallet').optional(),
+    paymentMethod: Joi.string().valid('phonepe', 'razorpay', 'upi', 'card', 'netbanking', 'wallet').optional(),
     type: Joi.string().valid('purchase', 'refund', 'cancellation').optional(),
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),

@@ -62,6 +62,12 @@ const config = {
         keyId: process.env.RAZORPAY_KEY_ID || "",
         keySecret: process.env.RAZORPAY_KEY_SECRET || "",
         webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || ""
+    },
+    phonepay: {
+        keyId: process.env.PHONEPAY_CLIENT_ID,
+        keySecret: process.env.PHONEPAY_CLIENT_SECRET,
+        merchantId: process.env.PHONEPAY_MERCHANT_ID,
+        saltIndex: process.env.PHONEPAY_SALT_INDEX || 1
     }
 }
 

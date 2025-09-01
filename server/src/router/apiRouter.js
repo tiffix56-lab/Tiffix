@@ -169,6 +169,10 @@ router.route('/admin/promo-codes/:id/stats').get(authentication, authorization([
 router.route('/subscription-purchase/initiate').post(authentication, subscriptionPurchaseController.initiatePurchase)
 router.route('/subscription-purchase/verify-payment').post(authentication, subscriptionPurchaseController.verifyPayment)
 
+// PhonePe callback routes (public - no authentication required for webhooks)
+router.route('/payments/phonepe/callback').post(subscriptionPurchaseController.phonepeCallback)
+router.route('/payments/phonepe/refund-callback').post(subscriptionPurchaseController.phonepeRefundCallback)
+
 // User subscription management
 router.route('/my-subscriptions').get(authentication, subscriptionPurchaseController.getUserSubscriptions)
 router.route('/my-subscriptions/:subscriptionId').get(authentication, subscriptionPurchaseController.getSubscriptionById)

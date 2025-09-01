@@ -3,6 +3,7 @@ import config from './config/config.js';
 import { initRateLimiter } from './config/rateLimiter.js';
 import cronService from './service/cronService.js';
 import databaseService from './service/databaseService.js';
+import paymentService from './service/paymentService.js';
 import logger from './util/logger.js';
 
 const server = app.listen(config.server.port);
@@ -20,6 +21,12 @@ const server = app.listen(config.server.port);
         logger.info('RATE_LIMITER_INITIATED');
 
         await cronService.init()
+
+        logger.info("PHONE_PAY_INIT", {
+            meta: {
+                env: paymentService.phonepeClient.env
+            }
+        })
 
         logger.info('APPLICATION_STARTED', {
             meta: {
