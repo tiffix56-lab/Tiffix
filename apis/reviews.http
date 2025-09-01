@@ -1,0 +1,150 @@
+### Review System API Testing
+
+@baseURL = http://localhost:4000/v1
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
+@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzYiLCJlbWFpbCI6InZlbmRvckBnbWFpbC5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.VendorTokenExample
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzciLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.AdminTokenExample
+
+@subscriptionId = 674c8e5b123456789012345a
+@vendorId = 674c8e5b123456789012345b
+@orderId = 674c8e5b123456789012345c
+@reviewId = 674c8e5b123456789012345d
+
+############### USER REVIEW MANAGEMENT ###############
+
+### Create Subscription Review
+POST {{baseURL}}/reviews
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "reviewType": "subscription",
+  "subscriptionId": "{{subscriptionId}}",
+  "rating": 4,
+  "reviewText": "Great subscription plan! The meals are consistently good and delivery is always on time. Really satisfied with the variety and quality."
+}
+
+### Create Vendor Review
+POST {{baseURL}}/reviews
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "reviewType": "vendor",
+  "vendorId": "{{vendorId}}",
+  "rating": 5,
+  "reviewText": "Excellent vendor! Food quality is outstanding and they always deliver fresh, hot meals. Very professional service."
+}
+
+### Create Order Review
+POST {{baseURL}}/reviews
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "reviewType": "order",
+  "orderId": "{{orderId}}",
+  "rating": 3,
+  "reviewText": "The food was okay, but delivery was a bit late. The taste was good but portion size could be better for the price."
+}
+
+### Get User's Reviews
+GET {{baseURL}}/my-reviews
+Authorization: Bearer {{userToken}}
+
+### Get User's Reviews with Filter
+GET {{baseURL}}/my-reviews?reviewType=subscription&page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User's Vendor Reviews Only
+GET {{baseURL}}/my-reviews?reviewType=vendor
+Authorization: Bearer {{userToken}}
+
+### Update Review (within 24 hours)
+PATCH {{baseURL}}/reviews/{{reviewId}}
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "rating": 5,
+  "reviewText": "Updated review: Actually, after thinking about it more, this service is really excellent. Changing my rating to 5 stars!"
+}
+
+### Delete Review (within 24 hours)
+DELETE {{baseURL}}/reviews/{{reviewId}}
+Authorization: Bearer {{userToken}}
+
+############### VENDOR REVIEW MANAGEMENT ###############
+
+### Get Vendor's Reviews
+GET {{baseURL}}/vendor/reviews
+Authorization: Bearer {{vendorToken}}
+
+### Get Vendor's Reviews with Rating Filter
+GET {{baseURL}}/vendor/reviews?minRating=4&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Get Vendor's Poor Reviews
+GET {{baseURL}}/vendor/reviews?maxRating=2
+Authorization: Bearer {{vendorToken}}
+
+############### ADMIN REVIEW MANAGEMENT ###############
+
+### Get All Reviews
+GET {{baseURL}}/admin/reviews
+Authorization: Bearer {{adminToken}}
+
+### Get Reviews with Filters
+GET {{baseURL}}/admin/reviews?reviewType=vendor&status=active&page=1&limit=20
+Authorization: Bearer {{adminToken}}
+
+### Get Reviews by Rating Range
+GET {{baseURL}}/admin/reviews?minRating=1&maxRating=2&reviewType=order
+Authorization: Bearer {{adminToken}}
+
+### Get Reviews by Date Range
+GET {{baseURL}}/admin/reviews?startDate=2024-01-01&endDate=2024-01-31
+Authorization: Bearer {{adminToken}}
+
+### Hide Review (Moderate)
+PATCH {{baseURL}}/admin/reviews/{{reviewId}}/moderate
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "hidden"
+}
+
+### Show Hidden Review
+PATCH {{baseURL}}/admin/reviews/{{reviewId}}/moderate
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "active"
+}
+
+### Get Review Statistics
+GET {{baseURL}}/admin/reviews/stats
+Authorization: Bearer {{adminToken}}
+
+### Get Review Statistics for Date Range
+GET {{baseURL}}/admin/reviews/stats?startDate=2024-01-01&endDate=2024-01-31
+Authorization: Bearer {{adminToken}}
+
+############### PUBLIC REVIEW ACCESS ###############
+
+### Get Subscription Reviews (Public)
+GET {{baseURL}}/public/subscriptions/{{subscriptionId}}/reviews
+
+### Get Subscription Reviews with Pagination
+GET {{baseURL}}/public/subscriptions/{{subscriptionId}}/reviews?page=1&limit=10&sortBy=rating
+
+### Get Vendor Reviews (Public)
+GET {{baseURL}}/public/vendors/{{vendorId}}/reviews
+
+### Get Vendor Reviews with Rating Filter
+GET {{baseURL}}/public/vendors/{{vendorId}}/reviews?minRating=4&page=1&limit=5
+
+### Get Order Review (Public)
+GET {{baseURL}}/public/orders/{{orderId}}/review

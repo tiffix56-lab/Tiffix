@@ -199,17 +199,43 @@ const userSchema = new mongoose.Schema(
                 type: Boolean,
                 default: false
             },
+            referralUsedAt: {
+                type: Date,
+                default: null
+            },
             userReferralCode: {
                 type: String,
+                unique: true,
+                sparse: true,
+                default: null
+            },
+            referralCodeGeneratedAt: {
+                type: Date,
                 default: null
             },
             totalreferralCredits: {
                 type: Number,
                 default: 0
             },
-            referralCreditsUsed: {
-                type: Number,
-                default: 0
+            referralStats: {
+                totalReferrals: {
+                    type: Number,
+                    default: 0
+                },
+                successfulReferrals: {
+                    type: Number,
+                    default: 0
+                },
+                pendingReferrals: {
+                    type: Number,
+                    default: 0
+                }
+            },
+            canRefer: {
+                type: Boolean,
+                default: function() {
+                    return this.role === 'USER'
+                }
             }
         }
     },
@@ -226,8 +252,13 @@ userSchema.index({ 'location.coordinates': '2dsphere' })
 userSchema.index({ createdAt: 1 })
 userSchema.index({ 'referral.referredBy': 1 })
 userSchema.index({ 'referral.usedReferralCode': 1 })
+userSchema.index({ 'referral.userReferralCode': 1 })
+userSchema.index({ 'referral.totalreferralCredits': -1 })
+userSchema.index({ 'referral.canRefer': 1 })
+userSchema.index({ 'referral.isReferralUsed': 1 })
 userSchema.index({ role: 1, isActive: 1 })
 userSchema.index({ role: 1, isBanned: 1 })
+userSchema.index({ role: 1, 'referral.canRefer': 1 })
 
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password') || !this.password) {
@@ -272,6 +303,112 @@ userSchema.statics.findByGoogleId = function (googleId) {
 
 userSchema.statics.findReferredUsers = function (userId) {
     return this.find({ 'referral.referredBy': userId })
+}
+
+userSchema.statics.findByReferralCode = function (referralCode) {
+    return this.findOne({ 'referral.userReferralCode': referralCode.toUpperCase() })
+}
+
+userSchema.statics.generateUniqueReferralCode = async function () {
+    const MAX_ATTEMPTS = 10
+    let attempts = 0
+    
+    while (attempts < MAX_ATTEMPTS) {
+        // Generate date-based code with timestamp
+        const now = new Date()
+        const timestamp = now.getTime().toString(36).toUpperCase()
+        const randomPart = Math.random().toString(36).substring(2, 5).toUpperCase()
+        const code = `${randomPart}${timestamp}`.substring(0, 8)
+        
+        // Check if code already exists
+        const existingUser = await this.findOne({ 'referral.userReferralCode': code })
+        if (!existingUser) {
+            return code
+        }
+        
+        attempts++
+    }
+    
+    // Fallback to random code if all attempts failed
+    const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    let fallbackCode = ''
+    for (let i = 0; i < 8; i++) {
+        fallbackCode += alphabet[Math.floor(Math.random() * alphabet.length)]
+    }
+    return fallbackCode
+}
+
+userSchema.statics.getReferralLeaderboard = function (limit = 10) {
+    return this.aggregate([
+        {
+            $match: {
+                'referral.totalreferralCredits': { $gt: 0 },
+                'referral.canRefer': true,
+                role: 'USER'
+            }
+        },
+        {
+            $lookup: {
+                from: 'users',
+                localField: '_id',
+                foreignField: 'referral.referredBy',
+                as: 'referredUsers'
+            }
+        },
+        {
+            $addFields: {
+                totalReferrals: { $size: '$referredUsers' },
+                successfulReferrals: {
+                    $size: {
+                        $filter: {
+                            input: '$referredUsers',
+                            cond: { $eq: ['$$this.referral.isReferralUsed', true] }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                name: 1,
+                'referral.userReferralCode': 1,
+                'referral.totalreferralCredits': 1,
+                totalReferrals: 1,
+                successfulReferrals: 1,
+                createdAt: 1
+            }
+        },
+        {
+            $sort: { 'referral.totalreferralCredits': -1 }
+        },
+        {
+            $limit: limit
+        }
+    ])
+}
+
+userSchema.statics.getReferralStats = function () {
+    return this.aggregate([
+        {
+            $group: {
+                _id: null,
+                totalUsers: { $sum: 1 },
+                totalReferrers: {
+                    $sum: { $cond: [{ $gt: ['$referral.totalreferralCredits', 0] }, 1, 0] }
+                },
+                totalReferralUsers: {
+                    $sum: { $cond: [{ $ne: ['$referral.referredBy', null] }, 1, 0] }
+                },
+                totalCreditsAwarded: { $sum: '$referral.totalreferralCredits' },
+                activeReferrers: {
+                    $sum: { $cond: [{ $and: [
+                        { $eq: ['$referral.canRefer', true] },
+                        { $gt: ['$referral.totalreferralCredits', 0] }
+                    ]}, 1, 0] }
+                }
+            }
+        }
+    ])
 }
 
 userSchema.methods.banUser = function (bannedBy, reason) {

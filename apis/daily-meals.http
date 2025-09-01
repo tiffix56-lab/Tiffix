@@ -1,0 +1,72 @@
+### Daily Meal Management API Testing
+
+@baseURL = http://localhost:4000/v1
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY1Njg3NjcsImV4cCI6MTc1NjY1NTE2N30.wda5z6YQ3sO3C1hh_7fsmowjo-GEqIxCNk01Ve1MkLM
+@subscriptionId = 68b2ba105d778fa67180c131
+@menuId1 = 68aea803cf4d19b3ba3f1989
+@menuId2 = 68aea803cf4d19b3ba3f1989
+
+############### ADMIN DAILY MEAL MANAGEMENT ###############
+
+### Set Today's Meal for Subscription
+POST {{baseURL}}/admin/daily-meals/set-today
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "subscriptionId": "{{subscriptionId}}",
+  "lunchMenuIds": ["{{menuId1}}", "{{menuId2}}"],
+  "dinnerMenuIds": ["{{menuId1}}"],
+  "notes": "Special meal for today - includes extra vegetables"
+}
+
+### Get All Daily Meals (Today by default)
+GET {{baseURL}}/admin/daily-meals
+Authorization: Bearer {{adminToken}}
+
+### Get Daily Meals with Date Range
+GET {{baseURL}}/admin/daily-meals?startDate=2024-01-01&endDate=2024-01-31
+Authorization: Bearer {{adminToken}}
+
+### Get Daily Meals with Filters
+GET {{baseURL}}/admin/daily-meals?vendorType=home_chef&page=1&limit=10&sortBy=mealDate&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+
+### Get Daily Meals for Specific Subscription
+GET {{baseURL}}/admin/daily-meals?subscriptionId={{subscriptionId}}&startDate=2024-01-01
+Authorization: Bearer {{adminToken}}
+
+### Get Available Menus for Subscription
+GET {{baseURL}}/admin/daily-meals/subscription/{{subscriptionId}}/menus
+Authorization: Bearer {{adminToken}}
+
+############### ORDER CREATION LOGS ###############
+
+### Get Order Creation Logs
+GET {{baseURL}}/admin/order-creation-logs
+Authorization: Bearer {{adminToken}}
+
+### Get Order Creation Logs with Filters
+GET {{baseURL}}/admin/order-creation-logs?status=failed&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get Order Creation Logs by Date Range
+GET {{baseURL}}/admin/order-creation-logs?startDate=2024-01-01&endDate=2024-01-31&subscriptionId={{subscriptionId}}
+Authorization: Bearer {{adminToken}}
+
+### Retry Failed Order Creation
+POST {{baseURL}}/admin/order-creation-logs/674c8e5b123456789012345d/retry/0
+Authorization: Bearer {{adminToken}}
+
+### Manual Order Creation (Future Feature)
+POST {{baseURL}}/admin/orders/manual-create
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "userId": "674c8e5b123456789012345e",
+  "subscriptionId": "{{subscriptionId}}",
+  "mealType": "lunch",
+  "deliveryDate": "2024-01-15",
+  "menuIds": ["{{menuId1}}"]
+}

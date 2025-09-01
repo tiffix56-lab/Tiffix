@@ -17,6 +17,7 @@ import paymentService from '../../service/paymentService.js'
 import promoCodeService from '../../service/promoCodeService.js'
 import TimezoneUtil from '../../util/timezone.js'
 import VendorAssignmentRequest from '../../models/vendorSwitchRequest.model.js'
+import { EPaymentStatus } from '../../constant/application.js'
 
 
 export default {
@@ -39,24 +40,48 @@ export default {
 
             const subscription = await Subscription.findById(subscriptionId);
             if (!subscription || !subscription.isActive) {
-                return httpError(next, 'Subscription plan not found or inactive', req, 404);
+                return httpError(next, new Error('Subscription plan not found or inactive'), req, 404);
             }
+            console.log("Delivery");
 
             // Validate delivery address and check service availability
-            const deliveryValidation = await LocationZone.validateDeliveryForSubscription(
-                deliveryAddress,
-                subscription.category
-            );
-
-            if (!deliveryValidation.isValid) {
-                return httpError(next, {
-                    message: 'Delivery not available to this address',
-                    errors: deliveryValidation.errors,
-                    suggestedZones: deliveryValidation.suggestedZones
-                }, req, 400);
+            let deliveryValidation;
+            try {
+                deliveryValidation = await LocationZone.validateDeliveryForSubscription(
+                    deliveryAddress,
+                    subscription.category
+                );
+            } catch (validationError) {
+                console.error("Delivery Validation Error:", {
+                    error: validationError.message,
+                    stack: validationError.stack,
+                    userId: userId,
+                    subscriptionId: subscriptionId,
+                    zipCode: deliveryAddress.zipCode,
+                    category: subscription.category
+                });
+                return httpError(next, new Error('Failed to validate delivery address'), req, 500);
             }
 
+            console.log("Delivery validation result:", deliveryValidation);
+
+            if (!deliveryValidation.isValid) {
+                console.error("Delivery Validation Failed:", {
+                    errors: deliveryValidation.errors,
+                    suggestedZones: deliveryValidation.suggestedZones,
+                    userId: userId,
+                    subscriptionId: subscriptionId,
+                    zipCode: deliveryAddress.zipCode,
+                    category: subscription.category
+                });
+
+                return httpError(next, new Error(`Delivery not available: ${deliveryValidation.errors.join(', ')}`), req, 400);
+            }
+
+            console.log("Delivery validation passed, continuing with subscription creation...");
+
             // Check if user already has an active subscription (using IST)
+            console.log("Checking for existing active subscriptions...");
             const currentIST = TimezoneUtil.now();
             const existingSubscription = await UserSubscription.findOne({
                 userId,
@@ -65,38 +90,62 @@ export default {
             });
 
             if (existingSubscription) {
-                return httpError(next, 'You already have an active subscription', req, 400);
+                console.log("User already has active subscription:", existingSubscription._id);
+                return httpError(next, new Error('You already have an active subscription'), req, 400);
             }
 
+            console.log("No existing active subscription found, proceeding...");
+
             // Validate meal timings against subscription plan
+            console.log("Validating meal timings...", {
+                requestMealTimings: mealTimings,
+                planMealTimings: subscription.mealTimings
+            });
+
             const planMealTimings = subscription.mealTimings;
             if (mealTimings.lunch.enabled && !planMealTimings.isLunchAvailable) {
-                return httpError(next, 'Lunch is not available for this subscription plan', req, 400);
+                console.log("Lunch not available in subscription plan");
+                return httpError(next, new Error('Lunch is not available for this subscription plan'), req, 400);
             }
             if (mealTimings.dinner.enabled && !planMealTimings.isDinnerAvailable) {
-                return httpError(next, 'Dinner is not available for this subscription plan', req, 400);
+                console.log("Dinner not available in subscription plan");
+                return httpError(next, new Error('Dinner is not available for this subscription plan'), req, 400);
             }
 
             // Validate meal timing windows
+            console.log("Validating meal timing windows...");
             if (mealTimings.lunch.enabled) {
                 const lunchTime = mealTimings.lunch.time;
                 const lunchWindow = planMealTimings.lunchOrderWindow;
+                console.log("Checking lunch timing:", {
+                    lunchTime,
+                    lunchWindow
+                });
                 if (lunchTime < lunchWindow.startTime || lunchTime > lunchWindow.endTime) {
-                    return httpError(next, `Lunch time must be between ${lunchWindow.startTime} and ${lunchWindow.endTime}`, req, 400);
+                    console.log("Lunch time outside allowed window");
+                    return httpError(next, new Error(`Lunch time must be between ${lunchWindow.startTime} and ${lunchWindow.endTime}`), req, 400);
                 }
             }
 
             if (mealTimings.dinner.enabled) {
                 const dinnerTime = mealTimings.dinner.time;
                 const dinnerWindow = planMealTimings.dinnerOrderWindow;
+                console.log("Checking dinner timing:", {
+                    dinnerTime,
+                    dinnerWindow
+                });
                 if (dinnerTime < dinnerWindow.startTime || dinnerTime > dinnerWindow.endTime) {
-                    return httpError(next, `Dinner time must be between ${dinnerWindow.startTime} and ${dinnerWindow.endTime}`, req, 400);
+                    console.log("Dinner time outside allowed window");
+                    return httpError(next, new Error(`Dinner time must be between ${dinnerWindow.startTime} and ${dinnerWindow.endTime}`), req, 400);
                 }
             }
 
             if (!mealTimings.lunch.enabled && !mealTimings.dinner.enabled) {
-                return httpError(next, 'At least one meal timing must be selected', req, 400);
+                console.log("No meal timings enabled");
+                return httpError(next, new Error('At least one meal timing must be selected'), req, 400);
             }
+
+            console.log("Meal timing validation passed, proceeding to payment...");
 
             let finalPrice = subscription.discountedPrice;
             let discountApplied = 0;
@@ -115,7 +164,7 @@ export default {
                     discountApplied = promoResult.discountAmount;
                     promoCodeData = promoResult.promoCode;
                 } catch (error) {
-                    return httpError(next, error.message, req, 400);
+                    return httpError(next, new Error(error.message), req, 400);
                 }
             }
 
@@ -125,7 +174,7 @@ export default {
 
             const today = TimezoneUtil.startOfDay();
             if (TimezoneUtil.startOfDay(subscriptionStartDate) < today) {
-                return httpError(next, 'Subscription start date cannot be in the past', req, 400);
+                return httpError(next, new Error('Subscription start date cannot be in the past'), req, 400);
             }
 
             const subscriptionEndDate = TimezoneUtil.addDays(subscription.durationDays, subscriptionStartDate);
@@ -149,14 +198,15 @@ export default {
             const transaction = new Transaction({
                 userId,
                 subscriptionId,
-                orderId: paymentOrder.id,
                 amount: finalPrice,
                 originalAmount: subscription.discountedPrice,
-                discountApplied,
-                promoCodeUsed: promoCodeData?._id || null,
+                discountAmount: discountApplied,
+                finalAmount: finalPrice, promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
                 type: 'subscription_purchase',
-                paymentGateway: 'razorpay'
+                paymentGateway: 'razorpay',
+                paymentMethod: 'razorpay',
+                gatewayOrderId: paymentOrder.id
             });
 
             await transaction.save();
@@ -173,9 +223,9 @@ export default {
                 skipCreditAvailable: subscription.userSkipMealPerPlan,
                 originalPrice: subscription.originalPrice,
                 finalPrice,
-                discountApplied,
+                discountApplied: discountApplied,
                 promoCodeUsed: promoCodeData?._id || null,
-                status: 'pending' // Will be activated after payment verification
+                status: 'pending'
             });
 
             await userSubscription.save();
@@ -202,7 +252,15 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            console.error("Initiate Purchase Error:", {
+                message: error.message,
+                stack: error.stack,
+                userId: req.authenticatedUser?._id,
+                subscriptionId: req.body?.subscriptionId
+            });
+
+            const errorMessage = error.message || 'Internal server error while initiating purchase';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -223,21 +281,44 @@ export default {
 
             const userId = req.authenticatedUser._id;
 
+            console.log("Looking for transaction with:", {
+                gatewayOrderId: razorpay_order_id,
+                userId: userId
+            });
+
             const transaction = await Transaction.findOne({
-                orderId: razorpay_order_id,
-                userId
+                gatewayOrderId: razorpay_order_id,
+                userId,
+
             });
 
             if (!transaction) {
-                return httpError(next, 'Transaction not found', req, 404);
+                console.error("Transaction not found:", {
+                    gatewayOrderId: razorpay_order_id,
+                    userId: userId
+                });
+                return httpError(next, new Error('Transaction not found for this order'), req, 404);
             }
+
+            if (transaction.status !== EPaymentStatus.PENDING) {
+                return httpError(next, new Error('Payment Already Verified'), req, 403);
+            }
+
+            console.log("Transaction found:", transaction._id);
 
             const userSubscription = await UserSubscription.findById(userSubscriptionId);
             if (!userSubscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                console.error("User subscription not found:", {
+                    userSubscriptionId,
+                    userId
+                });
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
+            console.log("User subscription found:", userSubscription._id);
+
             // Verify payment with payment service
+            console.log("Verifying payment with payment service...");
             const isPaymentValid = await paymentService.verifyPayment({
                 razorpay_order_id,
                 razorpay_payment_id,
@@ -245,6 +326,12 @@ export default {
             });
 
             if (!isPaymentValid) {
+                console.error("Payment verification failed:", {
+                    razorpay_order_id,
+                    razorpay_payment_id,
+                    userSubscriptionId
+                });
+
                 // Mark transaction as failed
                 transaction.status = 'failed';
                 transaction.failureReason = 'Payment verification failed';
@@ -254,12 +341,14 @@ export default {
                 userSubscription.status = 'failed';
                 await userSubscription.save();
 
-                return httpError(next, 'Payment verification failed', req, 400);
+                return httpError(next, new Error('Payment verification failed'), req, 400);
             }
+
+            console.log("Payment verification successful, activating subscription...");
 
             // Update transaction as successful (using IST)
             const completionTime = TimezoneUtil.now();
-            transaction.status = 'completed';
+            transaction.status = EPaymentStatus.SUCCESS;
             transaction.paymentId = razorpay_payment_id;
             transaction.completedAt = completionTime;
             await transaction.save();
@@ -316,7 +405,15 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            console.error("Verify Payment Error:", {
+                message: error.message,
+                stack: error.stack,
+                userId: req.authenticatedUser?._id,
+                orderId: req.body?.razorpay_order_id
+            });
+
+            const errorMessage = error.message || 'Internal server error while verifying payment';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -383,7 +480,15 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            console.error("Get User Subscriptions Error:", {
+                message: error.message,
+                stack: error.stack,
+                userId: req.authenticatedUser?._id,
+                query: req.query
+            });
+
+            const errorMessage = error.message || 'Internal server error while fetching subscriptions';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -403,7 +508,7 @@ export default {
                 .populate('transactionId', 'amount paymentId completedAt');
 
             if (!userSubscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             // Get vendor assignment history if available
@@ -426,7 +531,15 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            console.error("Get Subscription By ID Error:", {
+                message: error.message,
+                stack: error.stack,
+                userId: req.authenticatedUser?._id,
+                subscriptionId: req.params?.subscriptionId
+            });
+
+            const errorMessage = error.message || 'Internal server error while fetching subscription details';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -448,11 +561,11 @@ export default {
             });
 
             if (!userSubscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
             if (userSubscription.status !== 'active') {
-                return httpError(next, 'Only active subscriptions can be cancelled', req, 400);
+                return httpError(next, new Error('Only active subscriptions can be cancelled'), req, 400);
             }
 
             // Check if cancellation is allowed (e.g., within 24 hours of purchase) using IST
@@ -462,7 +575,7 @@ export default {
             const hoursDiff = timeDiff / (1000 * 60 * 60);
 
             if (hoursDiff > 24) {
-                return httpError(next, 'Subscription can only be cancelled within 24 hours of purchase', req, 400);
+                return httpError(next, new Error('Subscription can only be cancelled within 24 hours of purchase'), req, 400);
             }
 
             // Cancel the subscription (using IST)
@@ -480,7 +593,15 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            console.error("Cancel Subscription Error:", {
+                message: error.message,
+                stack: error.stack,
+                userId: req.authenticatedUser?._id,
+                subscriptionId: req.params?.subscriptionId
+            });
+
+            const errorMessage = error.message || 'Internal server error while cancelling subscription';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -502,12 +623,48 @@ export default {
             });
 
             if (!userSubscription) {
-                return httpError(next, 'Subscription not found', req, 404);
+                console.error("Subscription not found for vendor switch:", {
+                    subscriptionId,
+                    userId
+                });
+                return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
-            if (!userSubscription.canSwitchVendor()) {
-                return httpError(next, 'Vendor switch not available for this subscription', req, 400);
+            // Check if subscription is active
+            if (!userSubscription.isActive()) {
+                console.log("Cannot switch vendor - subscription not active:", {
+                    subscriptionId,
+                    status: userSubscription.status
+                });
+                return httpError(next, new Error('Cannot switch vendor for inactive subscription'), req, 400);
             }
+
+            // Check if vendor is assigned
+            if (!userSubscription.vendorDetails.isVendorAssigned || 
+                !userSubscription.vendorDetails.currentVendor || 
+                !userSubscription.vendorDetails.currentVendor.vendorId) {
+                console.log("Cannot switch vendor - no vendor currently assigned:", {
+                    subscriptionId,
+                    isVendorAssigned: userSubscription.vendorDetails.isVendorAssigned,
+                    hasCurrentVendor: !!userSubscription.vendorDetails.currentVendor
+                });
+                return httpError(next, new Error('Cannot switch vendor - no vendor currently assigned to this subscription'), req, 400);
+            }
+
+            // Check if vendor switch already used
+            if (userSubscription.vendorDetails.vendorSwitchUsed) {
+                console.log("Cannot switch vendor - switch already used:", {
+                    subscriptionId,
+                    vendorSwitchUsed: userSubscription.vendorDetails.vendorSwitchUsed
+                });
+                return httpError(next, new Error('Vendor switch has already been used for this subscription'), req, 400);
+            }
+            
+            console.log("Vendor switch validation passed:", {
+                subscriptionId,
+                currentVendorId: userSubscription.vendorDetails.currentVendor.vendorId,
+                isVendorAssigned: userSubscription.vendorDetails.isVendorAssigned
+            });
 
 
             // Find the delivery zone
@@ -535,7 +692,15 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+            console.error("Request Vendor Switch Error:", {
+                message: error.message,
+                stack: error.stack,
+                userId: req.authenticatedUser?._id,
+                subscriptionId: req.params?.subscriptionId
+            });
+
+            const errorMessage = error.message || 'Internal server error while requesting vendor switch';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };

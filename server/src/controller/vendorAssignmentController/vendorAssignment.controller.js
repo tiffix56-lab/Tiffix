@@ -86,7 +86,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching pending requests';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -101,7 +102,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching pending initial assignments';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -116,7 +118,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching pending vendor switches';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -131,7 +134,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching urgent requests';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -147,7 +151,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching requests by zone';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -161,7 +166,7 @@ export default {
                 .populate('deliveryZone')
 
             if (!request) {
-                return httpError(next, 'Assignment request not found', req, 404)
+                return httpError(next, new Error('Assignment request not found'), req, 404)
             }
 
             // Get subscription to determine category
@@ -207,7 +212,8 @@ export default {
             }
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching available vendors';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -228,21 +234,21 @@ export default {
                 .populate('userSubscriptionId')
 
             if (!request) {
-                return httpError(next, 'Assignment request not found', req, 404)
+                return httpError(next, new Error('Assignment request not found'), req, 404)
             }
 
             if (request.status !== 'pending') {
-                return httpError(next, 'Request has already been processed', req, 400)
+                return httpError(next, new Error('Request has already been processed'), req, 400)
             }
 
             // Validate vendor exists and is available
             const vendor = await VendorProfile.findById(vendorId)
             if (!vendor) {
-                return httpError(next, 'Vendor not found', req, 404)
+                return httpError(next, new Error('Vendor not found'), req, 404)
             }
 
             if (!vendor.isAvailable || !vendor.isVerified) {
-                return httpError(next, 'Vendor is not available for assignment', req, 400)
+                return httpError(next, new Error('Vendor is not available for assignment'), req, 400)
             }
 
             const userSubscription = request.userSubscriptionId
@@ -268,7 +274,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while assigning vendor';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -287,11 +294,11 @@ export default {
             const request = await VendorAssignmentRequest.findById(requestId)
 
             if (!request) {
-                return httpError(next, 'Assignment request not found', req, 404)
+                return httpError(next, new Error('Assignment request not found'), req, 404)
             }
 
             if (request.status !== 'pending') {
-                return httpError(next, 'Request has already been processed', req, 400)
+                return httpError(next, new Error('Request has already been processed'), req, 400)
             }
 
             await request.reject(adminUserId, rejectionReason, adminNotes)
@@ -302,7 +309,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while rejecting request';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -320,11 +328,11 @@ export default {
             const request = await VendorAssignmentRequest.findById(requestId)
 
             if (!request) {
-                return httpError(next, 'Assignment request not found', req, 404)
+                return httpError(next, new Error('Assignment request not found'), req, 404)
             }
 
             if (request.status !== 'pending') {
-                return httpError(next, 'Cannot update priority of processed request', req, 400)
+                return httpError(next, new Error('Cannot update priority of processed request'), req, 400)
             }
 
             await request.updatePriority(priority)
@@ -335,7 +343,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while updating priority';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -353,7 +362,7 @@ export default {
                 .populate('deliveryZone', 'zoneName city supportedVendorTypes')
 
             if (!request) {
-                return httpError(next, 'Assignment request not found', req, 404)
+                return httpError(next, new Error('Assignment request not found'), req, 404)
             }
 
             // Also populate subscription details
@@ -364,7 +373,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching request details';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -453,7 +463,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching assignment stats';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     },
 
@@ -531,7 +542,8 @@ export default {
             })
 
         } catch (error) {
-            httpError(next, error, req, 500)
+            const errorMessage = error.message || 'Internal server error while fetching all requests';
+            httpError(next, new Error(errorMessage), req, 500)
         }
     }
 }

@@ -1,6 +1,7 @@
 
 @baseURL = http://localhost:4000/v1
-@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
+POST {{baseURL}}/auth/login
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY1Njg3NjcsImV4cCI6MTc1NjY1NTE2N30.wda5z6YQ3sO3C1hh_7fsmowjo-GEqIxCNk01Ve1MkLM
 @zoneId = 689e2aec2674280083220470
 @pincode = 416788
 ## Create a new location zone
@@ -47,7 +48,35 @@ Authorization: Bearer {{accessToken}}
 ###
 
 ## Get all location zones with filters
-GET {{baseURL}}/zones?page=1&limit=10&city=Mumbai&serviceType=both_vendor_home_chef&isActive=true
+GET {{baseURL}}/zones?page=1&limit=10
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Get zones by city
+GET {{baseURL}}/zones?city=Mumbai&page=1&limit=5
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Get zones by service type
+GET {{baseURL}}/zones?serviceType=both_vendor_home_chef&page=1&limit=10
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Get zones by coordinates (within radius)
+GET {{baseURL}}/zones?lat=19.0760&lng=72.8777&radius=10&page=1&limit=10
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+###
+
+## Search zones by text
+GET {{baseURL}}/zones?search=Downtown&page=1&limit=10
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
@@ -61,9 +90,32 @@ Authorization: Bearer {{accessToken}}
 ###
 
 ## Check service availability by pincode
-GET {{baseURL}}/zones/check-service/{{pincode}}?vendorType=vendor
+GET {{baseURL}}/zones/check-service/{{pincode}}?vendorType=food_vendor
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
+
+###
+
+## Validate delivery for subscription (NEW API)
+POST {{baseURL}}/zones/validate-delivery
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+    "deliveryAddress": {
+        "street": "123 Main Street, Apartment 4B",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "country": "India",
+        "zipCode": "400001",
+        "landmark": "Near Metro Station",
+        "coordinates": {
+            "type": "Point",
+            "coordinates": [72.8777, 19.0760]
+        }
+    },
+    "subscriptionCategory": "food_vendor"
+}
 
 ###
 
@@ -101,6 +153,4 @@ Authorization: Bearer {{accessToken}}
 DELETE {{baseURL}}/admin/zones/{{zoneId}}
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
-
-###
 

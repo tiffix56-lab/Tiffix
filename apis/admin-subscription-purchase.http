@@ -1,7 +1,7 @@
 ### Admin Subscription Purchase API Testing
 
 @baseURL = http://localhost:4000/v1
-@adminToken = your_admin_access_token_here
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY1Njg3NjcsImV4cCI6MTc1NjY1NTE2N30.wda5z6YQ3sO3C1hh_7fsmowjo-GEqIxCNk01Ve1MkLM
 
 ### Get all purchase subscriptions with filters
 GET {{baseURL}}/admin/subscription-purchases?page=1&limit=20&search=user&status=active&vendorAssigned=assigned

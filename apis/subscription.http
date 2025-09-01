@@ -3,8 +3,8 @@
 # Base URL
 @baseUrl = http://localhost:4000/v1
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InVzZXJAZ21haWwuY29tIiwidXNlclR5cGUiOiJ1c2VyIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTUxNzYwOTMsImV4cCI6MTc1NTI2MjQ5M30.UxcC5v9P62mVwnRTkZVWmzgrq5Hs0UC9SvWkq16odIE
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTUxNzU4MTEsImV4cCI6MTc1NTI2MjIxMX0.hA6bDdt354l8vJDSsWLk8Hn_IzGKunAS-9cD3m5biDY
-@subscriptionId = 689ddbe0bd0e72f74f580a50
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY1Njg3NjcsImV4cCI6MTc1NjY1NTE2N30.wda5z6YQ3sO3C1hh_7fsmowjo-GEqIxCNk01Ve1MkLM
+@subscriptionId = 68b2ba105d778fa67180c131
 @menuId = 689ddbe0bd0e72f74f580a51
 
 ### ========================================
@@ -94,7 +94,7 @@ Authorization: Bearer {{adminToken}}
   "userSkipMealPerPlan": 6,
   "originalPrice": 2600,
   "discountedPrice": 2200,
-  "category": "home_chef",
+  "category": "food_vendor",
   "freeDelivery": true,
   "description": "Updated premium monthly plan with enhanced features",
   "features": ["Customizable meals", "Priority delivery", "Free snacks"],

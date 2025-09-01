@@ -21,7 +21,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { userProfile });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -91,7 +92,8 @@ export default {
                 message: 'Profile updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -117,7 +119,8 @@ export default {
                 message: 'Address added successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -161,7 +164,8 @@ export default {
                 message: 'Address updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -198,7 +202,8 @@ export default {
                 message: 'Address deleted successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -218,7 +223,8 @@ export default {
                 totalAddresses: addresses.length
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -245,7 +251,8 @@ export default {
                 message: 'Preferences updated successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 };

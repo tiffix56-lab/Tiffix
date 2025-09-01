@@ -1,60 +1,67 @@
-### Referral System API Tests
+### Enhanced Referral System API Tests
 
 # Base URL
 @baseUrl = http://localhost:4000/v1
-@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6InVzZXIiLCJyb2xlIjoidXNlciIsImlhdCI6MTc1NDQxNDg1NiwiZXhwIjoxNzU0NTAxMjU2fQ
 @adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkxZjUyODhiZmU2YjM3NDk0MDlkMzUiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6ImFkbWluIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzU0NDE0ODU2LCJleHAiOjE3NTQ1MDEyNTZ9.-dmZ9vXne8emn8xoOu4_sJZdrRkROXBTbL4dxZhwJik
 @referralCode = JXAZIHTO
+@testUserId = 6891f5288bfe6b3749409d35
 
 ### ========================================
-### PUBLIC REFERRAL ROUTES
+### PUBLIC REFERRAL ROUTES (No Auth Required)
 ### ========================================
 
-# Validate referral code (for registration form)
+# Validate referral code (Enhanced with bonus info)
 GET {{baseUrl}}/referral/validate/{{referralCode}}
+Content-Type: application/json
+
+### Test with invalid referral code
+GET {{baseUrl}}/referral/validate/INVALID123
+Content-Type: application/json
+
+### Get public referral leaderboard (motivational)
+GET {{baseUrl}}/referral/leaderboard
+Content-Type: application/json
+
+### Get leaderboard with custom limit
+GET {{baseUrl}}/referral/leaderboard?limit=20
 Content-Type: application/json
 
 ###
 
-
 ### ========================================
-### USER REFERRAL ROUTES
+### USER REFERRAL ROUTES (USER Role Only)
 ### ========================================
 
-# Generate referral link
+# Generate enhanced referral link with sharing content
 GET {{baseUrl}}/referral/generate-link
 Authorization: Bearer {{userToken}}
 
 ###
 
-# Get my referral statistics
+# Get comprehensive referral statistics
 GET {{baseUrl}}/referral/stats
 Authorization: Bearer {{userToken}}
 
+###
 
 ### ========================================
 ### ADMIN REFERRAL ROUTES
 ### ========================================
 
-# Get referral leaderboard (Admin)
-GET {{baseUrl}}/admin/referral/leaderboard
+# Get enhanced system-wide referral statistics
+GET {{baseUrl}}/admin/referral/system-stats
 Authorization: Bearer {{adminToken}}
 
 ###
 
-# Get referral leaderboard with custom limit
-GET {{baseUrl}}/admin/referral/leaderboard?limit=20
-Authorization: Bearer {{adminToken}}
-
-###
-
-# Get comprehensive referral analytics (Admin)
+# Get comprehensive referral analytics with advanced filtering
 GET {{baseUrl}}/admin/referral/analytics
 Authorization: Bearer {{adminToken}}
 
 ###
 
-# Get referral analytics with pagination
+# Get referral analytics with pagination and filters
 GET {{baseUrl}}/admin/referral/analytics?page=1&limit=10&sortBy=totalreferralCredits&sortOrder=desc
 Authorization: Bearer {{adminToken}}
 
@@ -66,39 +73,143 @@ Authorization: Bearer {{adminToken}}
 
 ###
 
-# Get referral analytics sorted by different criteria
-GET {{baseUrl}}/admin/referral/analytics?sortBy=referralCreditsUsed&sortOrder=asc&limit=15
+# Disable user referral capability
+POST {{baseUrl}}/admin/referral/users/{{testUserId}}/disable
 Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "reason": "Spam referral activities detected"
+}
 
 ###
 
-# Get recent referral analytics (last 30 days)
-GET {{baseUrl}}/admin/referral/analytics?startDate=2024-07-01&sortBy=totalreferralCredits&sortOrder=desc
+# Enable user referral capability
+POST {{baseUrl}}/admin/referral/users/{{testUserId}}/enable
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+# Process referral reward manually (Admin override)
+POST {{baseUrl}}/admin/referral/users/{{testUserId}}/process-reward
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "subscriptionAmount": 999
+}
+
+###
+
+### ========================================
+### REGISTRATION FLOW WITH REFERRAL
+### ========================================
+
+# Step 1: Validate referral code before registration
+GET {{baseUrl}}/referral/validate/{{referralCode}}
+
+### Step 2: Register with referral code
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "Test User With Referral",
+    "emailAddress": "testreferral@example.com",
+    "password": "TestPassword123",
+    "phoneNumber": "1234567890",
+    "referralCode": "{{referralCode}}"
+}
+
+### Step 3: Verify email (this will trigger referral reward processing)
+POST {{baseUrl}}/auth/verify-email
+Content-Type: application/json
+
+{
+    "emailAddress": "testreferral@example.com",
+    "otp": "000000"
+}
+
+###
+
+### ========================================
+### USER PROFILE WITH REFERRAL INFO
+### ========================================
+
+# Get user profile with referral information
+GET {{baseUrl}}/user-profiles
+Authorization: Bearer {{userToken}}
+
+###
+
+### ========================================
+### TESTING EDGE CASES
+### ========================================
+
+# Test: Try to use own referral code (should fail)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "Self Referral Test",
+    "emailAddress": "selfreferral@example.com",
+    "password": "TestPassword123",
+    "phoneNumber": "1234567891",
+    "referralCode": "USERS_OWN_CODE"
+}
+
+### Test: Try to generate referral link as non-USER role (should fail)
+GET {{baseUrl}}/referral/generate-link
 Authorization: Bearer {{adminToken}}
 
 ###
 
 ### ========================================
-### REFERRAL ANALYTICS QUERY EXAMPLES
+### LEADERBOARD AND STATS TESTING
 ### ========================================
 
-# Basic analytics (all time)
-# GET {{baseUrl}}/admin/referral/analytics
+# Test different leaderboard limits
+GET {{baseUrl}}/referral/leaderboard?limit=5
 
-# With pagination
-# GET {{baseUrl}}/admin/referral/analytics?page=2&limit=10
+### Test maximum leaderboard limit (should cap at 50)
+GET {{baseUrl}}/referral/leaderboard?limit=100
 
-# Filter by date range
-# GET {{baseUrl}}/admin/referral/analytics?startDate=2024-01-01&endDate=2024-06-30
+###
 
-# Sort by total credits earned
-# GET {{baseUrl}}/admin/referral/analytics?sortBy=totalreferralCredits&sortOrder=desc
+### ========================================
+### ANALYTICS TESTING
+### ========================================
 
-# Sort by credits used
-# GET {{baseUrl}}/admin/referral/analytics?sortBy=referralCreditsUsed&sortOrder=desc
+# Test analytics with different sorting options
+GET {{baseUrl}}/admin/referral/analytics?sortBy=totalreferralCredits&sortOrder=asc&limit=15
+Authorization: Bearer {{adminToken}}
 
-# Sort by registration date
-# GET {{baseUrl}}/admin/referral/analytics?sortBy=createdAt&sortOrder=desc
+### Test analytics with recent date filter (last 30 days)
+GET {{baseUrl}}/admin/referral/analytics?startDate=2024-11-01&sortBy=totalreferralCredits&sortOrder=desc
+Authorization: Bearer {{adminToken}}
 
-# Get top performers (high limit, sorted by credits)
-# GET {{baseUrl}}/admin/referral/analytics?limit=50&sortBy=totalreferralCredits&sortOrder=desc
+###
+
+### ========================================
+### INTEGRATION WITH USER MANAGEMENT
+### ========================================
+
+# Get user details with referral info through admin panel
+GET {{baseUrl}}/admin/users/{{testUserId}}
+Authorization: Bearer {{adminToken}}
+
+### Get all users with referral filtering
+GET {{baseUrl}}/admin/users?hasReferral=true
+Authorization: Bearer {{adminToken}}
+
+###
+
+### ========================================
+### TRANSACTION HISTORY WITH REFERRAL CREDITS
+### ========================================
+
+# Check user transactions including referral credit usage
+GET {{baseUrl}}/my-transactions
+Authorization: Bearer {{userToken}}
+
+###

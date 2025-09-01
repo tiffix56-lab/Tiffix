@@ -38,6 +38,10 @@ const userSubscriptionSchema = new mongoose.Schema(
             type: Number,
             default: 6
         },
+        skipCreditUsed: {
+            type: Number,
+            default: 0
+        },
 
         vendorDetails: {
             isVendorAssigned: {
@@ -317,7 +321,11 @@ userSubscriptionSchema.methods.useVendorSwitch = function () {
 }
 
 userSubscriptionSchema.methods.canSwitchVendor = function () {
-    return !this.vendorDetails.vendorSwitchUsed && this.isActive()
+    return !this.vendorDetails.vendorSwitchUsed && 
+           this.isActive() && 
+           this.vendorDetails.isVendorAssigned && 
+           this.vendorDetails.currentVendor && 
+           this.vendorDetails.currentVendor.vendorId
 }
 
 userSubscriptionSchema.methods.getDailyMealCount = function () {
@@ -342,8 +350,38 @@ userSubscriptionSchema.methods.skipMeal = function () {
     if (!this.canSkipMeal()) {
         throw new Error('No skip credits available or subscription not active')
     }
+    
+    // Use one skip credit
     this.skipCreditAvailable -= 1
+    this.skipCreditUsed += 1
+    
+    // Calculate if we need to extend subscription
+    // 2 skips = 1 day extension
+    const totalSkipsUsed = this.skipCreditUsed
+    const daysToExtend = Math.floor(totalSkipsUsed / 2)
+    
+    // If we have used an even number of skips, extend the subscription
+    if (totalSkipsUsed % 2 === 0 && totalSkipsUsed > 0) {
+        // Extend end date by 1 day (since we just completed 2 skips)
+        this.endDate = TimezoneUtil.addDays(1, this.endDate)
+        console.log(`🔄 Extended subscription by 1 day. New end date: ${TimezoneUtil.format(this.endDate, 'date')}`)
+    }
+    
     return this.save()
+}
+
+userSubscriptionSchema.methods.getSkipInfo = function () {
+    const totalSkipsUsed = this.skipCreditUsed
+    const daysAlreadyExtended = Math.floor(totalSkipsUsed / 2)
+    const pendingSkips = totalSkipsUsed % 2 // 0 or 1
+    
+    return {
+        skipCreditsAvailable: this.skipCreditAvailable,
+        skipCreditsUsed: this.skipCreditUsed,
+        daysExtended: daysAlreadyExtended,
+        pendingSkips: pendingSkips, // Skips waiting to complete a pair
+        nextExtensionAt: pendingSkips === 1 ? 'Next skip will extend by 1 day' : 'Need 2 more skips for 1 day extension'
+    }
 }
 
 userSubscriptionSchema.statics.findActiveByUser = function (userId) {

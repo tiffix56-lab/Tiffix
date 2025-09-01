@@ -22,7 +22,14 @@ export default {
 
             httpResponse(req, res, 201, responseMessage.SUCCESS, { zone: savedZone });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Create Location Zone Error:", {
+                message: err.message,
+                stack: err.stack,
+                body: req.body
+            });
+
+            const errorMessage = err.message || 'Internal server error while creating location zone';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -141,7 +148,7 @@ export default {
             // Add zone-specific statistics for each zone
             const zonesWithStats = await Promise.all(zones.map(async (zone) => {
                 const zoneObj = zone.toObject ? zone.toObject() : zone;
-                
+
                 // Get statistics for this specific zone
                 const zoneStats = await Promise.all([
                     // Users in this zone (based on location pincode)
@@ -243,7 +250,7 @@ export default {
                 // Total zones
                 LocationZone.countDocuments(),
                 LocationZone.countDocuments({ isActive: true }),
-                
+
                 // Global user statistics
                 User.aggregate([
                     {
@@ -354,7 +361,14 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Get All Location Zones Error:", {
+                message: err.message,
+                stack: err.stack,
+                query: req.query
+            });
+
+            const errorMessage = err.message || 'Internal server error while fetching location zones';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -438,12 +452,19 @@ export default {
                 availableVendors: stats[1][0]?.availableVendors || 0
             };
 
-            httpResponse(req, res, 200, responseMessage.SUCCESS, { 
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 zone: zone.toObject(),
                 stats: zoneStats
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Get Location Zone By ID Error:", {
+                message: err.message,
+                stack: err.stack,
+                zoneId: req.params.id
+            });
+
+            const errorMessage = err.message || 'Internal server error while fetching location zone details';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -468,7 +489,15 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { zone: updatedZone });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Update Location Zone Error:", {
+                message: err.message,
+                stack: err.stack,
+                zoneId: req.params.id,
+                body: req.body
+            });
+
+            const errorMessage = err.message || 'Internal server error while updating location zone';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -483,7 +512,14 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Location zone deleted successfully' });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Delete Location Zone Error:", {
+                message: err.message,
+                stack: err.stack,
+                zoneId: req.params.id
+            });
+
+            const errorMessage = err.message || 'Internal server error while deleting location zone';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -509,14 +545,68 @@ export default {
 
             const availableZones = zones.filter(zone => zone.isServiceAvailable(vendorType));
 
+            // Add enhanced response with zone details
+            const zoneDetails = availableZones.map(zone => ({
+                _id: zone._id,
+                zoneName: zone.zoneName,
+                city: zone.city,
+                serviceType: zone.serviceType,
+                supportedVendorTypes: zone.supportedVendorTypes,
+                operatingHours: zone.operatingHours,
+                deliveryFee: zone.deliveryFee,
+                isActive: zone.isActive
+            }));
+
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 available: availableZones.length > 0,
-                zones: availableZones,
+                zones: zoneDetails,
+                totalZones: zones.length,
+                availableZones: availableZones.length,
                 pincode,
-                vendorType: vendorType || 'all'
+                vendorType: vendorType || 'all',
+                message: availableZones.length > 0 ? 'Service available' : 'Service temporarily unavailable'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Check Service Availability Error:", {
+                message: err.message,
+                stack: err.stack,
+                pincode: req.params.pincode,
+                vendorType: req.query.vendorType
+            });
+
+            const errorMessage = err.message || 'Internal server error while checking service availability';
+            return httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    // New method to validate delivery for subscription
+    validateDeliveryForSubscription: async (req, res, next) => {
+        try {
+            const { body } = req;
+            const { deliveryAddress, subscriptionCategory } = body;
+
+            if (!deliveryAddress || !subscriptionCategory) {
+                return httpError(next, new Error('Delivery address and subscription category are required'), req, 400);
+            }
+
+            const validation = await LocationZone.validateDeliveryForSubscription(deliveryAddress, subscriptionCategory);
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                ...validation,
+                requestData: {
+                    deliveryAddress,
+                    subscriptionCategory
+                }
+            });
+        } catch (err) {
+            console.error("Validate Delivery For Subscription Error:", {
+                message: err.message,
+                stack: err.stack,
+                body: req.body
+            });
+
+            const errorMessage = err.message || 'Internal server error while validating delivery for subscription';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -549,7 +639,16 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Calculate Delivery Fee Error:", {
+                message: err.message,
+                stack: err.stack,
+                zoneId: req.params.zoneId,
+                distance: req.query.distance,
+                orderValue: req.query.orderValue
+            });
+
+            const errorMessage = err.message || 'Internal server error while calculating delivery fee';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -570,7 +669,14 @@ export default {
                 message: `Zone ${zone.isActive ? 'activated' : 'deactivated'} successfully`
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            console.error("Toggle Zone Status Error:", {
+                message: err.message,
+                stack: err.stack,
+                zoneId: req.params.id
+            });
+
+            const errorMessage = err.message || 'Internal server error while toggling zone status';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 

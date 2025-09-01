@@ -17,7 +17,8 @@ export default {
         try {
             httpResponse(req, res, 200, responseMessage.SUCCESS);
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -40,7 +41,7 @@ export default {
             const isPasswordValid = await user.comparePassword(password);
 
             if (!isPasswordValid) {
-                return httpError(next, new Error(responseMessage.AUTH.PASSWORD_NOT_MATCH), req, 401);
+                return httpError(next, new Error(responseMessage.customMessage("Invalid Credentials")), req, 401);
             }
 
             if (!user.isAccountConfirmed()) {
@@ -75,7 +76,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -126,7 +128,9 @@ export default {
                     timestamp: TimezoneUtil.now()
                 },
                 referral: {
-                    userReferralCode: quicker.generateReferralCode()
+                    userReferralCode: await userModel.generateUniqueReferralCode(),
+                    referralCodeGeneratedAt: TimezoneUtil.now(),
+                    canRefer: true
                 }
             };
 
@@ -165,7 +169,8 @@ export default {
                 requiresVerification: true
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -174,7 +179,8 @@ export default {
             res.clearCookie('accessToken');
             httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Logged out successfully' });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -205,7 +211,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Password changed successfully' });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -250,6 +257,19 @@ export default {
                 console.warn('User profile creation failed:', profileError.message);
             }
 
+            // Process referral rewards after email verification
+            let referralRewardMessage = '';
+            if (user.referral.referredBy && !user.referral.isReferralUsed) {
+                try {
+                    const referralResult = await referralService.processReferralReward(user._id);
+                    if (referralResult.success) {
+                        referralRewardMessage = ` 🎉 Referral bonus: You got ${referralResult.newUserCredits} credits and your referrer got ${referralResult.referrerCredits} credits!`;
+                    }
+                } catch (referralError) {
+                    console.warn('Referral reward processing failed:', referralError.message);
+                }
+            }
+
             try {
                 await emailService.sendWelcomeEmail(user.emailAddress, user.name, user.role);
             } catch (emailError) {
@@ -275,18 +295,22 @@ export default {
             });
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: 'Email verified successfully!',
+                message: `Email verified successfully!${referralRewardMessage}`,
                 user: {
                     id: user._id,
                     email: user.emailAddress,
                     name: user.name,
                     role: user.role,
-                    isAccountConfirmed: true
+                    isAccountConfirmed: true,
+                    referralCode: user.referral.userReferralCode,
+                    canRefer: user.referral.canRefer
                 },
-                accessToken
+                accessToken,
+                hasReferralReward: !!referralRewardMessage
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -323,7 +347,8 @@ export default {
                 message: 'New verification code sent to your email'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -363,7 +388,8 @@ export default {
                 message: 'Password reset code sent to your email'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -398,7 +424,8 @@ export default {
                 message: 'Password reset successfully'
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -423,7 +450,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -468,7 +496,8 @@ export default {
             });
 
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -502,7 +531,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -513,7 +543,8 @@ export default {
                 message: "Failed Authentication"
             })
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -564,7 +595,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -605,7 +637,7 @@ export default {
             if (userProfile) {
                 // Check if user has no default address or no addresses at all
                 const hasDefaultAddress = userProfile.addresses && userProfile.addresses.some(addr => addr.isDefault);
-                
+
                 if (!hasDefaultAddress || userProfile.addresses.length === 0) {
                     // Create a new address from location data and mark as default
                     const newAddress = {
@@ -647,7 +679,8 @@ export default {
                 }
             });
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };

@@ -14,6 +14,9 @@ import vendorCustomerManagementController from '../controller/subscriptionPurcha
 import transactionController from '../controller/transactionController/transaction.controller.js'
 import userAdminController from '../controller/AdminController/user.admincontroller.js'
 import vendorAssignmentController from '../controller/vendorAssignmentController/vendorAssignment.controller.js'
+import dailyMealController from '../controller/orderController/dailyMeal.controller.js'
+import orderController from '../controller/orderController/order.controller.js'
+import reviewController from '../controller/reviewController/review.controller.js'
 import { uploadFiles } from '../middleware/multerHandler.js'
 import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
@@ -72,15 +75,20 @@ router.route('/user-profiles/preferences').patch(authentication, userProfileCont
 
 
 // ############### REFERRAL ROUTES ####################
+// Public referral routes
 router.route('/referral/validate/:referralCode').get(referralController.validateReferralCode)
+router.route('/referral/leaderboard').get(referralController.getReferralLeaderboard)
 
 // User referral routes
-router.route('/referral/generate-link').get(authentication, referralController.generateReferralLink)
+router.route('/referral/generate-link').get(authentication, authorization([EUserRole.USER]), referralController.generateReferralLink)
 router.route('/referral/stats').get(authentication, referralController.getReferralStats)
 
 // Admin referral routes
 router.route('/admin/referral/analytics').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralAnalytics)
-router.route('/admin/referral/leaderboard').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralLeaderboard)
+router.route('/admin/referral/system-stats').get(authentication, authorization([EUserRole.ADMIN]), referralController.getSystemReferralStats)
+router.route('/admin/referral/users/:userId/disable').post(authentication, authorization([EUserRole.ADMIN]), referralController.disableUserReferrals)
+router.route('/admin/referral/users/:userId/enable').post(authentication, authorization([EUserRole.ADMIN]), referralController.enableUserReferrals)
+router.route('/admin/referral/users/:userId/process-reward').post(authentication, authorization([EUserRole.ADMIN]), referralController.processReferralReward)
 
 
 // ############### MENU ROUTES ####################
@@ -222,5 +230,56 @@ router.route('/admin/users/:id').delete(authentication, authorization([EUserRole
 router.route('/admin/users/:id/ban').post(authentication, authorization([EUserRole.ADMIN]), userAdminController.banUser)
 router.route('/admin/users/:id/unban').post(authentication, authorization([EUserRole.ADMIN]), userAdminController.unbanUser)
 router.route('/admin/users/:id/toggle-status').put(authentication, authorization([EUserRole.ADMIN]), userAdminController.toggleUserStatus)
+
+// ############### ORDER MANAGEMENT ROUTES ####################
+
+// ############### DAILY MEAL MANAGEMENT ROUTES (ADMIN ONLY) ####################
+// Admin daily meal management - for setting daily menus for subscriptions
+router.route('/admin/daily-meals/set-today').post(authentication, authorization([EUserRole.ADMIN]), dailyMealController.setTodayMeal)
+router.route('/admin/daily-meals').get(authentication, authorization([EUserRole.ADMIN]), dailyMealController.getMeals)
+router.route('/admin/daily-meals/subscription/:subscriptionId/menus').get(authentication, authorization([EUserRole.ADMIN]), dailyMealController.getAvailableMenusForSubscription)
+
+// Order creation logs and management
+router.route('/admin/order-creation-logs').get(authentication, authorization([EUserRole.ADMIN]), dailyMealController.getOrderCreationLogs)
+router.route('/admin/order-creation-logs/:logId/retry/:failedOrderIndex').post(authentication, authorization([EUserRole.ADMIN]), dailyMealController.retryFailedOrder)
+router.route('/admin/orders/manual-create').post(authentication, authorization([EUserRole.ADMIN]), dailyMealController.createManualOrder)
+
+// ############### ORDER ROUTES ####################
+
+// User order management (role checked in controller)
+router.route('/my-orders').get(authentication, orderController.getUserOrders)
+router.route('/orders/:orderId/skip').post(authentication, orderController.skipOrder)
+router.route('/orders/:orderId/cancel').post(authentication, orderController.cancelOrder)
+
+// Vendor order management (role checked in controller)
+router.route('/vendor/orders').get(authentication, authorization([EUserRole.VENDOR]), orderController.getVendorOrders)
+router.route('/orders/:orderId/status').patch(authentication, orderController.updateOrderStatus)
+
+// Admin order management (role checked in controller)
+router.route('/admin/orders').get(authentication, authorization([EUserRole.ADMIN]), orderController.getAdminOrders)
+router.route('/admin/orders/:orderId/confirm-delivery').post(authentication, orderController.confirmDelivery)
+
+// Common route (role checked in controller)
+router.route('/orders/:orderId').get(authentication, orderController.getOrderById)
+
+// ############### REVIEW ROUTES ####################
+// User review routes
+router.route('/reviews').post(authentication, authorization([EUserRole.USER]), reviewController.createReview)
+router.route('/my-reviews').get(authentication, authorization([EUserRole.USER]), reviewController.getUserReviews)
+router.route('/reviews/:reviewId').patch(authentication, authorization([EUserRole.USER]), reviewController.updateReview)
+router.route('/reviews/:reviewId').delete(authentication, authorization([EUserRole.USER]), reviewController.deleteReview)
+
+// Vendor review routes
+router.route('/vendor/reviews').get(authentication, authorization([EUserRole.VENDOR]), reviewController.getVendorReviews)
+
+// Admin review routes
+router.route('/admin/reviews').get(authentication, authorization([EUserRole.ADMIN]), reviewController.getAllReviews)
+router.route('/admin/reviews/:reviewId/moderate').patch(authentication, authorization([EUserRole.ADMIN]), reviewController.moderateReview)
+router.route('/admin/reviews/stats').get(authentication, authorization([EUserRole.ADMIN]), reviewController.getReviewStats)
+
+// Public review routes (no authentication required)
+router.route('/public/subscriptions/:subscriptionId/reviews').get(reviewController.getSubscriptionReviews)
+router.route('/public/vendors/:vendorId/reviews').get(reviewController.getPublicVendorReviews)
+router.route('/public/orders/:orderId/review').get(reviewController.getOrderReview)
 
 export default router

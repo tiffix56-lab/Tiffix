@@ -35,7 +35,7 @@ export default {
             const skip = (page - 1) * limit;
             const vendorProfile = await VendorProfile.findOne({ userId: vendorId });
             if (!vendorProfile) {
-                return httpError(next, 'Vendor profile not found', req, 404);
+                return httpError(next, new Error('Vendor profile not found'), req, 404);
             }
 
             const query = {
@@ -287,7 +287,10 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+
+            const errorMessage = error.message || 'Internal server error while processing vendor request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -300,7 +303,7 @@ export default {
             // Find vendor profile
             const vendorProfile = await VendorProfile.findOne({ userId: vendorId });
             if (!vendorProfile) {
-                return httpError(next, 'Vendor profile not found', req, 404);
+                return httpError(next, new Error('Vendor profile not found'), req, 404);
             }
 
             // Find subscription and verify it belongs to this vendor
@@ -317,7 +320,7 @@ export default {
                 .populate('vendorDetails.vendorsAssignedHistory.assignedBy', 'name');
 
             if (!subscription) {
-                return httpError(next, 'Customer subscription not found or not assigned to you', req, 404);
+                return httpError(next, new Error('Customer subscription not found or not assigned to you'), req, 404);
             }
 
             // Get delivery zone info
@@ -387,7 +390,9 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+            const errorMessage = error.message || 'Internal server error while processing vendor request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
@@ -409,7 +414,7 @@ export default {
             // Find vendor profile
             const vendorProfile = await VendorProfile.findOne({ userId: vendorId });
             if (!vendorProfile) {
-                return httpError(next, 'Vendor profile not found', req, 404);
+                return httpError(next, new Error('Vendor profile not found'), req, 404);
             }
 
             let dateFilter = {};
@@ -603,7 +608,10 @@ export default {
             });
 
         } catch (error) {
-            httpError(next, error, req, 500);
+
+
+            const errorMessage = error.message || 'Internal server error while processing vendor request';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 

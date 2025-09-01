@@ -9,7 +9,8 @@ export default {
         try {
             httpResponse(req, res, 200, responseMessage.SUCCESS);
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
     health: (req, res, next) => {
@@ -22,7 +23,8 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, healthData);
         } catch (err) {
-            httpError(next, err, req, 500);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
         }
     },
     uploadFile: async (req, res, next) => {
@@ -47,7 +49,8 @@ export default {
 
             return httpResponse(req, res, 200, responseMessage.SUCCESS, uploadedFile)
         } catch (err) {
-            return httpError(next, err, req, 500)
+            const errorMessage = err.message || 'Internal server error';
+            return httpError(next, new Error(errorMessage), req, 500)
         }
     },
 };

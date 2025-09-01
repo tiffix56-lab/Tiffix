@@ -6,9 +6,10 @@ const transactionSchema = new mongoose.Schema(
     {
         transactionId: {
             type: String,
-            required: true,
+            required: false,
             unique: true,
-            uppercase: true
+            uppercase: true,
+            sparse: true
         },
         userId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -27,7 +28,7 @@ const transactionSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ['purchase', 'refund', 'cancellation'],
+            enum: ['purchase', 'refund', 'cancellation', 'subscription_purchase'],
             default: 'purchase'
         },
         amount: {
@@ -47,7 +48,7 @@ const transactionSchema = new mongoose.Schema(
         },
         finalAmount: {
             type: Number,
-            required: true,
+            required: false,
             min: 0
         },
         currency: {
@@ -57,7 +58,8 @@ const transactionSchema = new mongoose.Schema(
         paymentMethod: {
             type: String,
             enum: ['razorpay', 'upi', 'card', 'netbanking', 'wallet'],
-            required: true
+            required: false,
+            default: 'razorpay'
         },
         paymentGateway: {
             type: String,
@@ -65,7 +67,7 @@ const transactionSchema = new mongoose.Schema(
         },
         gatewayTransactionId: {
             type: String,
-            required: true
+            required: false
         },
         gatewayPaymentId: {
             type: String,
@@ -144,12 +146,26 @@ transactionSchema.index({ userId: 1, createdAt: -1 })
 transactionSchema.index({ status: 1, createdAt: -1 })
 
 transactionSchema.pre('save', function (next) {
-    if (this.finalAmount !== (this.originalAmount - this.discountAmount)) {
-        next(new Error('Final amount calculation is incorrect'))
+    // Auto-generate transactionId if not provided
+    if (!this.transactionId) {
+        this.transactionId = this.constructor.generateTransactionId()
     }
 
-    if (this.discountAmount > this.originalAmount) {
-        next(new Error('Discount amount cannot exceed original amount'))
+    // Auto-calculate finalAmount if not provided
+    if (!this.finalAmount && this.amount) {
+        this.finalAmount = this.amount
+    }
+
+    // Validate finalAmount calculation if both originalAmount and discountAmount exist
+    if (this.originalAmount && this.discountAmount !== undefined) {
+        const expectedFinal = this.originalAmount - this.discountAmount
+        if (this.finalAmount && this.finalAmount !== expectedFinal) {
+            return next(new Error('Final amount calculation is incorrect'))
+        }
+    }
+
+    if (this.discountAmount && this.originalAmount && this.discountAmount > this.originalAmount) {
+        return next(new Error('Discount amount cannot exceed original amount'))
     }
 
     next()
