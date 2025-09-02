@@ -1,0 +1,75 @@
+import { apiService } from './api.service';
+import { API_ENDPOINTS } from '../constants/api';
+import { ApiResponse } from '../types/auth.types';
+
+export interface Transaction {
+  _id: string;
+  userId: string;
+  subscriptionId: string;
+  orderId: string;
+  amount: number;
+  originalAmount: number;
+  discountApplied: number;
+  finalAmount: number;
+  status: 'pending' | 'success' | 'failed' | 'refunded';
+  type: 'subscription_purchase' | 'refund';
+  paymentGateway: 'phonepe';
+  gatewayOrderId?: string;
+  gatewayPaymentId?: string;
+  gatewaySignature?: string;
+  promoCodeUsed?: string;
+  refund?: {
+    refundId: string;
+    refundAmount: number;
+    refundDate: string;
+    refundReason: string;
+    refundStatus: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  subscription?: {
+    planName: string;
+    duration: string;
+    durationDays: number;
+  };
+}
+
+export interface TransactionResponse {
+  transactions: Transaction[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  };
+}
+
+class TransactionService {
+  async getUserTransactions(): Promise<ApiResponse<TransactionResponse>> {
+    try {
+      const response = await apiService.get<TransactionResponse>(API_ENDPOINTS.TRANSACTIONS.MY_TRANSACTIONS);
+      
+      if (!response.success && (response.message?.includes('not found') || response.message?.includes('No transactions'))) {
+        return {
+          success: true,
+          message: 'No transactions yet',
+          data: { transactions: [] }
+        };
+      }
+      
+      return response;
+    } catch (error) {
+      return {
+        success: true,
+        message: 'No transactions yet', 
+        data: { transactions: [] }
+      };
+    }
+  }
+
+  async getTransactionById(id: string): Promise<ApiResponse<{ transaction: Transaction }>> {
+    return await apiService.get<{ transaction: Transaction }>(`${API_ENDPOINTS.TRANSACTIONS.MY_TRANSACTIONS}/${id}`);
+  }
+}
+
+export const transactionService = new TransactionService();
