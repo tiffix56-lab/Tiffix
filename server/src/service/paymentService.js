@@ -1,17 +1,28 @@
-import Razorpay from 'razorpay'
 import crypto from 'crypto'
 import config from '../config/config.js'
 import Transaction from '../models/transaction.model.js'
 import UserSubscription from '../models/userSubscription.model.js'
 import UserProfile from '../models/userProfile.model.js'
 import TimezoneUtil from '../util/timezone.js'
+import { Env, StandardCheckoutClient, StandardCheckoutPayRequest } from "pg-sdk-node";
+
+
 
 class PaymentService {
     constructor() {
-        this.razorpay = new Razorpay({
-            key_id: config.razorpay?.keyId || process.env.RAZORPAY_KEY_ID,
-            key_secret: config.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET
-        })
+        console.log(config.phonepay.keyId, config.phonepay.keySecret);
+
+        this.phonepeClient = StandardCheckoutClient.getInstance(
+            config.phonepay.keyId || process.env.PHONEPAY_CLIENT_ID,
+            config.phonepay.keySecret || process.env.PHONEPAY_CLIENT_SECRET,
+            1,
+            Env.SANDBOX
+        );
+
+        // PhonePe merchant configuration
+        this.merchantId = config.phonepay.merchantId || process.env.PHONEPAY_MERCHANT_ID;
+        this.saltIndex = config.phonepay.saltIndex || process.env.PHONEPAY_SALT_INDEX || 1;
+        this.saltKey = config.phonepay.keySecret || process.env.PHONEPAY_CLIENT_SECRET;
     }
 
     async createOrder(orderData) {
@@ -23,16 +34,34 @@ class PaymentService {
                 notes = {}
             } = orderData
 
-            const order = await this.razorpay.orders.create({
-                amount: Math.round(amount * 100), // Convert to paise
-                currency,
-                receipt,
-                notes
-            })
+            // Generate unique merchant order ID
+            const orderId = `TXN_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-            return order // Return the order directly for easier access
+            // Build PhonePe payment request using the proper builder pattern
+            const request = StandardCheckoutPayRequest.builder()
+                .merchantOrderId(orderId)
+                .amount(amount * 100) // Convert to paise
+                .redirectUrl(`${config.server.url}/v1/payments/phonepe/callback?orderId=${orderId}`)
+                .build();
+
+            console.log('PhonePe REQUEST:', this.phonepeClient);
+            console.log('Payment request:', request);
+
+            // Create payment with PhonePe
+            const response = await this.phonepeClient.pay(request);
+            console.log('PhonePe response:', response);
+
+            return {
+                id: orderId,
+                amount: amount,
+                currency: currency,
+                receipt: receipt,
+                notes: notes,
+                phonepe_response: response,
+                payment_url: response.redirectUrl
+            };
         } catch (error) {
-            console.error('Razorpay order creation error:', error)
+            console.error('PhonePe order creation error:', error)
             throw new Error(`Payment order creation failed: ${error.message}`)
         }
     }
@@ -40,28 +69,31 @@ class PaymentService {
     async verifyPayment(paymentData) {
         try {
             const {
-                razorpay_order_id,
-                razorpay_payment_id,
-                razorpay_signature
+                phonepe_transaction_id,
+                phonepe_merchant_id,
+                phonepe_checksum
             } = paymentData
 
             // Allow test payments in development mode
-            if (process.env.NODE_ENV !== 'production' && 
-                (razorpay_payment_id?.startsWith('pay_test_') || razorpay_signature === 'test_signature_for_development')) {
+            if (process.env.NODE_ENV !== 'production' && phonepe_checksum === 'test_signature_for_development') {
                 console.log('Development mode: Accepting test payment verification');
                 return true;
             }
 
-            const body = razorpay_order_id + '|' + razorpay_payment_id
+            // Check payment status using PhonePe SDK
+            const statusResponse = await this.phonepeClient.checkStatus(
+                phonepe_transaction_id,
+                this.merchantId
+            );
 
-            const expectedSignature = crypto
-                .createHmac('sha256', config.razorpay?.keySecret || process.env.RAZORPAY_KEY_SECRET)
-                .update(body.toString())
-                .digest('hex')
+            // Verify the checksum
+            const stringToHash = `/pg/v1/status/${this.merchantId}/${phonepe_transaction_id}` + this.saltKey;
+            const expectedChecksum = crypto.createHash('sha256').update(stringToHash).digest('hex') + '###' + this.saltIndex;
 
-            const isValid = expectedSignature === razorpay_signature
+            const isChecksumValid = expectedChecksum === phonepe_checksum;
+            const isPaymentSuccess = statusResponse?.data?.state === 'COMPLETED';
 
-            return isValid // Return boolean directly for simpler usage
+            return isChecksumValid && isPaymentSuccess;
         } catch (error) {
             console.error('Payment verification error:', error)
             return false
@@ -87,13 +119,12 @@ class PaymentService {
 
             // Mark transaction as successful
             await transaction.markAsSuccess(
-                paymentData.razorpay_payment_id,
+                paymentData.phonepe_transaction_id,
                 transaction.subscriptionId.mealsPerPlan
             )
 
             // Create user subscription
             const userSubscription = await this.createUserSubscription(transaction)
-
 
             // Update subscription purchase count
             await transaction.subscriptionId.incrementPurchases()
@@ -204,19 +235,19 @@ class PaymentService {
                 reason = 'Customer request'
             } = refundData
 
-            const refund = await this.razorpay.payments.refund(
-                transaction.gatewayPaymentId,
-                {
-                    amount: Math.round(amount * 100), // Convert to paise
-                    notes: {
-                        reason,
-                        original_transaction_id: transactionId
-                    }
-                }
-            )
+            // PhonePe refund request
+            const refundRequest = {
+                merchantId: this.merchantId,
+                merchantTransactionId: `REFUND_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                originalTransactionId: transaction.gatewayPaymentId,
+                amount: Math.round(amount * 100), // Convert to paise
+                callbackUrl: `${config.server.url}/v1/payments/phonepe/refund-callback`
+            };
+
+            const refund = await this.phonepeClient.refund(refundRequest);
 
             await transaction.markAsRefunded({
-                refundId: refund.id,
+                refundId: refundRequest.merchantTransactionId,
                 refundAmount: amount,
                 refundDate: TimezoneUtil.now(),
                 refundReason: reason,
@@ -236,7 +267,7 @@ class PaymentService {
 
     async getPaymentDetails(paymentId) {
         try {
-            const payment = await this.razorpay.payments.fetch(paymentId)
+            const payment = await this.phonepeClient.checkStatus(paymentId, this.merchantId)
             return {
                 success: true,
                 payment
@@ -257,20 +288,27 @@ class PaymentService {
                 throw new Error('Invalid webhook signature')
             }
 
-            const { event: eventType, payload } = event
+            // PhonePe webhook structure
+            const { merchantId, transactionId, amount, state, responseCode } = event
 
-            switch (eventType) {
-                case 'payment.captured':
-                    await this.handlePaymentCaptured(payload.payment.entity)
+            switch (state) {
+                case 'COMPLETED':
+                    await this.handlePaymentCaptured({
+                        id: transactionId,
+                        order_id: event.merchantTransactionId,
+                        amount: amount,
+                        state: state
+                    })
                     break
-                case 'payment.failed':
-                    await this.handlePaymentFailed(payload.payment.entity)
-                    break
-                case 'refund.processed':
-                    await this.handleRefundProcessed(payload.refund.entity)
+                case 'FAILED':
+                    await this.handlePaymentFailed({
+                        id: transactionId,
+                        order_id: event.merchantTransactionId,
+                        error_description: 'Payment failed'
+                    })
                     break
                 default:
-                    console.log(`Unhandled webhook event: ${eventType}`)
+                    console.log(`Unhandled webhook state: ${state}`)
             }
 
             return { success: true }
@@ -282,11 +320,10 @@ class PaymentService {
 
     verifyWebhookSignature(body, signature) {
         try {
-            const webhookSecret = config.razorpay?.webhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET
-            const expectedSignature = crypto
-                .createHmac('sha256', webhookSecret)
-                .update(JSON.stringify(body))
-                .digest('hex')
+            // PhonePe webhook signature verification
+            const webhookPayload = JSON.stringify(body);
+            const stringToHash = webhookPayload + this.saltKey;
+            const expectedSignature = crypto.createHash('sha256').update(stringToHash).digest('hex') + '###' + this.saltIndex;
 
             return expectedSignature === signature
         } catch (error) {
@@ -303,7 +340,7 @@ class PaymentService {
 
             if (transaction && transaction.status !== 'success') {
                 await this.processSuccessfulPayment(transaction.transactionId, {
-                    razorpay_payment_id: payment.id
+                    phonepe_transaction_id: payment.id
                 })
             }
         } catch (error) {

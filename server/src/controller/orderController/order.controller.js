@@ -25,7 +25,7 @@ export default {
                 return httpError(next, error, req, 422);
             }
 
-            const { status, startDate, endDate, page = 1, limit = 20, days } = value;
+            const { status, search, startDate, endDate, page = 1, limit = 20, days } = value;
 
             // Build query
             const query = { userId };
@@ -54,20 +54,75 @@ export default {
                 };
             }
 
-            const orders = await Order.find(query)
-                .populate('selectedMenus', 'foodTitle foodImage price')
-                .populate('vendorDetails.vendorId', 'businessInfo.businessName')
-                .populate('userSubscriptionId', 'subscriptionId mealTiming skipCreditAvailable')
-                .populate({
-                    path: 'userSubscriptionId',
-                    populate: {
-                        path: 'subscriptionId',
-                        select: 'planName category'
-                    }
-                })
-                .sort({ deliveryDate: -1, deliveryTime: -1 })
-                .limit(parseInt(limit))
-                .skip((parseInt(page) - 1) * parseInt(limit));
+            let orders;
+            if (search) {
+                // Use aggregation for search functionality
+                orders = await Order.aggregate([
+                    { $match: query },
+                    {
+                        $lookup: {
+                            from: 'menus',
+                            localField: 'selectedMenus',
+                            foreignField: '_id',
+                            as: 'selectedMenus'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'vendorprofiles',
+                            localField: 'vendorDetails.vendorId',
+                            foreignField: '_id',
+                            as: 'vendorDetails.vendorId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'usersubscriptions',
+                            localField: 'userSubscriptionId',
+                            foreignField: '_id',
+                            as: 'userSubscriptionId'
+                        }
+                    },
+                    {
+                        $match: {
+                            $or: [
+                                { orderNumber: { $regex: search, $options: 'i' } },
+                                { specialInstructions: { $regex: search, $options: 'i' } },
+                                { 'skipDetails.skipReason': { $regex: search, $options: 'i' } },
+                                { 'cancellationDetails.cancelReason': { $regex: search, $options: 'i' } },
+                                { 'deliveryConfirmation.deliveryNotes': { $regex: search, $options: 'i' } },
+                                { 'selectedMenus.foodTitle': { $regex: search, $options: 'i' } },
+                                { 'vendorDetails.vendorId.businessInfo.businessName': { $regex: search, $options: 'i' } }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            'vendorDetails.vendorId': { $arrayElemAt: ['$vendorDetails.vendorId', 0] },
+                            userSubscriptionId: { $arrayElemAt: ['$userSubscriptionId', 0] }
+                        }
+                    },
+                    { $sort: { deliveryDate: -1, deliveryTime: -1 } },
+                    { $skip: (parseInt(page) - 1) * parseInt(limit) },
+                    { $limit: parseInt(limit) }
+                ])
+            } else {
+                // Use regular find with populate when no search
+                orders = await Order.find(query)
+                    .populate('selectedMenus', 'foodTitle foodImage price')
+                    .populate('vendorDetails.vendorId', 'businessInfo.businessName')
+                    .populate('userSubscriptionId', 'subscriptionId mealTiming skipCreditAvailable')
+                    .populate({
+                        path: 'userSubscriptionId',
+                        populate: {
+                            path: 'subscriptionId',
+                            select: 'planName category'
+                        }
+                    })
+                    .sort({ deliveryDate: -1, deliveryTime: -1 })
+                    .limit(parseInt(limit))
+                    .skip((parseInt(page) - 1) * parseInt(limit));
+            }
 
             const total = await Order.countDocuments(query);
 
@@ -79,7 +134,7 @@ export default {
                     total,
                     pages: Math.ceil(total / parseInt(limit))
                 },
-                filters: { status, startDate, endDate, days }
+                filters: { status, search, startDate, endDate, days }
             });
 
         } catch (err) {
@@ -233,7 +288,7 @@ export default {
                 return httpError(next, error, req, 422);
             }
 
-            const { status, startDate, endDate, page = 1, limit = 20, days } = value;
+            const { status, search, startDate, endDate, page = 1, limit = 20, days } = value;
 
             // Build query for vendor orders
             const query = { 'vendorDetails.vendorId': vendorProfile._id };
@@ -261,13 +316,68 @@ export default {
                 };
             }
 
-            const orders = await Order.find(query)
-                .populate('userId', 'name phoneNumber')
-                .populate('selectedMenus', 'foodTitle foodImage')
-                .populate('userSubscriptionId', 'deliveryAddress')
-                .sort({ deliveryDate: 1, deliveryTime: 1 })
-                .limit(parseInt(limit))
-                .skip((parseInt(page) - 1) * parseInt(limit));
+            let orders;
+            if (search) {
+                // Use aggregation for search functionality
+                orders = await Order.aggregate([
+                    { $match: query },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'userId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'menus',
+                            localField: 'selectedMenus',
+                            foreignField: '_id',
+                            as: 'selectedMenus'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'usersubscriptions',
+                            localField: 'userSubscriptionId',
+                            foreignField: '_id',
+                            as: 'userSubscriptionId'
+                        }
+                    },
+                    {
+                        $match: {
+                            $or: [
+                                { orderNumber: { $regex: search, $options: 'i' } },
+                                { specialInstructions: { $regex: search, $options: 'i' } },
+                                { 'skipDetails.skipReason': { $regex: search, $options: 'i' } },
+                                { 'cancellationDetails.cancelReason': { $regex: search, $options: 'i' } },
+                                { 'deliveryConfirmation.deliveryNotes': { $regex: search, $options: 'i' } },
+                                { 'selectedMenus.foodTitle': { $regex: search, $options: 'i' } },
+                                { 'userId.name': { $regex: search, $options: 'i' } }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userId: { $arrayElemAt: ['$userId', 0] },
+                            userSubscriptionId: { $arrayElemAt: ['$userSubscriptionId', 0] }
+                        }
+                    },
+                    { $sort: { deliveryDate: 1, deliveryTime: 1 } },
+                    { $skip: (parseInt(page) - 1) * parseInt(limit) },
+                    { $limit: parseInt(limit) }
+                ])
+            } else {
+                // Use regular find with populate when no search
+                orders = await Order.find(query)
+                    .populate('userId', 'name phoneNumber')
+                    .populate('selectedMenus', 'foodTitle foodImage')
+                    .populate('userSubscriptionId', 'deliveryAddress')
+                    .sort({ deliveryDate: 1, deliveryTime: 1 })
+                    .limit(parseInt(limit))
+                    .skip((parseInt(page) - 1) * parseInt(limit));
+            }
 
             const total = await Order.countDocuments(query);
 
@@ -279,7 +389,7 @@ export default {
                     total,
                     pages: Math.ceil(total / parseInt(limit))
                 },
-                filters: { status, startDate, endDate, days }
+                filters: { status, search, startDate, endDate, days }
             });
 
         } catch (err) {
@@ -384,7 +494,7 @@ export default {
                 return httpError(next, error, req, 422);
             }
 
-            const { status, startDate, endDate, page = 1, limit = 20, days, vendorId } = value;
+            const { status, search, startDate, endDate, page = 1, limit = 20, days, vendorId } = value;
 
             // Build query
             const query = {};
@@ -416,21 +526,87 @@ export default {
                 };
             }
 
-            const orders = await Order.find(query)
-                .populate('userId', 'name phoneNumber emailAddress')
-                .populate('selectedMenus', 'foodTitle')
-                .populate('vendorDetails.vendorId', 'businessInfo.businessName')
-                .populate('userSubscriptionId', 'subscriptionId')
-                .populate({
-                    path: 'userSubscriptionId',
-                    populate: {
-                        path: 'subscriptionId',
-                        select: 'planName category'
-                    }
-                })
-                .sort({ deliveryDate: -1, createdAt: -1 })
-                .limit(parseInt(limit))
-                .skip((parseInt(page) - 1) * parseInt(limit));
+            let orders;
+            if (search) {
+                // Use aggregation for search functionality
+                orders = await Order.aggregate([
+                    { $match: query },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'userId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'menus',
+                            localField: 'selectedMenus',
+                            foreignField: '_id',
+                            as: 'selectedMenus'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'vendorprofiles',
+                            localField: 'vendorDetails.vendorId',
+                            foreignField: '_id',
+                            as: 'vendorDetails.vendorId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'usersubscriptions',
+                            localField: 'userSubscriptionId',
+                            foreignField: '_id',
+                            as: 'userSubscriptionId'
+                        }
+                    },
+                    {
+                        $match: {
+                            $or: [
+                                { orderNumber: { $regex: search, $options: 'i' } },
+                                { specialInstructions: { $regex: search, $options: 'i' } },
+                                { 'skipDetails.skipReason': { $regex: search, $options: 'i' } },
+                                { 'cancellationDetails.cancelReason': { $regex: search, $options: 'i' } },
+                                { 'deliveryConfirmation.deliveryNotes': { $regex: search, $options: 'i' } },
+                                { 'selectedMenus.foodTitle': { $regex: search, $options: 'i' } },
+                                { 'userId.name': { $regex: search, $options: 'i' } },
+                                { 'userId.emailAddress': { $regex: search, $options: 'i' } },
+                                { 'vendorDetails.vendorId.businessInfo.businessName': { $regex: search, $options: 'i' } }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userId: { $arrayElemAt: ['$userId', 0] },
+                            'vendorDetails.vendorId': { $arrayElemAt: ['$vendorDetails.vendorId', 0] },
+                            userSubscriptionId: { $arrayElemAt: ['$userSubscriptionId', 0] }
+                        }
+                    },
+                    { $sort: { deliveryDate: -1, createdAt: -1 } },
+                    { $skip: (parseInt(page) - 1) * parseInt(limit) },
+                    { $limit: parseInt(limit) }
+                ])
+            } else {
+                // Use regular find with populate when no search
+                orders = await Order.find(query)
+                    .populate('userId', 'name phoneNumber emailAddress')
+                    .populate('selectedMenus', 'foodTitle')
+                    .populate('vendorDetails.vendorId', 'businessInfo.businessName')
+                    .populate('userSubscriptionId', 'subscriptionId')
+                    .populate({
+                        path: 'userSubscriptionId',
+                        populate: {
+                            path: 'subscriptionId',
+                            select: 'planName category'
+                        }
+                    })
+                    .sort({ deliveryDate: -1, createdAt: -1 })
+                    .limit(parseInt(limit))
+                    .skip((parseInt(page) - 1) * parseInt(limit));
+            }
 
             const total = await Order.countDocuments(query);
 
@@ -442,7 +618,7 @@ export default {
                     total,
                     pages: Math.ceil(total / parseInt(limit))
                 },
-                filters: { status, startDate, endDate, days, vendorId }
+                filters: { status, search, startDate, endDate, days, vendorId }
             });
 
         } catch (err) {

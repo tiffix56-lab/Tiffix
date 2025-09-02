@@ -2,20 +2,21 @@
 
 # Base URL
 @baseURL = http://localhost:4000/v1
-@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIzMzI2OWUxZTUwZWJlNmY0ZDZkYTkiLCJlbWFpbCI6InVzZXIyQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoidXNlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU2NTc0MzI5LCJleHAiOjE3NTY2NjA3Mjl9.dpLcQX_SuS_9hkcn_zLzYHAacQFahZKJoeNYf6TXPHw
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIzMzI2OWUxZTUwZWJlNmY0ZDZkYTkiLCJlbWFpbCI6InVzZXIyQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoidXNlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU2NzUwNzQ4LCJleHAiOjE3NTY4MzcxNDh9.RDaispXIISeoZzAakuZJfyo5ISr4_pE1ZuoYp83du00
 
 
 
 ### ============== SUBSCRIPTION PURCHASE & MANAGEMENT APIs ==============
 
-### Purchase a Subscription without Promo Code (User)
+### Initiate Subscription Purchase (Requires Authentication) - PhonePe Integration
+# Response will include phonepeKey and paymentUrl for frontend integration
 POST {{baseURL}}/subscription-purchase/initiate
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
   "subscriptionId": "68b2ba105d778fa67180c131",
-  "promoCode":"WELCOME100",
+
   "deliveryAddress": {
     "street": "789 Pine St",
     "city": "Mumbai",
@@ -37,19 +38,19 @@ Authorization: Bearer {{accessToken}}
       "time": "20:00"
     }
   },
-  "startDate": "2025-09-01T00:00:00.000Z"
+  "startDate": "2025-09-02T00:00:00.000Z"
 }
 
-### Verify Payment for Subscription Purchase (User)
-POST {{baseURL}}/subscriptions/verify-payment
+### Verify Payment (Requires Authentication) - PhonePe Integration
+POST {{baseURL}}/subscription-purchase/verify-payment
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "razorpay_order_id": "order_RBcvBOQrUpgmug",
-  "razorpay_payment_id": "pay_test_payment_12345",
-  "razorpay_signature": "test_signature_for_development",
-  "userSubscriptionId": "68b33354927d9f0b0616a84b"
+  "phonepe_transaction_id": "TXN_1756751258968_so0nf",
+  "phonepe_merchant_id": "PGTESTPAYUAT",
+  "phonepe_checksum": "test_signature_for_development",
+  "userSubscriptionId": "68b5e59b5b07d1ce6123bbdd"
 }
 
 ### Get My Subscriptions (Requires Authentication)
@@ -111,3 +112,37 @@ Authorization: Bearer {{adminToken}}
   "status": "paused",
   "adminNotes": "Paused due to payment issues"
 }
+
+### ============== PHONEPE WEBHOOK ENDPOINTS (FOR TESTING) ==============
+
+### PhonePe Payment Callback (Webhook - No Authentication Required)
+POST {{baseURL}}/payments/phonepe/callback
+Content-Type: application/json
+X-Verify: sha256_hash_signature
+
+{
+  "merchantId": "MERCHANT123",
+  "transactionId": "TXN_1693564800000_ABC123",
+  "merchantTransactionId": "TXN_1693564800000_ABC123",
+  "amount": 200000,
+  "state": "COMPLETED",
+  "responseCode": "SUCCESS",
+  "paymentInstrument": {
+    "type": "PAY_PAGE"
+  }
+}
+
+### PhonePe Refund Callback (Webhook - No Authentication Required)
+POST {{baseURL}}/payments/phonepe/refund-callback
+Content-Type: application/json
+X-Verify: sha256_hash_signature
+
+{
+  "merchantId": "MERCHANT123",
+  "transactionId": "REFUND_1693564800000_XYZ789",
+  "originalTransactionId": "TXN_1693564800000_ABC123",
+  "amount": 200000,
+  "state": "COMPLETED",
+  "responseCode": "SUCCESS"
+}
+

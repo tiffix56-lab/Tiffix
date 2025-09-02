@@ -156,7 +156,7 @@ export default {
                         {
                             $match: {
                                 'location.pincode': { $in: zoneObj.pincodes || [] },
-                                role: 'USER'
+                                role: 'user'
                             }
                         },
                         {
@@ -255,7 +255,7 @@ export default {
                 User.aggregate([
                     {
                         $match: {
-                            role: 'USER'
+                            role: 'user'
                         }
                     },
                     {
@@ -388,7 +388,7 @@ export default {
                     {
                         $match: {
                             'location.pincode': { $in: zone.pincodes || [] },
-                            role: 'USER'
+                            role: 'user'
                         }
                     },
                     {

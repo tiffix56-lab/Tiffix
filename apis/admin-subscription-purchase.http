@@ -1,7 +1,8 @@
 ### Admin Subscription Purchase API Testing
 
 @baseURL = http://localhost:4000/v1
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY1Njg3NjcsImV4cCI6MTc1NjY1NTE2N30.wda5z6YQ3sO3C1hh_7fsmowjo-GEqIxCNk01Ve1MkLM
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY4MTEyMDQsImV4cCI6MTc1Njg5NzYwNH0.XCfF4bgA0hXVAwwhummqak4vkh_ZWpTE3_mDaKoHkR4
+@subscriptionId = 68b5e59b5b07d1ce6123bbdd
 
 ### Get all purchase subscriptions with filters
 GET {{baseURL}}/admin/subscription-purchases?page=1&limit=20&search=user&status=active&vendorAssigned=assigned
@@ -32,7 +33,11 @@ GET {{baseURL}}/admin/subscription-purchases?vendorAssigned=unassigned&sortBy=cr
 Authorization: Bearer {{adminToken}}
 
 ### Get specific subscription purchase by ID
-GET {{baseURL}}/admin/subscription-purchases/subscription_id_here
+GET {{baseURL}}/admin/subscription-purchases/{{subscriptionId}}
+Authorization: Bearer {{adminToken}}
+
+### Get specific subscription purchase by ID (with example ID)
+GET {{baseURL}}/admin/subscription-purchases/68b3369322ac3a3450561d98
 Authorization: Bearer {{adminToken}}
 
 ### Get subscription purchase statistics - 30 days
@@ -53,4 +58,60 @@ Authorization: Bearer {{adminToken}}
 
 ### Get subscription purchase statistics - 1 year food vendor
 GET {{baseURL}}/admin/subscription-purchases/stats?period=1y&category=food_vendor
+Authorization: Bearer {{adminToken}}
+
+### ========================================
+### ADMIN SUBSCRIPTION PURCHASE SEARCH EXAMPLES
+### ========================================
+
+### Search subscriptions by user name
+GET {{baseURL}}/admin/subscription-purchases?search=John%20Doe&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search subscriptions by user email
+GET {{baseURL}}/admin/subscription-purchases?search=john@example.com&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search subscriptions by user phone number
+GET {{baseURL}}/admin/subscription-purchases?search=9876543210&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search subscriptions by subscription plan name
+GET {{baseURL}}/admin/subscription-purchases?search=premium&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search subscriptions by delivery city
+GET {{baseURL}}/admin/subscription-purchases?search=Mumbai&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search subscriptions by delivery zip code
+GET {{baseURL}}/admin/subscription-purchases?search=400001&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search subscriptions by subscription ID
+GET {{baseURL}}/admin/subscription-purchases?search=68b3369322ac3a3450561d98&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Combined search with status filter
+GET {{baseURL}}/admin/subscription-purchases?search=premium&status=active&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Combined search with vendor assignment filter
+GET {{baseURL}}/admin/subscription-purchases?search=john&vendorAssigned=unassigned&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Combined search with price range
+GET {{baseURL}}/admin/subscription-purchases?search=premium&priceMin=2000&priceMax=5000&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Combined search with date range
+GET {{baseURL}}/admin/subscription-purchases?search=mumbai&dateFrom=2024-01-01&dateTo=2024-12-31&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Combined search with category and sorting
+GET {{baseURL}}/admin/subscription-purchases?search=chef&category=home_chef&sortBy=finalPrice&sortOrder=desc&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search with multiple filters
+GET {{baseURL}}/admin/subscription-purchases?search=doe&status=active&vendorAssigned=assigned&category=food_vendor&sortBy=createdAt&sortOrder=desc&page=1&limit=10
 Authorization: Bearer {{adminToken}}

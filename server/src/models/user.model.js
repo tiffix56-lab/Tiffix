@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema(
             minlength: 2,
             maxlength: 72
         },
+        gender: {
+            type: String,
+            enum: ['male', 'female', 'other'],
+            default: 'male'
+        },
         avatar: {
             type: String,
             default: null
@@ -234,7 +239,7 @@ const userSchema = new mongoose.Schema(
             canRefer: {
                 type: Boolean,
                 default: function() {
-                    return this.role === 'USER'
+                    return this.role === 'user'
                 }
             }
         }
@@ -344,7 +349,7 @@ userSchema.statics.getReferralLeaderboard = function (limit = 10) {
             $match: {
                 'referral.totalreferralCredits': { $gt: 0 },
                 'referral.canRefer': true,
-                role: 'USER'
+                role: 'user'
             }
         },
         {
@@ -462,7 +467,7 @@ userSchema.statics.getUserStats = function () {
                 },
                 totalAdmins: {
                     $sum: {
-                        $cond: [{ $eq: ['$role', 'ADMIN'] }, 1, 0]
+                        $cond: [{ $eq: ['$role', 'admin'] }, 1, 0]
                     }
                 }
             }

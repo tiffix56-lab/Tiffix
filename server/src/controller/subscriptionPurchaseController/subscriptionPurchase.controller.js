@@ -224,8 +224,8 @@ export default {
                 finalAmount: finalPrice, promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
                 type: 'subscription_purchase',
-                paymentGateway: 'razorpay',
-                paymentMethod: 'razorpay',
+                paymentGateway: 'phonepe',
+                paymentMethod: 'phonepe',
                 gatewayOrderId: paymentOrder.id
             });
 
@@ -260,7 +260,8 @@ export default {
                 amount: finalPrice,
                 currency: 'INR',
                 userSubscriptionId: userSubscription._id,
-                razorpayKey: process.env.RAZORPAY_KEY_ID,
+                phonepeKey: process.env.PHONEPAY_CLIENT_ID,
+                paymentUrl: paymentOrder.payment_url,
                 subscription: {
                     planName: subscription.planName,
                     duration: subscription.duration,
@@ -293,28 +294,28 @@ export default {
             }
 
             const {
-                razorpay_order_id,
-                razorpay_payment_id,
-                razorpay_signature,
+                phonepe_transaction_id,
+                phonepe_merchant_id,
+                phonepe_checksum,
                 userSubscriptionId
             } = req.body;
 
             const userId = req.authenticatedUser._id;
 
             console.log("Looking for transaction with:", {
-                gatewayOrderId: razorpay_order_id,
+                gatewayOrderId: phonepe_transaction_id,
                 userId: userId
             });
 
             const transaction = await Transaction.findOne({
-                gatewayOrderId: razorpay_order_id,
+                gatewayOrderId: phonepe_transaction_id,
                 userId,
 
             });
 
             if (!transaction) {
                 console.error("Transaction not found:", {
-                    gatewayOrderId: razorpay_order_id,
+                    gatewayOrderId: phonepe_transaction_id,
                     userId: userId
                 });
                 return httpError(next, new Error('Transaction not found for this order'), req, 404);
@@ -340,15 +341,15 @@ export default {
             // Verify payment with payment service
             console.log("Verifying payment with payment service...");
             const isPaymentValid = await paymentService.verifyPayment({
-                razorpay_order_id,
-                razorpay_payment_id,
-                razorpay_signature
+                phonepe_transaction_id,
+                phonepe_merchant_id,
+                phonepe_checksum
             });
 
             if (!isPaymentValid) {
                 console.error("Payment verification failed:", {
-                    razorpay_order_id,
-                    razorpay_payment_id,
+                    phonepe_transaction_id,
+                    phonepe_merchant_id,
                     userSubscriptionId
                 });
 
@@ -369,7 +370,10 @@ export default {
             // Update transaction as successful (using IST)
             const completionTime = TimezoneUtil.now();
             transaction.status = EPaymentStatus.SUCCESS;
-            transaction.paymentId = razorpay_payment_id;
+            transaction.paymentId = phonepe_transaction_id;
+            transaction.phonepeTransactionId = phonepe_transaction_id;
+            transaction.phonepeMerchantId = phonepe_merchant_id;
+            transaction.phonepeChecksum = phonepe_checksum;
             transaction.completedAt = completionTime;
             await transaction.save();
 
@@ -429,7 +433,7 @@ export default {
                 message: error.message,
                 stack: error.stack,
                 userId: req.authenticatedUser?._id,
-                orderId: req.body?.razorpay_order_id
+                orderId: req.body?.phonepe_transaction_id
             });
 
             const errorMessage = error.message || 'Internal server error while verifying payment';
@@ -721,6 +725,70 @@ export default {
 
             const errorMessage = error.message || 'Internal server error while requesting vendor switch';
             return httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    // PhonePe callback handler for payment completion
+    phonepeCallback: async (req, res, next) => {
+        try {
+            console.log('PhonePe callback received:', req.body);
+            
+            const signature = req.headers['x-verify'];
+            const event = req.body;
+
+            // Handle webhook with payment service
+            await paymentService.handleWebhook(event, signature);
+
+            // Respond to PhonePe with success
+            res.status(200).json({
+                success: true,
+                message: 'Callback processed successfully'
+            });
+
+        } catch (error) {
+            console.error('PhonePe callback error:', {
+                message: error.message,
+                stack: error.stack,
+                body: req.body
+            });
+
+            // Always respond with 200 to PhonePe to avoid retry storms
+            res.status(200).json({
+                success: false,
+                error: 'Callback processing failed'
+            });
+        }
+    },
+
+    // PhonePe refund callback handler
+    phonepeRefundCallback: async (req, res, next) => {
+        try {
+            console.log('PhonePe refund callback received:', req.body);
+            
+            const signature = req.headers['x-verify'];
+            const event = req.body;
+
+            // Handle refund webhook
+            // You can add specific refund handling logic here if needed
+            console.log('Refund callback processed:', event);
+
+            res.status(200).json({
+                success: true,
+                message: 'Refund callback processed successfully'
+            });
+
+        } catch (error) {
+            console.error('PhonePe refund callback error:', {
+                message: error.message,
+                stack: error.stack,
+                body: req.body
+            });
+
+            // Always respond with 200 to PhonePe to avoid retry storms
+            res.status(200).json({
+                success: false,
+                error: 'Refund callback processing failed'
+            });
         }
     }
 };

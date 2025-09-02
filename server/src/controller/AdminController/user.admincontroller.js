@@ -358,7 +358,7 @@ export default {
                         },
                         newUsers: { $sum: 1 },
                         newVendors: {
-                            $sum: { $cond: [{ $eq: ['$role', 'VENDOR'] }, 1, 0] }
+                            $sum: { $cond: [{ $eq: ['$role', 'vendor'] }, 1, 0] }
                         },
                         activeUsers: {
                             $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] }

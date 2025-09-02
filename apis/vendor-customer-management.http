@@ -66,3 +66,39 @@ Authorization: Bearer {{vendorToken}}
 ### Get customer analytics - food vendor category
 GET {{baseURL}}/vendor/customers/analytics?period=30d&category=food_vendor
 Authorization: Bearer {{vendorToken}}
+
+### ========================================
+### VENDOR CUSTOMER SEARCH EXAMPLES
+### ========================================
+
+### Search customers by name
+GET {{baseURL}}/vendor/customers?search=John%20Doe&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Search customers by email
+GET {{baseURL}}/vendor/customers?search=john@example.com&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Search customers by phone number
+GET {{baseURL}}/vendor/customers?search=9876543210&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Search customers by subscription plan name
+GET {{baseURL}}/vendor/customers?search=premium&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Search customers by delivery address
+GET {{baseURL}}/vendor/customers?search=Mumbai&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Combined search with status filter
+GET {{baseURL}}/vendor/customers?search=premium&status=active&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Combined search with date range
+GET {{baseURL}}/vendor/customers?search=john&dateFrom=2024-01-01&dateTo=2024-12-31&page=1&limit=10
+Authorization: Bearer {{vendorToken}}
+
+### Search with sorting
+GET {{baseURL}}/vendor/customers?search=doe&sortBy=createdAt&sortOrder=desc&page=1&limit=10
+Authorization: Bearer {{vendorToken}}

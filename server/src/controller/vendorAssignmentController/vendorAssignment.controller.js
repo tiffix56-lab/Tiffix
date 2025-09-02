@@ -31,6 +31,7 @@ export default {
                 requestType,
                 priority,
                 deliveryZone,
+                search,
                 sortBy = 'priority',
                 sortOrder = 'asc'
             } = req.query
@@ -51,14 +52,78 @@ export default {
                 sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1
             }
 
-            const requests = await VendorAssignmentRequest.find(query)
-                .populate('userId', 'name emailAddress phoneNumber')
-                .populate('userSubscriptionId', 'startDate endDate deliveryAddress mealTiming')
-                .populate('currentVendorId', 'businessInfo contactInfo')
-                .populate('deliveryZone', 'zoneName city supportedVendorTypes')
-                .sort(sortObj)
-                .skip(skip)
-                .limit(Number(limit))
+            let requests;
+            if (search) {
+                // Use aggregation for search functionality when search is provided
+                requests = await VendorAssignmentRequest.aggregate([
+                    { $match: query },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'userId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'usersubscriptions',
+                            localField: 'userSubscriptionId',
+                            foreignField: '_id',
+                            as: 'userSubscriptionId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'vendorprofiles',
+                            localField: 'currentVendorId',
+                            foreignField: '_id',
+                            as: 'currentVendorId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'locationzones',
+                            localField: 'deliveryZone',
+                            foreignField: '_id',
+                            as: 'deliveryZone'
+                        }
+                    },
+                    {
+                        $match: {
+                            $or: [
+                                { description: { $regex: search, $options: 'i' } },
+                                { adminNotes: { $regex: search, $options: 'i' } },
+                                { rejectionReason: { $regex: search, $options: 'i' } },
+                                { 'userId.name': { $regex: search, $options: 'i' } },
+                                { 'userId.emailAddress': { $regex: search, $options: 'i' } },
+                                { 'currentVendorId.businessInfo.businessName': { $regex: search, $options: 'i' } }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userId: { $arrayElemAt: ['$userId', 0] },
+                            userSubscriptionId: { $arrayElemAt: ['$userSubscriptionId', 0] },
+                            currentVendorId: { $arrayElemAt: ['$currentVendorId', 0] },
+                            deliveryZone: { $arrayElemAt: ['$deliveryZone', 0] }
+                        }
+                    },
+                    { $sort: sortObj },
+                    { $skip: skip },
+                    { $limit: Number(limit) }
+                ])
+            } else {
+                // Use regular find with populate when no search is provided
+                requests = await VendorAssignmentRequest.find(query)
+                    .populate('userId', 'name emailAddress phoneNumber')
+                    .populate('userSubscriptionId', 'startDate endDate deliveryAddress mealTiming')
+                    .populate('currentVendorId', 'businessInfo contactInfo')
+                    .populate('deliveryZone', 'zoneName city supportedVendorTypes')
+                    .sort(sortObj)
+                    .skip(skip)
+                    .limit(Number(limit))
+            }
 
             const totalRequests = await VendorAssignmentRequest.countDocuments(query)
             const totalPages = Math.ceil(totalRequests / limit)
@@ -483,6 +548,7 @@ export default {
                 requestType,
                 priority,
                 deliveryZone,
+                search,
                 startDate,
                 endDate,
                 sortBy = 'requestedAt',
@@ -508,16 +574,100 @@ export default {
             const sortObj = {}
             sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1
 
-            const requests = await VendorAssignmentRequest.find(query)
-                .populate('userId', 'name emailAddress phoneNumber')
-                .populate('userSubscriptionId', 'startDate endDate')
-                .populate('currentVendorId', 'businessInfo')
-                .populate('newVendorId', 'businessInfo')
-                .populate('processedBy', 'name')
-                .populate('deliveryZone', 'zoneName city')
-                .sort(sortObj)
-                .skip(skip)
-                .limit(Number(limit))
+            let requests;
+            if (search) {
+                // Use aggregation for search functionality when search is provided
+                requests = await VendorAssignmentRequest.aggregate([
+                    { $match: query },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'userId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'usersubscriptions',
+                            localField: 'userSubscriptionId',
+                            foreignField: '_id',
+                            as: 'userSubscriptionId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'vendorprofiles',
+                            localField: 'currentVendorId',
+                            foreignField: '_id',
+                            as: 'currentVendorId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'vendorprofiles',
+                            localField: 'newVendorId',
+                            foreignField: '_id',
+                            as: 'newVendorId'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'processedBy',
+                            foreignField: '_id',
+                            as: 'processedBy'
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'locationzones',
+                            localField: 'deliveryZone',
+                            foreignField: '_id',
+                            as: 'deliveryZone'
+                        }
+                    },
+                    {
+                        $match: {
+                            $or: [
+                                { description: { $regex: search, $options: 'i' } },
+                                { adminNotes: { $regex: search, $options: 'i' } },
+                                { rejectionReason: { $regex: search, $options: 'i' } },
+                                { 'userId.name': { $regex: search, $options: 'i' } },
+                                { 'userId.emailAddress': { $regex: search, $options: 'i' } },
+                                { 'currentVendorId.businessInfo.businessName': { $regex: search, $options: 'i' } },
+                                { 'newVendorId.businessInfo.businessName': { $regex: search, $options: 'i' } },
+                                { 'processedBy.name': { $regex: search, $options: 'i' } }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userId: { $arrayElemAt: ['$userId', 0] },
+                            userSubscriptionId: { $arrayElemAt: ['$userSubscriptionId', 0] },
+                            currentVendorId: { $arrayElemAt: ['$currentVendorId', 0] },
+                            newVendorId: { $arrayElemAt: ['$newVendorId', 0] },
+                            processedBy: { $arrayElemAt: ['$processedBy', 0] },
+                            deliveryZone: { $arrayElemAt: ['$deliveryZone', 0] }
+                        }
+                    },
+                    { $sort: sortObj },
+                    { $skip: skip },
+                    { $limit: Number(limit) }
+                ])
+            } else {
+                // Use regular find with populate when no search is provided
+                requests = await VendorAssignmentRequest.find(query)
+                    .populate('userId', 'name emailAddress phoneNumber')
+                    .populate('userSubscriptionId', 'startDate endDate')
+                    .populate('currentVendorId', 'businessInfo')
+                    .populate('newVendorId', 'businessInfo')
+                    .populate('processedBy', 'name')
+                    .populate('deliveryZone', 'zoneName city')
+                    .sort(sortObj)
+                    .skip(skip)
+                    .limit(Number(limit))
+            }
 
             const totalRequests = await VendorAssignmentRequest.countDocuments(query)
             const totalPages = Math.ceil(totalRequests / limit)
@@ -536,6 +686,7 @@ export default {
                     requestType,
                     priority,
                     deliveryZone,
+                    search,
                     startDate,
                     endDate
                 }

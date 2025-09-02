@@ -27,7 +27,7 @@ class ReferralService {
             }
 
             // Check if referrer can still refer (only USER role can refer)
-            if (!referrer.referral.canRefer || referrer.role !== 'USER') {
+            if (!referrer.referral.canRefer || referrer.role !== 'user') {
                 logger.warn(`Referrer cannot refer anymore: ${referrer._id}`);
                 return { success: false, message: 'Referrer is not eligible to receive rewards' };
             }
@@ -130,7 +130,7 @@ class ReferralService {
             }
 
             // Check if referrer can refer (only USER role can refer)
-            if (!referrer.referral.canRefer || referrer.role !== 'USER') {
+            if (!referrer.referral.canRefer || referrer.role !== 'user') {
                 return {
                     success: false,
                     message: 'This referral code is not valid for referrals'
@@ -212,7 +212,7 @@ class ReferralService {
             }
 
             // Check if user can refer
-            const canRefer = user.referral.canRefer && user.role === 'USER';
+            const canRefer = user.referral.canRefer && user.role === 'user';
 
             // Count referred users with detailed info
             const referredUsers = await User.find({
@@ -302,7 +302,7 @@ class ReferralService {
             }
 
             // Check if user can refer
-            if (!user.referral.canRefer || user.role !== 'USER') {
+            if (!user.referral.canRefer || user.role !== 'user') {
                 throw new Error('You are not eligible to generate referral links');
             }
 
@@ -361,7 +361,7 @@ class ReferralService {
             }
 
             // Check if referrer can refer
-            if (!referrer.referral.canRefer || referrer.role !== 'USER') {
+            if (!referrer.referral.canRefer || referrer.role !== 'user') {
                 return {
                     valid: false,
                     message: 'This referral code is not valid'
@@ -414,7 +414,7 @@ class ReferralService {
                 {
                     $match: {
                         'referral.canRefer': true,
-                        role: 'USER'
+                        role: 'user'
                     }
                 },
                 {
@@ -521,7 +521,7 @@ class ReferralService {
             }
 
             // Only USER role can refer
-            if (user.role !== 'USER') {
+            if (user.role !== 'user') {
                 throw new Error('Only regular users can be enabled for referrals');
             }
 

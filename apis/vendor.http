@@ -3,7 +3,7 @@
 # Base URL
 @baseUrl = http://localhost:4000/v1
 @token = YOUR_USER_TOKEN_HERE
-@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTNmZTcwMTU1MzVkODE0MmQ1ZWUiLCJlbWFpbCI6InZlbmRvckBnbWFpbC5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTUxOTU3OTEsImV4cCI6MTc1NTI4MjE5MX0.kWk0q4KBcFutToA0jatDFtaHAXmvNrzBQmI2xieKxHs
+@vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTNmZTcwMTU1MzVkODE0MmQ1ZWUiLCJlbWFpbCI6InZlbmRvckBnbWFpbC5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTY4MDA1ODAsImV4cCI6MTc1Njg4Njk4MH0.x-qzTtjh-ay3t726D13v-OgwtcoyHbPAKGd5__X9bPs
 @adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY1Njg3NjcsImV4cCI6MTc1NjY1NTE2N30.wda5z6YQ3sO3C1hh_7fsmowjo-GEqIxCNk01Ve1MkLM
 @vendorId = 689254b67015535d8142d61d
 @userId = USER_ID_HERE
@@ -26,6 +26,7 @@ Content-Type: application/json
 {
     "user": {
         "name": "Updated Vendor Name",
+        "gender": "female",
         "emailAddress": "updated.vendor@example.com"
     },
     "vendorProfile": {
@@ -98,7 +99,8 @@ Content-Type: application/json
 
 {
     "user": {
-        "name": "New Display Name"
+        "name": "New Display Name",
+        "gender": "male"
     }
 }
 
@@ -259,6 +261,7 @@ Content-Type: application/json
 {
     "user": {
         "name": "John Doe Chef",
+        "gender": "male",
         "emailAddress": "john.chef@example.com",
         "phoneNumber": "919876543210",
         "password": "SecurePass123!",
@@ -341,6 +344,7 @@ Content-Type: application/json
 {
     "user": {
         "name": "Spice Restaurant Owner",
+        "gender": "other",
         "emailAddress": "spice.restaurant@example.com",
         "phoneNumber": "919876543211",
         "password": "RestaurantPass123!",

@@ -26,6 +26,7 @@ export const ValidateRegister = Joi.object({
     emailAddress: Joi.string().email().trim().required(),
     password: Joi.string().min(8).max(24).trim().required(),
     name: Joi.string().min(2).max(50).trim().required(),
+    gender: Joi.string().valid('male', 'female', 'other').optional(),
     phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).required(),
     referralCode: Joi.string().optional().default("")
 });
@@ -49,6 +50,7 @@ export const ValidateForgotPassword = Joi.object({
 
 export const ValidateUpdateUserProfile = Joi.object({
     name: Joi.string().min(2).max(72).trim().optional(),
+    gender: Joi.string().valid('male', 'female', 'other').optional(),
     avatar: Joi.string().uri().optional(),
     phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).optional(),
     isActive: Joi.boolean().optional(),
@@ -264,6 +266,7 @@ export const ValidateMenuQuery = Joi.object({
 export const ValidateCreateVendorWithUser = Joi.object({
     user: Joi.object({
         name: Joi.string().min(2).max(72).trim().required(),
+        gender: Joi.string().valid('male', 'female', 'other').optional(),
         emailAddress: Joi.string().email().trim().required(),
         phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).required(),
         password: Joi.string().min(8).max(24).trim().required(),
@@ -305,6 +308,7 @@ export const ValidateCreateVendorWithUser = Joi.object({
 export const ValidateUpdateVendorWithUserInfo = Joi.object({
     user: Joi.object({
         name: Joi.string().min(2).max(72).trim().optional(),
+        gender: Joi.string().valid('male', 'female', 'other').optional(),
         emailAddress: Joi.string().email().trim().optional()
     }).optional(),
     vendorProfile: Joi.object({
@@ -658,9 +662,9 @@ export const ValidateInitiatePurchase = Joi.object({
 });
 
 export const ValidateVerifyPayment = Joi.object({
-    razorpay_order_id: Joi.string().required(),
-    razorpay_payment_id: Joi.string().required(),
-    razorpay_signature: Joi.string().required(),
+    phonepe_transaction_id: Joi.string().required(),
+    phonepe_merchant_id: Joi.string().required(),
+    phonepe_checksum: Joi.string().required(),
     userSubscriptionId: Joi.string().hex().length(24).required()
 });
 
@@ -693,6 +697,7 @@ export const ValidateVendorAssignmentQuery = Joi.object({
     requestType: Joi.string().valid('initial_assignment', 'vendor_switch').optional(),
     priority: Joi.string().valid('low', 'medium', 'high', 'urgent').optional(),
     deliveryZone: Joi.string().hex().length(24).optional(),
+    search: Joi.string().min(1).max(100).trim().optional(),
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
     sortBy: Joi.string().valid('requestedAt', 'priority', 'status', 'requestType').optional(),
@@ -720,7 +725,7 @@ export const ValidateTransactionQuery = Joi.object({
     page: Joi.number().positive().optional(),
     limit: Joi.number().positive().max(100).optional(),
     status: Joi.string().valid('pending', 'processing', 'success', 'failed', 'cancelled', 'refunded').optional(),
-    paymentMethod: Joi.string().valid('razorpay', 'upi', 'card', 'netbanking', 'wallet').optional(),
+    paymentMethod: Joi.string().valid('phonepe', 'razorpay', 'upi', 'card', 'netbanking', 'wallet').optional(),
     type: Joi.string().valid('purchase', 'refund', 'cancellation').optional(),
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
@@ -744,7 +749,7 @@ export const ValidateRefundTransaction = Joi.object({
 export const ValidateUserFilters = Joi.object({
     page: Joi.number().positive().optional(),
     limit: Joi.number().positive().max(100).optional(),
-    role: Joi.string().valid('USER', 'VENDOR', 'ADMIN').optional(),
+    role: Joi.string().valid('user', 'vendor', 'admin').optional(),
     status: Joi.string().valid('active', 'inactive', 'banned').optional(),
     search: Joi.string().trim().min(2).optional(),
     userType: Joi.string().valid('normal', 'vendor', 'premium').optional(),
@@ -857,6 +862,7 @@ export const ValidateOrderQuery = Joi.object({
     page: Joi.number().positive().optional(),
     limit: Joi.number().positive().max(100).optional(),
     status: Joi.string().valid('upcoming', 'preparing', 'out_for_delivery', 'delivered', 'skipped', 'cancelled').optional(),
+    search: Joi.string().min(1).max(100).trim().optional(),
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
     vendorId: Joi.string().hex().length(24).optional(),

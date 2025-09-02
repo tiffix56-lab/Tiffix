@@ -297,9 +297,9 @@ export default {
             const { subscriptionId } = req.params;
 
             const subscription = await UserSubscription.findById(subscriptionId)
-                .populate('userId', 'name emailAddress phoneNumber profilePicture addresses createdAt')
+                .populate('userId', 'name emailAddress phoneNumber createdAt')
                 .populate('subscriptionId', 'planName category duration durationDays features terms originalPrice discountedPrice')
-                .populate('vendorDetails.currentVendor.vendorId', 'businessInfo contactInfo address isVerified rating capacity')
+                .populate('vendorDetails.currentVendor.vendorId', 'businessInfo isVerified rating capacity')
                 .populate('promoCodeUsed', 'code discountType discountValue maxDiscount')
                 .populate('transactionId', 'amount paymentId completedAt status type paymentGateway orderId')
                 .populate('vendorDetails.vendorsAssignedHistory.vendorId', 'businessInfo')
@@ -315,8 +315,8 @@ export default {
                 userSubscriptionId: subscriptionId
             })
                 .populate('currentVendorId', 'businessInfo')
-                .populate('requestedVendorId', 'businessInfo')
-                .populate('assignedBy', 'name')
+                .populate('newVendorId', 'businessInfo')
+                .populate('processedBy', 'name')
                 .sort({ createdAt: -1 });
 
             // Calculate analytics
