@@ -16,6 +16,11 @@ import Customers from "./pages/Vendor/Customers";
 import VendorAssignment from "./pages/Admin/VendorAssignment";
 import Purchases from "./pages/Admin/Purchases";
 import Orders from "./pages/Vendor/Orders";
+import DailyMeal from "./pages/Admin/DailyMeal";
+import PromoCodes from "./pages/Admin/PromoCodes";
+import Referals from "./pages/Admin/Referals";
+import Order from "./pages/Admin/Order";
+import Reviews from "./pages/Admin/Reviews";
 
 
 
@@ -40,6 +45,11 @@ function App() {
             <Route path="/vendor-management" element={<Vendor />} />
             <Route path="/vendor-assignment" element={<VendorAssignment />} />
             <Route path="/purchases" element={<Purchases />} />
+            <Route path="/daily-meals" element={<DailyMeal />} />
+            <Route path="/orders" element={<Order />} />
+            <Route path="/promo-codes" element={<PromoCodes />} />
+            <Route path="/referrals" element={<Referals />} />
+            <Route path="/reviews" element={<Reviews />} />
           </Route>
 
           {/* Vendor Routes */}

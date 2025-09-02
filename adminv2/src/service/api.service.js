@@ -382,3 +382,200 @@ export const getOrderByIdApi = async (orderId) => {
 }
 
 
+// ADMIN ORDER MANAGEMENT
+
+export const getAdminOrdersApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/orders', {
+        params
+    });
+    return response.data;
+}
+
+export const confirmOrderDeliveryApi = async (orderId, body) => {
+    const response = await servicesAxiosInstance.post(`/admin/orders/${orderId}/confirm-delivery`, body);
+    return response.data;
+}
+
+export const manualCreateOrderApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/orders/manual-create', body);
+    return response.data;
+}
+
+
+// ADMIN DAILY MEAL MANAGEMENT
+
+export const getDailyMealsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/daily-meals', {
+        params
+    });
+    return response.data;
+}
+
+export const setTodayMealApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/daily-meals/set-today', body);
+    return response.data;
+}
+
+export const getAvailableMenusForSubscriptionApi = async (subscriptionId) => {
+    const response = await servicesAxiosInstance.get(`/admin/daily-meals/subscription/${subscriptionId}/menus`);
+    return response.data;
+}
+
+
+// ORDER CREATION LOGS
+
+export const getOrderCreationLogsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/order-creation-logs', {
+        params
+    });
+    return response.data;
+}
+
+export const retryFailedOrderCreationApi = async (logId, attemptIndex) => {
+    const response = await servicesAxiosInstance.post(`/admin/order-creation-logs/${logId}/retry/${attemptIndex}`);
+    return response.data;
+}
+
+
+// ADMIN PROMO CODE MANAGEMENT
+
+export const getPromoCodesApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/promo-codes', {
+        params
+    });
+    return response.data;
+}
+
+export const getPromoCodeByIdApi = async (promoCodeId) => {
+    const response = await servicesAxiosInstance.get(`/admin/promo-codes/${promoCodeId}`);
+    return response.data;
+}
+
+export const createPromoCodeApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/promo-codes', body);
+    return response.data;
+}
+
+export const updatePromoCodeApi = async (promoCodeId, body) => {
+    const response = await servicesAxiosInstance.put(`/admin/promo-codes/${promoCodeId}`, body);
+    return response.data;
+}
+
+export const deletePromoCodeApi = async (promoCodeId) => {
+    const response = await servicesAxiosInstance.delete(`/admin/promo-codes/${promoCodeId}`);
+    return response.data;
+}
+
+export const togglePromoCodeStatusApi = async (promoCodeId) => {
+    const response = await servicesAxiosInstance.patch(`/admin/promo-codes/${promoCodeId}/toggle-status`);
+    return response.data;
+}
+
+export const getPromoCodeStatsApi = async (promoCodeId) => {
+    const response = await servicesAxiosInstance.get(`/admin/promo-codes/${promoCodeId}/stats`);
+    return response.data;
+}
+
+export const getExpiringPromoCodesApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/promo-codes/expiring', {
+        params
+    });
+    return response.data;
+}
+
+export const bulkCreatePromoCodesApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/promo-codes/bulk-create', body);
+    return response.data;
+}
+
+export const validatePromoCodeApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/promo-codes/validate', body);
+    return response.data;
+}
+
+
+// ADMIN REFERRAL MANAGEMENT
+
+export const getReferralSystemStatsApi = async () => {
+    const response = await servicesAxiosInstance.get('/admin/referral/system-stats');
+    return response.data;
+}
+
+export const getReferralAnalyticsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/referral/analytics', {
+        params
+    });
+    return response.data;
+}
+
+export const disableUserReferralApi = async (userId, body) => {
+    const response = await servicesAxiosInstance.post(`/admin/referral/users/${userId}/disable`, body);
+    return response.data;
+}
+
+export const enableUserReferralApi = async (userId) => {
+    const response = await servicesAxiosInstance.post(`/admin/referral/users/${userId}/enable`);
+    return response.data;
+}
+
+export const processReferralRewardApi = async (userId, body) => {
+    const response = await servicesAxiosInstance.post(`/admin/referral/users/${userId}/process-reward`, body);
+    return response.data;
+}
+
+export const validateReferralCodeApi = async (referralCode) => {
+    const response = await servicesAxiosInstance.get(`/referral/validate/${referralCode}`);
+    return response.data;
+}
+
+export const getReferralLeaderboardApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/referral/leaderboard', {
+        params
+    });
+    return response.data;
+}
+
+
+// ADMIN REVIEW MANAGEMENT
+
+export const getAdminReviewsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/reviews', {
+        params
+    });
+    return response.data;
+}
+
+export const getReviewStatsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/reviews/stats', {
+        params
+    });
+    return response.data;
+}
+
+export const moderateReviewApi = async (reviewId, body) => {
+    const response = await servicesAxiosInstance.patch(`/admin/reviews/${reviewId}/moderate`, body);
+    return response.data;
+}
+
+export const getVendorReviewsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/vendor/reviews', {
+        params
+    });
+    return response.data;
+}
+
+export const getPublicSubscriptionReviewsApi = async (subscriptionId, params) => {
+    const response = await servicesAxiosInstance.get(`/public/subscriptions/${subscriptionId}/reviews`, {
+        params
+    });
+    return response.data;
+}
+
+export const getPublicVendorReviewsApi = async (vendorId, params) => {
+    const response = await servicesAxiosInstance.get(`/public/vendors/${vendorId}/reviews`, {
+        params
+    });
+    return response.data;
+}
+
+

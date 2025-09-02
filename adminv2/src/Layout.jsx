@@ -1,5 +1,9 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Home, Users, ChefHat, MapPin, Menu, X, LogOut } from "lucide-react";
+import { 
+  Home, Users, ChefHat, MapPin, Menu, X, LogOut, Star, Share, 
+  Package, ShoppingCart, Calendar, UserPlus, Building2, 
+  Tag, Gift, MessageSquare, ClipboardList, CreditCard 
+} from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 
@@ -10,13 +14,18 @@ function AdminLayout() {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'User Management', href: '/user-management', icon: Users },
+    { name: 'Daily Meals', href: '/daily-meals', icon: Calendar },
+    { name: 'Orders', href: '/orders', icon: ShoppingCart },
     { name: 'Menu Management', href: '/menu', icon: ChefHat },
+    { name: 'Vendor Assignment', href: '/vendor-assignment', icon: UserPlus },
     { name: 'Location Zones', href: '/location-zone', icon: MapPin },
-    { name: 'Subscriptions', href: '/subscriptions', icon: Menu },
-    { name: 'Vendor Management', href: '/vendor-management', icon: Menu },
-    { name: 'Vendor Assignment', href: '/vendor-assignment', icon: Menu },
-    { name: 'Purchases', href: '/purchases', icon: Menu },
+    { name: 'Subscriptions', href: '/subscriptions', icon: Package },
+    { name: 'Purchases', href: '/purchases', icon: CreditCard },
+    { name: 'User Management', href: '/user-management', icon: Users },
+    { name: 'Vendor Management', href: '/vendor-management', icon: Building2 },
+    { name: "Promo Codes", href: '/promo-codes', icon: Tag },
+    { name: 'Referrals', href: '/referrals', icon: Gift },
+    { name: 'Reviews', href: '/reviews', icon: MessageSquare },
   ];
 
   const isActive = (path) => {
