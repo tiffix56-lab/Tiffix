@@ -53,6 +53,7 @@ function UserManagement() {
       const response = await getAllUsersApi(cleanFilters)
       setUsers(Array.isArray(response.data.users) ? response.data.users : [])
     } catch (error) {
+      toast.error(error.response?.data?.message || 'Error fetching users')
       console.error('Error fetching users:', error)
       setUsers([])
     }
@@ -254,9 +255,9 @@ function UserManagement() {
                     onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
                   >
                     <option value="" className="bg-gray-800">All Roles</option>
-                    <option value="USER" className="bg-gray-800">Users</option>
-                    <option value="VENDOR" className="bg-gray-800">Vendors</option>
-                    <option value="ADMIN" className="bg-gray-800">Admins</option>
+                    <option value="user" className="bg-gray-800">Users</option>
+                    <option value="vendor" className="bg-gray-800">Vendors</option>
+                    <option value="admin" className="bg-gray-800">Admins</option>
                   </select>
                 </div>
 

@@ -599,9 +599,6 @@ function Order() {
                     <td className="px-6 py-4">
                       <div className="space-y-1">
                         {getStatusBadge(order)}
-                        {order.skipDetails?.isSkipped && (
-                          <div className="text-xs text-orange-400">Skip requested</div>
-                        )}
                         {order.cancellationDetails?.isCancelled && (
                           <div className="text-xs text-red-400">Cancelled</div>
                         )}

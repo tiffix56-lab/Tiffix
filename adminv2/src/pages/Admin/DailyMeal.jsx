@@ -10,7 +10,8 @@ import {
   getAvailableMenusForSubscriptionApi,
   getOrderCreationLogsApi,
   retryFailedOrderCreationApi,
-  getSubscriptionsApi
+  getSubscriptionsApi,
+  getMenusApi
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
@@ -58,6 +59,13 @@ function DailyMeal() {
 
   const [availableMenus, setAvailableMenus] = useState([])
   const [loadingMenus, setLoadingMenus] = useState(false)
+  
+  // Search states
+  const [subscriptionSearch, setSubscriptionSearch] = useState('')
+  const [menuSearch, setMenuSearch] = useState('')
+  const [allMenus, setAllMenus] = useState([])
+  const [filteredSubscriptions, setFilteredSubscriptions] = useState([])
+  const [filteredMenus, setFilteredMenus] = useState([])
 
   // Stats
   const [stats, setStats] = useState({
@@ -142,9 +150,22 @@ function DailyMeal() {
   const fetchSubscriptions = async () => {
     try {
       const data = await getSubscriptionsApi({ limit: 100, isActive: true })
-      setSubscriptions(data.data.subscriptions || [])
+      const subs = data.data.subscriptions || []
+      setSubscriptions(subs)
+      setFilteredSubscriptions(subs)
     } catch (error) {
       console.error('Error fetching subscriptions:', error)
+    }
+  }
+
+  const fetchAllMenus = async () => {
+    try {
+      const data = await getMenusApi({ limit: 100, isAvailable: true })
+      const menus = data.data.menus || []
+      setAllMenus(menus)
+      setFilteredMenus(menus)
+    } catch (error) {
+      console.error('Error fetching menus:', error)
     }
   }
 
@@ -164,6 +185,41 @@ function DailyMeal() {
       setAvailableMenus([])
     } finally {
       setLoadingMenus(false)
+    }
+  }
+
+  // Search functions
+  const handleSubscriptionSearch = (searchTerm) => {
+    setSubscriptionSearch(searchTerm)
+    if (!searchTerm.trim()) {
+      setFilteredSubscriptions(subscriptions)
+    } else {
+      const filtered = subscriptions.filter(sub => 
+        sub.planName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sub.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sub.vendorType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sub.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      setFilteredSubscriptions(filtered)
+    }
+  }
+
+  const handleMenuSearch = (searchTerm) => {
+    setMenuSearch(searchTerm)
+    const menusToFilter = availableMenus.length > 0 ? availableMenus : allMenus
+    
+    if (!searchTerm.trim()) {
+      setFilteredMenus(menusToFilter)
+    } else {
+      const filtered = menusToFilter.filter(menu => 
+        menu.foodTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        menu.description?.short?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        menu.description?.long?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        menu.cuisine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        menu.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        menu.dietaryOptions?.some(option => option.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+      setFilteredMenus(filtered)
     }
   }
 
@@ -189,6 +245,10 @@ function DailyMeal() {
         dinnerMenuIds: [],
         notes: ''
       })
+      setSubscriptionSearch('')
+      setMenuSearch('')
+      setFilteredSubscriptions(subscriptions)
+      setFilteredMenus(availableMenus.length > 0 ? availableMenus : allMenus)
       fetchDailyMeals()
     } catch (error) {
       console.error('Error setting today\'s meal:', error)
@@ -252,6 +312,7 @@ function DailyMeal() {
   useEffect(() => {
     fetchDailyMeals()
     fetchSubscriptions()
+    fetchAllMenus()
   }, [filters])
 
   useEffect(() => {
@@ -265,6 +326,14 @@ function DailyMeal() {
       fetchAvailableMenus(mealForm.subscriptionId)
     }
   }, [mealForm.subscriptionId])
+
+  useEffect(() => {
+    handleMenuSearch(menuSearch)
+  }, [availableMenus, allMenus])
+
+  useEffect(() => {
+    handleSubscriptionSearch(subscriptionSearch)
+  }, [subscriptions])
 
   return (
     <div className="p-6 space-y-6">
@@ -809,18 +878,32 @@ function DailyMeal() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Subscription *
                 </label>
-                <select
-                  value={mealForm.subscriptionId}
-                  onChange={(e) => setMealForm(prev => ({ ...prev, subscriptionId: e.target.value }))}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">Select a subscription</option>
-                  {subscriptions.map(sub => (
-                    <option key={sub._id} value={sub._id}>
-                      {sub.title} - {sub.vendorType}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search subscriptions..."
+                      value={subscriptionSearch}
+                      onChange={(e) => handleSubscriptionSearch(e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <select
+                    value={mealForm.subscriptionId}
+                    onChange={(e) => setMealForm(prev => ({ ...prev, subscriptionId: e.target.value }))}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Select a subscription</option>
+                    {filteredSubscriptions.map(sub => (
+                      <option key={sub._id} value={sub._id}>
+                        {sub.planName || sub.title} - {sub.vendorType} ({sub.category})
+                      </option>
+                    ))}
+                  </select>
+                  {subscriptionSearch && filteredSubscriptions.length === 0 && (
+                    <p className="text-gray-400 text-sm">No subscriptions found matching your search.</p>
+                  )}
+                </div>
               </div>
 
               {/* Menu Selection */}
@@ -833,14 +916,33 @@ function DailyMeal() {
                     </div>
                   ) : (
                     <>
+                      {/* Menu Search */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Search Menus
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search by name, cuisine, dietary options..."
+                            value={menuSearch}
+                            onChange={(e) => handleMenuSearch(e.target.value)}
+                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                        {menuSearch && filteredMenus.length === 0 && (
+                          <p className="text-gray-400 text-sm mt-2">No menus found matching your search.</p>
+                        )}
+                      </div>
+
                       {/* Lunch Menus */}
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Lunch Menus
+                          Lunch Menus ({filteredMenus.length} available)
                         </label>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {availableMenus.map(menu => (
-                            <label key={`lunch-${menu._id}`} className="flex items-center gap-3 p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {filteredMenus.map(menu => (
+                            <label key={`lunch-${menu._id}`} className="flex items-start gap-3 p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors">
                               <input
                                 type="checkbox"
                                 checked={mealForm.lunchMenuIds.includes(menu._id)}
@@ -857,12 +959,43 @@ function DailyMeal() {
                                     }))
                                   }
                                 }}
-                                className="rounded text-orange-600 focus:ring-orange-500 focus:ring-2"
+                                className="rounded text-orange-600 focus:ring-orange-500 focus:ring-2 mt-1"
                               />
                               <div className="flex-1">
-                                <div className="text-white font-medium">{menu.foodTitle}</div>
-                                <div className="text-gray-400 text-sm">{menu.description?.short}</div>
-                                <div className="text-orange-400 text-sm">₹{menu.price}</div>
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="text-white font-medium text-lg">{menu.foodTitle}</div>
+                                    <div className="text-orange-400 font-bold text-lg">₹{menu.price}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-orange-400 text-sm capitalize">{menu.cuisine}</div>
+                                    <div className="text-gray-400 text-xs">{menu.prepTime}min • {menu.calories}cal</div>
+                                  </div>
+                                </div>
+                                {menu.description?.short && (
+                                  <div className="text-gray-300 text-sm mt-1">{menu.description.short}</div>
+                                )}
+                                {menu.dietaryOptions && menu.dietaryOptions.length > 0 && (
+                                  <div className="flex gap-1 flex-wrap mt-2">
+                                    {menu.dietaryOptions.map((option, idx) => (
+                                      <span key={idx} className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium capitalize">
+                                        {option}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {menu.tags && menu.tags.length > 0 && (
+                                  <div className="flex gap-1 flex-wrap mt-1">
+                                    {menu.tags.slice(0, 3).map((tag, idx) => (
+                                      <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                        #{tag}
+                                      </span>
+                                    ))}
+                                    {menu.tags.length > 3 && (
+                                      <span className="text-gray-400 text-xs">+{menu.tags.length - 3} more</span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </label>
                           ))}
@@ -872,11 +1005,11 @@ function DailyMeal() {
                       {/* Dinner Menus */}
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Dinner Menus
+                          Dinner Menus ({filteredMenus.length} available)
                         </label>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {availableMenus.map(menu => (
-                            <label key={`dinner-${menu._id}`} className="flex items-center gap-3 p-2 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {filteredMenus.map(menu => (
+                            <label key={`dinner-${menu._id}`} className="flex items-start gap-3 p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors">
                               <input
                                 type="checkbox"
                                 checked={mealForm.dinnerMenuIds.includes(menu._id)}
@@ -893,12 +1026,43 @@ function DailyMeal() {
                                     }))
                                   }
                                 }}
-                                className="rounded text-orange-600 focus:ring-orange-500 focus:ring-2"
+                                className="rounded text-orange-600 focus:ring-orange-500 focus:ring-2 mt-1"
                               />
                               <div className="flex-1">
-                                <div className="text-white font-medium">{menu.foodTitle}</div>
-                                <div className="text-gray-400 text-sm">{menu.description?.short}</div>
-                                <div className="text-orange-400 text-sm">₹{menu.price}</div>
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="text-white font-medium text-lg">{menu.foodTitle}</div>
+                                    <div className="text-orange-400 font-bold text-lg">₹{menu.price}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-orange-400 text-sm capitalize">{menu.cuisine}</div>
+                                    <div className="text-gray-400 text-xs">{menu.prepTime}min • {menu.calories}cal</div>
+                                  </div>
+                                </div>
+                                {menu.description?.short && (
+                                  <div className="text-gray-300 text-sm mt-1">{menu.description.short}</div>
+                                )}
+                                {menu.dietaryOptions && menu.dietaryOptions.length > 0 && (
+                                  <div className="flex gap-1 flex-wrap mt-2">
+                                    {menu.dietaryOptions.map((option, idx) => (
+                                      <span key={idx} className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium capitalize">
+                                        {option}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {menu.tags && menu.tags.length > 0 && (
+                                  <div className="flex gap-1 flex-wrap mt-1">
+                                    {menu.tags.slice(0, 3).map((tag, idx) => (
+                                      <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                        #{tag}
+                                      </span>
+                                    ))}
+                                    {menu.tags.length > 3 && (
+                                      <span className="text-gray-400 text-xs">+{menu.tags.length - 3} more</span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </label>
                           ))}
