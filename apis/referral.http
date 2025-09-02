@@ -67,6 +67,18 @@ Authorization: Bearer {{adminToken}}
 
 ###
 
+# Get referral analytics with search by user name
+GET {{baseUrl}}/admin/referral/analytics?search=John&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+# Get referral analytics with search by email
+GET {{baseUrl}}/admin/referral/analytics?search=john@example.com&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
 # Get referral analytics with date range
 GET {{baseUrl}}/admin/referral/analytics?startDate=2024-01-01&endDate=2024-12-31&page=1&limit=20
 Authorization: Bearer {{adminToken}}
@@ -211,5 +223,57 @@ Authorization: Bearer {{adminToken}}
 # Check user transactions including referral credit usage
 GET {{baseUrl}}/my-transactions
 Authorization: Bearer {{userToken}}
+
+###
+
+### ========================================
+### REFERRAL SEARCH EXAMPLES
+### ========================================
+
+### Search referral analytics by user name
+GET {{baseUrl}}/admin/referral/analytics?search=Alice&page=1&limit=15
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Search referral analytics by user email
+GET {{baseUrl}}/admin/referral/analytics?search=alice@domain.com&page=1&limit=15
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Search referral analytics by phone number
+GET {{baseUrl}}/admin/referral/analytics?search=9876543210&page=1&limit=15
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Search referral analytics by referral code
+GET {{baseUrl}}/admin/referral/analytics?search=JXAZIHTO&page=1&limit=15
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Combined search with sorting by credits
+GET {{baseUrl}}/admin/referral/analytics?search=premium&sortBy=totalreferralCredits&sortOrder=desc&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Combined search with date range filter
+GET {{baseUrl}}/admin/referral/analytics?search=john&startDate=2024-01-01&endDate=2024-12-31&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Search users with referral capability
+GET {{baseUrl}}/admin/users?search=referral&hasReferral=true&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Search for high-performing referrers
+GET {{baseUrl}}/admin/referral/analytics?search=top&sortBy=totalreferralCredits&sortOrder=desc&page=1&limit=5
+Authorization: Bearer {{adminToken}}
 
 ###

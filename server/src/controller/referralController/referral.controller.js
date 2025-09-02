@@ -51,7 +51,7 @@ export default {
             const { userId, role } = req.authenticatedUser;
 
             // Check if user can generate referral links
-            if (role !== 'USER') {
+            if (role !== 'user') {
                 return httpError(next, new Error('Only regular users can generate referral links'), req, 403);
             }
 

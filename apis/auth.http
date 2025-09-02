@@ -5,10 +5,10 @@
 # @email = user@gmail.com
 # @email = user2@gmail.com
 // For vendor
-@email = vendor@gmail.com
+# @email = vendor@gmail.com
 # @email = spice.restaurant@example.com
 // for Admin
-# @email = admin@gmail.com
+@email = admin@gmail.com
 @password = 12345678
 @name = Test User
 @phoneNumber = 91987654321
