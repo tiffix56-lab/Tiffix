@@ -3,9 +3,9 @@
 @baseURL = http://localhost:4000/v1
 // For user
 # @email = user@gmail.com
-@email = user2@gmail.com
+# @email = user2@gmail.com
 // For vendor
-# @email = vendor@gmail.com
+@email = vendor@gmail.com
 # @email = spice.restaurant@example.com
 // for Admin
 # @email = admin@gmail.com

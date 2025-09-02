@@ -31,6 +31,7 @@ export default {
 
             const userData = {
                 name: value.user.name,
+                gender: value.user.gender,
                 emailAddress: value.user.emailAddress,
                 phoneNumber: {
                     isoCode,
@@ -61,7 +62,7 @@ export default {
             const newVendorProfile = new VendorProfile(vendorProfileData);
             const savedProfile = await newVendorProfile.save();
 
-            await savedProfile.populate('userId', 'name emailAddress phoneNumber role');
+            await savedProfile.populate('userId', 'name gender emailAddress phoneNumber role');
 
             httpResponse(req, res, 201, responseMessage.SUCCESS, {
                 user: savedUser,
@@ -119,7 +120,7 @@ export default {
             sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
             const vendorProfiles = await VendorProfile.find(filter)
-                .populate('userId', 'name emailAddress phoneNumber role isActive')
+                .populate('userId', 'name gender emailAddress phoneNumber role isActive')
                 .sort(sortObj)
                 .skip(skip)
                 .limit(parseInt(limit));
@@ -176,7 +177,7 @@ export default {
             const updatedProfile = await VendorProfile.findByIdAndUpdate(paramValue.id, value, {
                 new: true,
                 runValidators: false
-            }).populate('userId', 'name emailAddress phoneNumber');
+            }).populate('userId', 'name gender emailAddress phoneNumber');
 
             if (!updatedProfile) {
                 return httpError(next, new Error('Vendor profile not found'), req, 404);
@@ -411,7 +412,7 @@ export default {
             }
 
             // Populate with updated user info
-            await updatedProfile.populate('userId', 'name emailAddress phoneNumber');
+            await updatedProfile.populate('userId', 'name gender emailAddress phoneNumber');
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 vendorProfile: updatedProfile,

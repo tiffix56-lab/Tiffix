@@ -26,6 +26,7 @@ export const ValidateRegister = Joi.object({
     emailAddress: Joi.string().email().trim().required(),
     password: Joi.string().min(8).max(24).trim().required(),
     name: Joi.string().min(2).max(50).trim().required(),
+    gender: Joi.string().valid('male', 'female', 'other').optional(),
     phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).required(),
     referralCode: Joi.string().optional().default("")
 });
@@ -49,6 +50,7 @@ export const ValidateForgotPassword = Joi.object({
 
 export const ValidateUpdateUserProfile = Joi.object({
     name: Joi.string().min(2).max(72).trim().optional(),
+    gender: Joi.string().valid('male', 'female', 'other').optional(),
     avatar: Joi.string().uri().optional(),
     phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).optional(),
     isActive: Joi.boolean().optional(),
@@ -264,6 +266,7 @@ export const ValidateMenuQuery = Joi.object({
 export const ValidateCreateVendorWithUser = Joi.object({
     user: Joi.object({
         name: Joi.string().min(2).max(72).trim().required(),
+        gender: Joi.string().valid('male', 'female', 'other').optional(),
         emailAddress: Joi.string().email().trim().required(),
         phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).required(),
         password: Joi.string().min(8).max(24).trim().required(),
@@ -305,6 +308,7 @@ export const ValidateCreateVendorWithUser = Joi.object({
 export const ValidateUpdateVendorWithUserInfo = Joi.object({
     user: Joi.object({
         name: Joi.string().min(2).max(72).trim().optional(),
+        gender: Joi.string().valid('male', 'female', 'other').optional(),
         emailAddress: Joi.string().email().trim().optional()
     }).optional(),
     vendorProfile: Joi.object({

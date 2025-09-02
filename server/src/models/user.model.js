@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema(
             minlength: 2,
             maxlength: 72
         },
+        gender: {
+            type: String,
+            enum: ['male', 'female', 'other'],
+            default: 'male'
+        },
         avatar: {
             type: String,
             default: null

@@ -41,6 +41,7 @@ export default {
             const userProfileFields = {};
 
             if (value.name !== undefined) userFields.name = value.name;
+            if (value.gender !== undefined) userFields.gender = value.gender;
             if (value.avatar !== undefined) userFields.avatar = value.avatar;
             if (value.isActive !== undefined) userFields.isActive = value.isActive;
 
@@ -81,7 +82,7 @@ export default {
                     runValidators: true,
                     upsert: true
                 }
-            ).populate('userId', 'name emailAddress phoneNumber avatar isActive');
+            ).populate('userId', 'name gender emailAddress phoneNumber avatar isActive');
 
             if (!updatedProfile) {
                 return httpError(next, new Error('Failed to update user profile'), req, 500);
