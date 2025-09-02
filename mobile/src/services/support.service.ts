@@ -1,4 +1,5 @@
 import { apiService } from './api.service';
+import { API_ENDPOINTS } from '../constants/api';
 import { ApiResponse } from '../types/auth.types';
 
 export interface ComplaintData {

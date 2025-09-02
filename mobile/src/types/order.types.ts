@@ -51,8 +51,11 @@ export interface PurchaseResponse {
   message: string;
   data?: {
     orderId: string;
-    paymentUrl?: string;
+    paymentUrl: string;
     amount: number;
-    transactionId: string;
+    currency: string;
+    phonepeKey: string;
+    userSubscriptionId: string;
+    subscription: any;
   };
 }

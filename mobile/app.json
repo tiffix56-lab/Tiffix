@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tiffix",
-    "slug": "tiffix",
+    "slug": "tiffix-mobile",
     "version": "1.0.0",
     "scheme": "tiffix",
     "web": {
@@ -10,7 +10,9 @@
     "experiments": {
       "tsconfigPaths": true
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
@@ -19,9 +21,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["src/assets/*"],
+    "assetBundlePatterns": [
+      "src/assets/*"
+    ],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.tiffix.mobile",
       "config": {
         "googleMapsApiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
       }
@@ -31,7 +36,7 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.rutwik187.tiffix",
+      "package": "com.tiffix.mobile",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
@@ -42,8 +47,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b0503ac0-e2ae-48f1-a2fb-3b7dd33c40f2"
+        "projectId": "89ca5d7a-4912-4459-809a-2a1f9e3d763f"
       }
-    }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/89ca5d7a-4912-4459-809a-2a1f9e3d763f"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "katareayush"
   }
 }

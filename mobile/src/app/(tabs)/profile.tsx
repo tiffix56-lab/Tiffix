@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import * as ImagePicker from 'expo-image-picker';
 import { userService } from '@/services/user.service';
+import { uploadService } from '@/services/upload.service';
 import { User } from '@/types/user.types';
 
 const Profile = () => {
   const { colorScheme } = useColorScheme();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     fetchUserData();
@@ -103,6 +106,96 @@ const Profile = () => {
     router.push(`/(profile)${route}`);
   };
 
+  const handlePhotoPress = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant camera roll permissions to upload photos.');
+      return;
+    }
+
+    Alert.alert(
+      'Update Profile Photo',
+      'Choose an option',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Camera', onPress: () => openCamera() },
+        { text: 'Gallery', onPress: () => openGallery() },
+      ]
+    );
+  };
+
+  const openCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please grant camera permissions to take photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      uploadPhoto(result.assets[0]);
+    }
+  };
+
+  const openGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      uploadPhoto(result.assets[0]);
+    }
+  };
+
+  const uploadPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+    try {
+      setUploadingPhoto(true);
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        type: asset.mimeType || 'image/jpeg',
+        name: asset.fileName || 'profile.jpg',
+      } as any);
+      formData.append('category', 'profile');
+
+      const uploadResponse = await uploadService.uploadProfilePhoto(formData as any);
+      
+      if (uploadResponse.success && uploadResponse.data) {
+        // Update user profile with new avatar URL
+        const updateResponse = await userService.updateUserProfile({
+          avatar: uploadResponse.data.url,
+        });
+        
+        if (updateResponse.success) {
+          Alert.alert('Success', 'Profile photo updated successfully');
+          fetchUserData(); // Refresh user data
+        } else {
+          Alert.alert('Error', 'Failed to update profile photo');
+        }
+      } else {
+        Alert.alert('Error', 'Failed to upload photo');
+      }
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      Alert.alert('Error', 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-zinc-50 pb-12 dark:bg-neutral-900">
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
@@ -124,17 +217,24 @@ const Profile = () => {
             <View className="relative mb-4">
               <Image
                 source={{
-                  uri: 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
+                  uri: user?.avatar || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
                 }}
                 className="h-24 w-24 rounded-full"
                 resizeMode="cover"
               />
-              <TouchableOpacity className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800">
-                <Feather
-                  name="camera"
-                  size={16}
-                  color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'}
-                />
+              <TouchableOpacity 
+                className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800"
+                onPress={handlePhotoPress}
+                disabled={uploadingPhoto}>
+                {uploadingPhoto ? (
+                  <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+                ) : (
+                  <Feather
+                    name="camera"
+                    size={16}
+                    color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'}
+                  />
+                )}
               </TouchableOpacity>
             </View>
             {loading ? (

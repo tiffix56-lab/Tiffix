@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import RazorpayCheckout from 'react-native-razorpay';
 import { orderService } from '@/services/order.service';
 import { orderStore, OrderData } from '@/utils/order-store';
 import { InitiatePurchaseRequest } from '@/types/order.types';
@@ -103,34 +102,39 @@ const Payment = () => {
       const response = await orderService.initiatePurchase(orderPayload);
 
       if (response.success && response.data) {
-        const { orderId, amount, currency, razorpayKey, userSubscriptionId } = response.data;
+        const { orderId, amount, currency, phonepeKey, userSubscriptionId, paymentUrl } = response.data;
 
-        const options = {
-          description: `${orderData.selectedSubscription.planName} Subscription`,
-          image: 'https://your-logo-url.com/logo.png',
-          currency: currency,
-          key: razorpayKey,
-          amount: amount,
-          name: 'Tiffix',
-          order_id: orderId,
-          prefill: {
-            email: '',
-            contact: '',
-            name: '',
-          },
-          theme: { color: '#000000' },
-        };
+        // Store payment data for verification later
+        await orderStore.setOrderData({
+          ...orderData,
+          orderId,
+          userSubscriptionId,
+          paymentAmount: amount
+        });
 
-        RazorpayCheckout.open(options)
-          .then((data: any) => {
-            handlePaymentSuccess(data, userSubscriptionId);
-          })
-          .catch((error: any) => {
-            if (error.description !== 'Payment cancelled by user') {
-              Alert.alert('Payment Failed', error.description || 'Payment could not be processed');
-            }
+        // Open PhonePe payment URL
+        if (paymentUrl) {
+          const supported = await Linking.canOpenURL(paymentUrl);
+          if (supported) {
+            await Linking.openURL(paymentUrl);
+            
+            // Navigate to payment verification screen
+            router.push({
+              pathname: '/(home)/payment-verification',
+              params: {
+                orderId,
+                userSubscriptionId,
+                amount: amount.toString()
+              }
+            });
+          } else {
+            Alert.alert('Error', 'Cannot open PhonePe payment URL');
             setLoading(false);
-          });
+          }
+        } else {
+          Alert.alert('Error', 'Payment URL not received from PhonePe');
+          setLoading(false);
+        }
       } else {
         Alert.alert('Order Failed', response.message || 'Failed to initiate payment');
         setLoading(false);
@@ -142,41 +146,6 @@ const Payment = () => {
     }
   };
 
-  const handlePaymentSuccess = async (paymentData: any, userSubscriptionId: string) => {
-    try {
-      const verificationData = {
-        userSubscriptionId,
-        razorpay_order_id: paymentData.razorpay_order_id,
-        razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_signature: paymentData.razorpay_signature,
-      };
-
-      const verificationResponse = await orderService.verifyPayment(verificationData);
-
-      if (verificationResponse.success && verificationResponse.data?.success) {
-        router.push({
-          pathname: '/(home)/order-confirmed',
-          params: {
-            subscriptionId: verificationResponse.data.userSubscriptionId,
-            userSubscriptionId: userSubscriptionId,
-            paymentId: paymentData.razorpay_payment_id,
-          }
-        });
-      } else {
-        Alert.alert(
-          'Payment Verification Failed',
-          'Your payment was processed but could not be verified. Please contact support.'
-        );
-      }
-    } catch (error) {
-      Alert.alert(
-        'Verification Error',
-        'Payment verification failed. Please contact support if amount was deducted.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!orderData) {
     return (
@@ -288,7 +257,7 @@ const Payment = () => {
                 <Text
                   className="text-base font-medium text-black dark:text-white"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
-                  Razorpay
+                  PhonePe
                 </Text>
                 <Text
                   className="text-sm text-zinc-500 dark:text-zinc-400"

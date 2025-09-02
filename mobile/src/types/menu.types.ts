@@ -9,7 +9,7 @@ export interface MenuItem {
     long?: string;
   };
   detailedItemList: string;
-  vendorCategory: 'vendor' | 'home_chef';
+  vendorCategory: 'food_vendor' | 'home_chef';
   cuisine: string;
   prepTime: number;
   calories: number;
@@ -38,7 +38,7 @@ export interface MenuResponse {
 export interface MenuQuery {
   page?: number;
   limit?: number;
-  vendorCategory?: 'vendor' | 'home_chef';
+  vendorCategory?: 'food_vendor' | 'home_chef';
   cuisine?: string;
   dietaryOptions?: string;
   tags?: string;

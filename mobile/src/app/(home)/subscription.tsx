@@ -133,8 +133,8 @@ const Subscription = () => {
                       : 'border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-black'
                   }`}>
                   <View className="flex-row items-start justify-between">
-                    <View className="flex-1">
-                      <View className="mb-2 flex-row items-center">
+                    <View className="flex-1 mr-4">
+                      <View className="mb-2 flex-row items-center flex-wrap">
                         <Text
                           className={`text-xl font-semibold ${
                             isSelected
@@ -144,25 +144,18 @@ const Subscription = () => {
                           style={{ fontFamily: 'Poppins_600SemiBold' }}>
                           {plan.planName}
                         </Text>
-                        {plan.duration === 'yearly' && (
-                          <View className="ml-3 rounded-full bg-blue-500 px-3 py-1">
-                            <Text
-                              className="text-xs font-medium text-zinc-50"
-                              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                              BEST VALUE
-                            </Text>
-                          </View>
-                        )}
-                        {plan.duration === 'monthly' && (
-                          <View className="ml-3 rounded-full bg-green-500 px-3 py-1">
-                            <Text
-                              className="text-xs font-medium text-zinc-50"
-                              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                              POPULAR
-                            </Text>
-                          </View>
-                        )}
                       </View>
+                      {(plan.duration === 'yearly' || plan.duration === 'monthly') && (
+                        <View className="mb-2">
+                          <View className="rounded-full bg-blue-500 px-3 py-1 self-start">
+                            <Text
+                              className="text-xs font-medium text-zinc-50"
+                              style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                              {plan.duration === 'yearly' ? 'BEST VALUE' : 'POPULAR'}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
                       <Text
                         className={`text-base ${
                           isSelected
@@ -172,15 +165,6 @@ const Subscription = () => {
                         style={{ fontFamily: 'Poppins_500Medium' }}>
                         No. of meals: {plan.mealsPerPlan} meals
                       </Text>
-                      <Text
-                        className={`text-base ${
-                          isSelected
-                            ? 'text-zinc-50 dark:text-zinc-50'
-                            : 'text-zinc-500 dark:text-zinc-400'
-                        }`}
-                        style={{ fontFamily: 'Poppins_500Medium' }}>
-                        Duration: {plan.durationDays} days
-                      </Text>
                       {plan.freeDelivery && (
                         <Text
                           className={`text-base ${
@@ -189,7 +173,7 @@ const Subscription = () => {
                               : 'text-green-600 dark:text-green-400'
                           }`}
                           style={{ fontFamily: 'Poppins_500Medium' }}>
-                          Free Delivery
+                          Delivery Free
                         </Text>
                       )}
                     </View>
@@ -219,7 +203,7 @@ const Subscription = () => {
                             : 'text-zinc-500 dark:text-zinc-400'
                         }`}
                         style={{ fontFamily: 'Poppins_500Medium' }}>
-                        {plan.duration}
+                        {plan.duration === 'yearly' ? 'Yearly' : plan.duration === 'monthly' ? 'Monthly' : 'Quarterly'}
                       </Text>
                     </View>
                   </View>
@@ -232,17 +216,6 @@ const Subscription = () => {
                       }`}
                       style={{ fontFamily: 'Poppins_500Medium' }}>
                       You Save: {formatCurrency(savings)}
-                    </Text>
-                  )}
-                  {plan.description && (
-                    <Text
-                      className={`mt-2 text-xs ${
-                        isSelected
-                          ? 'text-zinc-400 dark:text-zinc-500'
-                          : 'text-zinc-400 dark:text-zinc-500'
-                      }`}
-                      style={{ fontFamily: 'Poppins_400Regular' }}>
-                      {plan.description}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -303,6 +276,9 @@ const Subscription = () => {
                 </Text>
               </View>
             )}
+
+            {/* Bottom Spacing */}
+            <View className="h-20" />
           </ScrollView>
         )}
       </View>

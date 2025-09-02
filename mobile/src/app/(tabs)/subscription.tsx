@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,94 +7,151 @@ import {
   Image,
   StatusBar,
   Dimensions,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { orderService } from '@/services/order.service';
+import { reviewService } from '@/services/review.service';
 
 const { width } = Dimensions.get('window');
 
-interface Meal {
-  id: string;
-  name: string;
-  description: string;
-  image: any;
-  date: string;
-  time: string;
-  isVegetarian: boolean;
+interface Order {
+  _id: string;
+  subscriptionId: string;
+  menuId: string;
+  vendorId: string;
+  userId: string;
+  orderDate: string;
+  deliveryTime: string;
+  status: 'pending' | 'confirmed' | 'prepared' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'skipped';
+  mealType: 'lunch' | 'dinner';
+  menu?: {
+    name: string;
+    description: string;
+    image: string;
+    isVegetarian: boolean;
+  };
   skipCount?: string;
+  canSkip: boolean;
+  canCancel: boolean;
+  createdAt: string;
 }
 
-interface MealCardProps {
-  meal: Meal;
+interface OrderCardProps {
+  order: Order;
   isUpcoming?: boolean;
+  onSkip: (orderId: string) => void;
+  onCancel: (orderId: string) => void;
+  onReview: (orderId: string) => void;
 }
 
 const Subscription = () => {
   const { colorScheme } = useColorScheme();
   const [activeTab, setActiveTab] = useState('upcoming');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Sample data for upcoming meals
-  const upcomingMeals: Meal[] = [
-    {
-      id: '1',
-      name: 'Special Thali',
-      description: '4 roti/chawal/aloogobi/chole aloo/kadi/salad',
-      image: require('@/assets/category-2.png'),
-      date: '2025-05-21',
-      time: '09:00',
-      isVegetarian: true,
-      skipCount: '6/6',
-    },
-    {
-      id: '2',
-      name: 'Special Thali',
-      description: '4 roti/chawal/aloogobi/chole aloo/kadi/salad',
-      image: require('@/assets/category-2.png'),
-      date: '2025-05-22',
-      time: '12:00',
-      isVegetarian: true,
-      skipCount: '5/6',
-    },
-  ];
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-  // Sample data for delivered meals
-  const deliveredMeals: Meal[] = [
-    {
-      id: '3',
-      name: 'Special Thali',
-      description: '4 roti/chawal/aloogobi/chole aloo/kadi/salad',
-      image: require('@/assets/category-2.png'),
-      date: '2025-05-20',
-      time: '09:00',
-      isVegetarian: true,
-    },
-    {
-      id: '4',
-      name: 'Special Thali',
-      description: '4 roti/chawal/aloogobi/chole aloo/kadi/salad',
-      image: require('@/assets/category-2.png'),
-      date: '2025-05-19',
-      time: '12:00',
-      isVegetarian: true,
-    },
-    {
-      id: '5',
-      name: 'Special Thali',
-      description: '4 roti/chawal/aloogobi/chole aloo/kadi/salad',
-      image: require('@/assets/category-2.png'),
-      date: '2025-05-18',
-      time: '09:00',
-      isVegetarian: true,
-    },
-  ];
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await orderService.getMyOrders();
+      
+      if (response.success && response.data) {
+        setOrders(response.data.orders || []);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-  const MealCard: React.FC<MealCardProps> = ({ meal, isUpcoming = false }) => (
+  const handleSkipOrder = async (orderId: string) => {
+    Alert.alert(
+      'Skip Order',
+      'Are you sure you want to skip this order?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Skip',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await orderService.skipOrder(orderId, 'User requested skip');
+              if (response.success) {
+                Alert.alert('Success', 'Order skipped successfully');
+                fetchOrders();
+              } else {
+                Alert.alert('Error', response.message || 'Failed to skip order');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to skip order');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    Alert.alert(
+      'Cancel Order',
+      'Are you sure you want to cancel this order? This action cannot be undone.',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await orderService.cancelOrder(orderId, 'User requested cancellation');
+              if (response.success) {
+                Alert.alert('Success', 'Order cancelled successfully');
+                fetchOrders();
+              } else {
+                Alert.alert('Error', response.message || 'Failed to cancel order');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to cancel order');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleReviewOrder = async (orderId: string) => {
+    // Navigate to review screen or show review modal
+    router.push(`/(profile)/review?orderId=${orderId}`);
+  };
+
+  const upcomingOrders = orders.filter(order => 
+    ['pending', 'confirmed', 'prepared', 'out_for_delivery'].includes(order.status)
+  );
+  
+  const deliveredOrders = orders.filter(order => 
+    ['delivered'].includes(order.status)
+  );
+
+  const OrderCard: React.FC<OrderCardProps> = ({ order, isUpcoming = false, onSkip, onCancel, onReview }) => (
     <View className="mb-6 rounded-md bg-white shadow-sm dark:bg-neutral-800">
       <View className="flex-row overflow-hidden ">
         {/* Meal Image - Full Height */}
         <View className="mr-2">
-          <Image source={meal.image} className="h-52 w-36 rounded-lg" resizeMode="cover" />
+          <Image 
+            source={order.menu?.image ? { uri: order.menu.image } : require('@/assets/category-2.png')} 
+            className="h-52 w-36 rounded-lg" 
+            resizeMode="cover" 
+          />
         </View>
 
         {/* Meal Details */}
@@ -103,9 +160,9 @@ const Subscription = () => {
             <Text
               className="mb-1 flex-1 text-xl font-semibold text-black dark:text-white"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              {meal.name}
+              {order.menu?.name || 'Meal'}
             </Text>
-            {meal.isVegetarian && (
+            {order.menu?.isVegetarian && (
               <View className="mb-4 rounded-md border border-lime-500 bg-lime-50 px-2 py-1 dark:bg-lime-900/20">
                 <Text
                   className="mb-1 text-xs font-medium text-lime-700 dark:text-lime-400"
@@ -119,7 +176,7 @@ const Subscription = () => {
           <Text
             className="mb-4 text-sm text-gray-600 dark:text-gray-300"
             style={{ fontFamily: 'Poppins_400Regular' }}>
-            {meal.description}
+            {order.menu?.description || 'No description available'}
           </Text>
 
           <View className="mb-4 flex-row items-center justify-between">
@@ -132,7 +189,7 @@ const Subscription = () => {
               <Text
                 className="ml-2 text-sm font-semibold text-gray-600 dark:text-gray-300"
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                {meal.date} at {meal.time}
+                {new Date(order.orderDate).toLocaleDateString()} at {order.deliveryTime}
               </Text>
             </View>
 
@@ -155,24 +212,34 @@ const Subscription = () => {
           {/* Action Buttons */}
           {isUpcoming ? (
             <View className="flex-row gap-3">
-              <TouchableOpacity className="flex-1 rounded-lg bg-red-500 py-4">
-                <Text
-                  className="text-center text-sm font-medium text-white"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  Cancel Meal
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="flex-1 rounded-lg bg-black py-4 dark:bg-white">
-                <Text
-                  className="text-center text-base font-medium text-white dark:text-black"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  {meal.skipCount} Skip
-                </Text>
-              </TouchableOpacity>
+              {order.canCancel && (
+                <TouchableOpacity 
+                  className="flex-1 rounded-lg bg-red-500 py-4"
+                  onPress={() => onCancel(order._id)}>
+                  <Text
+                    className="text-center text-sm font-medium text-white"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    Cancel Meal
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {order.canSkip && (
+                <TouchableOpacity 
+                  className="flex-1 rounded-lg bg-black py-4 dark:bg-white"
+                  onPress={() => onSkip(order._id)}>
+                  <Text
+                    className="text-center text-base font-medium text-white dark:text-black"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    {order.skipCount || 'Skip'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View>
-              <TouchableOpacity className="rounded-lg bg-black py-4 dark:bg-white">
+              <TouchableOpacity 
+                className="rounded-lg bg-black py-4 dark:bg-white"
+                onPress={() => onReview(order._id)}>
                 <Text
                   className="text-center text-base font-medium text-white dark:text-black"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
@@ -275,11 +342,29 @@ const Subscription = () => {
           </View>
 
           {/* Content */}
-          {activeTab === 'upcoming' ? (
+          {loading ? (
+            <View className="flex-1 items-center justify-center py-20">
+              <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+              <Text className="mt-4 text-gray-600 dark:text-gray-300">Loading orders...</Text>
+            </View>
+          ) : activeTab === 'upcoming' ? (
             <View>
-              {upcomingMeals.map((meal) => (
-                <MealCard key={meal.id} meal={meal} isUpcoming={true} />
-              ))}
+              {upcomingOrders.length > 0 ? (
+                upcomingOrders.map((order) => (
+                  <OrderCard 
+                    key={order._id} 
+                    order={order} 
+                    isUpcoming={true} 
+                    onSkip={handleSkipOrder}
+                    onCancel={handleCancelOrder}
+                    onReview={handleReviewOrder}
+                  />
+                ))
+              ) : (
+                <View className="py-20 items-center">
+                  <Text className="text-gray-600 dark:text-gray-300">No upcoming orders</Text>
+                </View>
+              )}
 
               {/* Information Notes */}
               <View className="mb-6 gap-2">
@@ -313,9 +398,22 @@ const Subscription = () => {
             </View>
           ) : (
             <View>
-              {deliveredMeals.map((meal) => (
-                <MealCard key={meal.id} meal={meal} isUpcoming={false} />
-              ))}
+              {deliveredOrders.length > 0 ? (
+                deliveredOrders.map((order) => (
+                  <OrderCard 
+                    key={order._id} 
+                    order={order} 
+                    isUpcoming={false} 
+                    onSkip={handleSkipOrder}
+                    onCancel={handleCancelOrder}
+                    onReview={handleReviewOrder}
+                  />
+                ))
+              ) : (
+                <View className="py-20 items-center">
+                  <Text className="text-gray-600 dark:text-gray-300">No delivered orders</Text>
+                </View>
+              )}
             </View>
           )}
         </ScrollView>

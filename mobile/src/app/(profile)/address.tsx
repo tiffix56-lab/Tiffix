@@ -5,6 +5,8 @@ import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { addressService } from '@/services/address.service';
 import { Address as AddressType } from '@/types/address.types';
+import axios from 'axios';
+import * as Location from 'expo-location';
 
 const Address = () => {
   console.log('🏠 Address component mounted');
@@ -23,6 +25,13 @@ const Address = () => {
     isDefault: false,
     coordinates: { latitude: 0, longitude: 0 }
   });
+  const [showAddressSearch, setShowAddressSearch] = useState(false);
+  const [addressSearchQuery, setAddressSearchQuery] = useState('');
+  const [addressSearchResults, setAddressSearchResults] = useState<any[]>([]);
+  const [isAddressSearchLoading, setIsAddressSearchLoading] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+
+  const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
 
@@ -63,9 +72,232 @@ const Address = () => {
     }
   };
 
+  const searchAddressPlaces = async (query: string): Promise<void> => {
+    if (!GOOGLE_MAPS_API_KEY || query.length < 3) {
+      setAddressSearchResults([]);
+      return;
+    }
+
+    setIsAddressSearchLoading(true);
+    try {
+      const autocompleteResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
+        {
+          params: {
+            input: query,
+            key: GOOGLE_MAPS_API_KEY,
+            components: 'country:in',
+            language: 'en',
+          }
+        }
+      );
+
+      const textSearchResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json`,
+        {
+          params: {
+            query: query + ' India',
+            key: GOOGLE_MAPS_API_KEY,
+            language: 'en',
+          }
+        }
+      );
+
+      let combinedResults = [];
+
+      if (autocompleteResponse.data.status === 'OK') {
+        const autocompleteFormatted = autocompleteResponse.data.predictions.map((prediction: any) => ({
+          ...prediction,
+          source: 'autocomplete'
+        }));
+        combinedResults.push(...autocompleteFormatted);
+      }
+
+      if (textSearchResponse.data.status === 'OK') {
+        const textSearchFormatted = textSearchResponse.data.results.map((place: any) => ({
+          place_id: place.place_id,
+          structured_formatting: {
+            main_text: place.name,
+            secondary_text: place.formatted_address
+          },
+          description: place.formatted_address,
+          source: 'textsearch',
+          geometry: place.geometry
+        }));
+        combinedResults.push(...textSearchFormatted);
+      }
+
+      const uniqueResults = combinedResults.filter((result, index, self) =>
+        index === self.findIndex(r => r.place_id === result.place_id)
+      );
+
+      setAddressSearchResults(uniqueResults.slice(0, 10));
+    } catch (error) {
+      console.error('Error searching places:', error);
+    } finally {
+      setIsAddressSearchLoading(false);
+    }
+  };
+
+  const getPlaceDetails = async (placeId: string): Promise<any> => {
+    if (!GOOGLE_MAPS_API_KEY) return null;
+
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/details/json`,
+        {
+          params: {
+            place_id: placeId,
+            fields: 'geometry,formatted_address,name,address_components',
+            key: GOOGLE_MAPS_API_KEY,
+          }
+        }
+      );
+
+      if (response.data.status === 'OK') {
+        return response.data.result;
+      }
+    } catch (error) {
+      console.error('Error getting place details:', error);
+    }
+    return null;
+  };
+
+  const parseAddressComponents = (addressComponents: any[]) => {
+    let street = '', city = '', state = '', zipCode = '', country = '';
+    
+    addressComponents.forEach((component: any) => {
+      if (component.types.includes('street_number') || component.types.includes('route')) {
+        street += component.long_name + ' ';
+      }
+      if (component.types.includes('locality') || component.types.includes('sublocality')) {
+        city = component.long_name;
+      }
+      if (component.types.includes('administrative_area_level_1')) {
+        state = component.short_name;
+      }
+      if (component.types.includes('postal_code')) {
+        zipCode = component.long_name;
+      }
+      if (component.types.includes('country')) {
+        country = component.short_name;
+      }
+    });
+
+    return {
+      street: street.trim(),
+      city,
+      state,
+      zipCode,
+      country
+    };
+  };
+
+  const handleAddressSelect = async (prediction?: any): Promise<void> => {
+    if (!prediction) {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Location permission is required to get current location');
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+
+        const addresses = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        if (addresses.length > 0) {
+          const addr = addresses[0];
+          setNewAddress(prev => ({
+            ...prev,
+            street: `${addr.streetNumber || ''} ${addr.street || ''}`.trim() || 'Current Location',
+            city: addr.city || 'Current Area',
+            state: addr.region || 'India',
+            zipCode: addr.postalCode || '',
+            coordinates: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude
+            }
+          }));
+          setSelectedPlace({ description: 'Current Location' });
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Unable to get current location');
+      }
+    } else {
+      if (prediction.geometry && prediction.geometry.location) {
+        const { lat, lng } = prediction.geometry.location;
+        const addressComponents = prediction.address_components || [];
+        const parsed = parseAddressComponents(addressComponents);
+        
+        if (parsed.country !== 'IN') {
+          Alert.alert('Location Not Supported', 'Currently, we only deliver to addresses in India.');
+          return;
+        }
+
+        setNewAddress(prev => ({
+          ...prev,
+          street: parsed.street || prediction.description,
+          city: parsed.city,
+          state: parsed.state,
+          zipCode: parsed.zipCode,
+          coordinates: { latitude: lat, longitude: lng }
+        }));
+        setSelectedPlace(prediction);
+      } else {
+        const placeDetails = await getPlaceDetails(prediction.place_id);
+        if (placeDetails) {
+          const parsed = parseAddressComponents(placeDetails.address_components || []);
+          
+          if (parsed.country !== 'IN') {
+            Alert.alert('Location Not Supported', 'Currently, we only deliver to addresses in India.');
+            return;
+          }
+
+          setNewAddress(prev => ({
+            ...prev,
+            street: parsed.street || placeDetails.formatted_address,
+            city: parsed.city,
+            state: parsed.state,
+            zipCode: parsed.zipCode,
+            coordinates: {
+              latitude: placeDetails.geometry.location.lat,
+              longitude: placeDetails.geometry.location.lng
+            }
+          }));
+          setSelectedPlace(prediction);
+        }
+      }
+    }
+
+    setShowAddressSearch(false);
+    setAddressSearchQuery('');
+    setAddressSearchResults([]);
+  };
+
   const handleAddAddress = async () => {
-    if (!newAddress.label.trim() || !newAddress.street.trim() || !newAddress.city.trim() || !newAddress.state.trim() || !newAddress.zipCode.trim()) {
-      Alert.alert('Error', 'All fields are required');
+    if (!newAddress.label.trim()) {
+      Alert.alert('Error', 'Please enter an address label');
+      return;
+    }
+
+    if (!selectedPlace || !newAddress.street.trim() || !newAddress.city.trim() || !newAddress.state.trim()) {
+      Alert.alert('Error', 'Please select an address from the suggestions');
+      return;
+    }
+
+    if (!newAddress.coordinates || newAddress.coordinates.latitude === 0 || newAddress.coordinates.longitude === 0) {
+      Alert.alert('Error', 'Invalid address coordinates. Please select again.');
+      return;
+    }
+
+    if (newAddress.zipCode && !/^[0-9]{6}$/.test(newAddress.zipCode)) {
+      Alert.alert('Error', 'Please select an address with a valid 6-digit Indian pincode');
       return;
     }
 
@@ -73,7 +305,10 @@ const Address = () => {
       setAdding(true);
       const addressPayload = {
         ...newAddress,
-        coordinates: newAddress.coordinates
+        coordinates: {
+          latitude: newAddress.coordinates.latitude,
+          longitude: newAddress.coordinates.longitude
+        }
       };
       const response = await addressService.addAddress(addressPayload);
       
@@ -89,6 +324,7 @@ const Address = () => {
           isDefault: false,
           coordinates: { latitude: 0, longitude: 0 }
         });
+        setSelectedPlace(null);
         fetchAddresses();
       } else {
         Alert.alert('Error', response.message || 'Failed to add address');
@@ -133,57 +369,6 @@ const Address = () => {
     );
   };
 
-  const handlePlaceSelect = (data: any, details: any) => {
-    console.log('📍 Place selected:', data);
-    console.log('📍 Place details:', details);
-    
-    if (details) {
-      const addressComponents = details.address_components;
-      let street = '', city = '', state = '', zipCode = '', country = '';
-      
-      addressComponents.forEach((component: any) => {
-        if (component.types.includes('street_number') || component.types.includes('route')) {
-          street += component.long_name + ' ';
-        }
-        if (component.types.includes('locality') || component.types.includes('sublocality')) {
-          city = component.long_name;
-        }
-        if (component.types.includes('administrative_area_level_1')) {
-          state = component.long_name;
-        }
-        if (component.types.includes('postal_code')) {
-          zipCode = component.long_name;
-        }
-        if (component.types.includes('country')) {
-          country = component.short_name;
-        }
-      });
-
-      // Validate Indian address
-      if (country !== 'IN') {
-        Alert.alert('Location Not Supported', 'Currently, we only deliver to addresses in India. Please select an Indian address.');
-        return;
-      }
-
-      if (!zipCode || !/^[0-9]{6}$/.test(zipCode)) {
-        Alert.alert('Invalid Address', 'Please select an address with a valid 6-digit Indian pincode.');
-        return;
-      }
-
-      setNewAddress(prev => ({
-        ...prev,
-        street: street.trim() || details.formatted_address,
-        city: city || 'Unknown City',
-        state: state || 'Unknown State',
-        zipCode: zipCode,
-        coordinates: {
-          latitude: details.geometry.location.lat,
-          longitude: details.geometry.location.lng
-        }
-      }));
-      console.log('✅ Valid Indian address set');
-    }
-  };
 
   try {
     console.log('🎨 Rendering Address component');
@@ -257,43 +442,104 @@ const Address = () => {
                     style={{ fontFamily: 'Poppins_400Regular' }}
                   />
                   
-                  <TextInput
-                    className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                    placeholder="Enter your full address"
-                    placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                    value={newAddress.street}
-                    onChangeText={(text) => setNewAddress(prev => ({ ...prev, street: text }))}
-                    style={{ fontFamily: 'Poppins_400Regular' }}
-                  />
-                  
-                  <View className="flex-row space-x-2">
-                    <TextInput
-                      className="flex-1 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                      placeholder="City"
-                      placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                      value={newAddress.city}
-                      onChangeText={(text) => setNewAddress(prev => ({ ...prev, city: text }))}
-                      style={{ fontFamily: 'Poppins_400Regular' }}
-                    />
-                    <TextInput
-                      className="flex-1 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                      placeholder="State"
-                      placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                      value={newAddress.state}
-                      onChangeText={(text) => setNewAddress(prev => ({ ...prev, state: text }))}
-                      style={{ fontFamily: 'Poppins_400Regular' }}
-                    />
-                  </View>
-                  
-                  <TextInput
-                    className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                    placeholder="ZIP Code"
-                    placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                    value={newAddress.zipCode}
-                    onChangeText={(text) => setNewAddress(prev => ({ ...prev, zipCode: text }))}
-                    keyboardType="numeric"
-                    style={{ fontFamily: 'Poppins_400Regular' }}
-                  />
+                  <TouchableOpacity
+                    onPress={() => setShowAddressSearch(!showAddressSearch)}
+                    className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-600 dark:bg-zinc-800">
+                    <View className="flex-row items-center">
+                      <Feather name="search" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                      <Text
+                        className={`ml-3 flex-1 text-base ${
+                          selectedPlace 
+                            ? 'text-black dark:text-white' 
+                            : 'text-zinc-500 dark:text-zinc-400'
+                        }`}
+                        style={{ fontFamily: 'Poppins_400Regular' }}>
+                        {selectedPlace ? selectedPlace.description : 'Search for your address'}
+                      </Text>
+                      <Feather name="chevron-down" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                    </View>
+                  </TouchableOpacity>
+
+                  {showAddressSearch && (
+                    <View className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-600 dark:bg-zinc-800 max-h-80">
+                      <View className="flex-row items-center border-b border-zinc-200 p-3 dark:border-zinc-600">
+                        <Feather name="search" size={16} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                        <TextInput
+                          className="ml-3 flex-1 text-black dark:text-white"
+                          placeholder="Search for area, street name..."
+                          placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+                          value={addressSearchQuery}
+                          onChangeText={(text) => {
+                            setAddressSearchQuery(text);
+                            searchAddressPlaces(text);
+                          }}
+                          autoFocus={true}
+                          style={{ fontFamily: 'Poppins_400Regular' }}
+                        />
+                        {isAddressSearchLoading && (
+                          <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+                        )}
+                      </View>
+
+                      <ScrollView className="max-h-52" showsVerticalScrollIndicator={false}>
+                        <TouchableOpacity
+                          onPress={() => handleAddressSelect()}
+                          className="flex-row items-center border-b border-zinc-100 p-3 dark:border-zinc-700">
+                          <View className="h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                            <Feather name="navigation" size={16} color="#22C55E" />
+                          </View>
+                          <View className="ml-3 flex-1">
+                            <Text className="text-sm font-medium text-green-600 dark:text-green-400" style={{ fontFamily: 'Poppins_500Medium' }}>
+                              Use Current Location
+                            </Text>
+                            <Text className="text-xs text-zinc-500 dark:text-zinc-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                              Using GPS
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+
+                        {addressSearchResults.map((prediction, index) => (
+                          <TouchableOpacity
+                            key={prediction.place_id || index}
+                            onPress={() => handleAddressSelect(prediction)}
+                            className={`flex-row items-center p-3 ${
+                              index < addressSearchResults.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-700' : ''
+                            }`}>
+                            <View className="h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                              <Feather name="map-pin" size={16} color="#3B82F6" />
+                            </View>
+                            <View className="ml-3 flex-1">
+                              <Text className="text-sm font-medium text-black dark:text-white" style={{ fontFamily: 'Poppins_500Medium' }}>
+                                {prediction.structured_formatting?.main_text || prediction.description}
+                              </Text>
+                              <Text className="text-xs text-zinc-500 dark:text-zinc-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                                {prediction.structured_formatting?.secondary_text || ''}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+
+                        {addressSearchQuery.length > 2 && addressSearchResults.length === 0 && !isAddressSearchLoading && (
+                          <View className="items-center py-6">
+                            <Text className="text-sm text-zinc-500 dark:text-zinc-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                              No locations found
+                            </Text>
+                          </View>
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {selectedPlace && (
+                    <View className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-600 dark:bg-green-900/20">
+                      <Text className="text-sm font-medium text-green-700 dark:text-green-400" style={{ fontFamily: 'Poppins_500Medium' }}>
+                        Selected Address:
+                      </Text>
+                      <Text className="text-sm text-green-600 dark:text-green-300" style={{ fontFamily: 'Poppins_400Regular' }}>
+                        {[newAddress.street, newAddress.city, newAddress.state, newAddress.zipCode].filter(Boolean).join(', ')}
+                      </Text>
+                    </View>
+                  )}
 
                   <TouchableOpacity
                     onPress={() => setNewAddress(prev => ({ ...prev, isDefault: !prev.isDefault }))}
@@ -394,7 +640,7 @@ const Address = () => {
                         <Text
                           className="mt-1 text-sm text-gray-600 dark:text-gray-300"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
-                          {[address?.street, address?.city, address?.state, address?.zipCode].filter(Boolean).join(', ')}
+                          {address && [address.street, address.city, address.state, address.zipCode].filter(Boolean).join(', ')}
                         </Text>
                       </View>
                       <TouchableOpacity

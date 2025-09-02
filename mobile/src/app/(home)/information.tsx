@@ -19,9 +19,7 @@ import { menuService } from '@/services/menu.service';
 import { Address } from '@/types/address.types';
 import { MenuItem } from '@/types/menu.types';
 import { Subscription } from '@/services/subscription.service';
-import { mapsService } from '@/services/maps.service';
 import { orderStore } from '@/utils/order-store';
-import * as Location from 'expo-location';
 
 const Information = () => {
   const { colorScheme } = useColorScheme();
@@ -33,9 +31,6 @@ const Information = () => {
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   
-  // Form states
-  const [addressQuery, setAddressQuery] = useState('');
-  const [addressResults, setAddressResults] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [lunchTime, setLunchTime] = useState('12:00 PM');
   const [dinnerTime, setDinnerTime] = useState('08:00 PM');
@@ -81,15 +76,24 @@ const Information = () => {
       // Handle addresses
       if (addressResponse.success && addressResponse.data) {
         const addresses = addressResponse.data.addresses || [];
-        // Ensure addresses have proper coordinate format
-        const validAddresses = addresses.filter(addr => 
-          addr && addr.coordinates && 
-          addr.coordinates.latitude !== undefined
-        );
+        console.log('Raw addresses from API:', addresses);
+        
+        // Ensure addresses have proper coordinate format (they should already be transformed by service)
+        const validAddresses = addresses.filter(addr => {
+          const hasValidCoords = addr && addr.coordinates && 
+            (('latitude' in addr.coordinates && addr.coordinates.latitude !== undefined) ||
+             ('coordinates' in addr.coordinates && Array.isArray(addr.coordinates.coordinates)));
+          const hasValidFields = addr.label && addr.street && addr.city && addr.state && addr.zipCode;
+          return hasValidCoords && hasValidFields;
+        });
+        
+        console.log('Valid addresses after filtering:', validAddresses);
         setSavedAddresses(validAddresses);
+        
         const defaultAddress = validAddresses.find(addr => addr.isDefault);
         if (defaultAddress) {
           setSelectedAddress(defaultAddress);
+          console.log('Set default address:', defaultAddress);
         }
       }
       
@@ -116,90 +120,6 @@ const Information = () => {
     }
   };
 
-  // Search places using Google Maps Autocomplete
-  const searchAddress = async (query: string) => {
-    setAddressQuery(query);
-    if (query.length < 2) {
-      setAddressResults([]);
-      return;
-    }
-    try {
-      const results = await mapsService.searchPlaces(query);
-      setAddressResults(results);
-    } catch (error) {
-      console.error('Error searching places:', error);
-    }
-  };
-
-  // Get current GPS location using Expo Location
-  const getCurrentLocation = async () => {
-    try {
-      const location = await mapsService.getCurrentLocation();
-      if (location) {
-        setAddressQuery('Getting current location...');
-        
-        // Use Expo's reverse geocoding (no API key needed)
-        const addresses = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-
-        if (addresses.length > 0) {
-          const addr = addresses[0];
-          const currentAddress: Address = {
-            _id: 'current_' + Date.now(),
-            label: 'Current Location',
-            street: `${addr.streetNumber || ''} ${addr.street || ''}`.trim() || 'Current Location',
-            city: addr.city || 'Current Area',
-            state: addr.region || 'India',
-            zipCode: addr.postalCode || '000000',
-            isDefault: false,
-            coordinates: {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude
-            }
-          };
-          
-          setSelectedAddress(currentAddress);
-          setAddressQuery(`${currentAddress.street}, ${currentAddress.city}`);
-          console.log('📍 Created current location address:', currentAddress);
-        } else {
-          throw new Error('No address data returned');
-        }
-      } else {
-        Alert.alert('Error', 'Unable to get your current location. Please search manually.');
-      }
-    } catch (error) {
-      setAddressQuery('');
-      Alert.alert('Error', 'Unable to get your current location. Please try again.');
-      console.error('Location error:', error);
-    }
-  };
-
-  // Select place from autocomplete results
-  const selectAddress = async (result: any) => {
-    try {
-      const placeDetails = await mapsService.getPlaceDetails(result.place_id);
-      if (placeDetails) {
-        const address: Address = {
-          _id: 'selected_' + Date.now(),
-          label: placeDetails.street ? 'Selected Address' : 'Current Location',
-          street: placeDetails.street,
-          city: placeDetails.city,
-          state: placeDetails.state,
-          zipCode: placeDetails.zipCode,
-          isDefault: false,
-          coordinates: placeDetails.coordinates
-        };
-        setSelectedAddress(address);
-        setAddressQuery(result.description);
-        setAddressResults([]);
-      }
-    } catch (error) {
-      console.error('Error selecting place:', error);
-      Alert.alert('Error', 'Unable to select this location. Please try again.');
-    }
-  };
 
   // Date picker handlers
   const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -350,56 +270,47 @@ const Information = () => {
                 </View>
               )}
 
-              {/* Address Search with Autocomplete */}
-              <View className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
-                <View className="flex-row items-center">
-                  <Feather
-                    name="search"
-                    size={20}
-                    color={colorScheme === 'dark' ? '#FFFFFF' : '#6B7280'}
-                  />
-                  <TextInput
-                    className="ml-3 flex-1 text-base text-black dark:text-white"
-                    placeholder="Search for delivery address"
-                    placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                    value={addressQuery}
-                    onChangeText={searchAddress}
-                    style={{ fontFamily: 'Poppins_400Regular' }}
-                  />
-                  <TouchableOpacity
-                    onPress={getCurrentLocation}
-                    className="rounded-full bg-black p-2 dark:bg-white ml-2">
-                    <Feather name="navigation" size={16} color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
-                  </TouchableOpacity>
-                </View>
-                
-                {/* Search Results */}
-                {addressResults.length > 0 && (
-                  <View className="mt-3 border-t border-zinc-200 dark:border-zinc-700 pt-3">
-                    <ScrollView className="max-h-40">
-                      {addressResults.map((result, index) => (
-                        <TouchableOpacity
-                          key={result.place_id}
-                          onPress={() => selectAddress(result)}
-                          className="py-2 border-b border-zinc-100 dark:border-zinc-800">
-                          <Text
-                            className="text-black dark:text-white font-medium"
-                            style={{ fontFamily: 'Poppins_500Medium' }}
-                            numberOfLines={1}>
-                            {result.structured_formatting?.main_text || result.description}
-                          </Text>
-                          <Text
-                            className="text-zinc-500 dark:text-zinc-400 text-sm"
-                            style={{ fontFamily: 'Poppins_400Regular' }}
-                            numberOfLines={1}>
-                            {result.structured_formatting?.secondary_text || ''}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
+              {/* No Saved Addresses */}
+              {savedAddresses.length === 0 && (
+                <View className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-700 dark:bg-zinc-900">
+                  <View className="items-center">
+                    <Feather name="map-pin" size={32} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
+                    <Text
+                      className="mt-2 text-center text-base font-medium text-zinc-600 dark:text-zinc-300"
+                      style={{ fontFamily: 'Poppins_500Medium' }}>
+                      No saved addresses
+                    </Text>
+                    <Text
+                      className="mt-1 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                      style={{ fontFamily: 'Poppins_400Regular' }}>
+                      Add an address to continue with your order
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => router.push('/(profile)/address')}
+                      className="mt-4 rounded-lg bg-black px-6 py-3 dark:bg-white">
+                      <Text
+                        className="text-sm font-medium text-white dark:text-black"
+                        style={{ fontFamily: 'Poppins_500Medium' }}>
+                        Add Address
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                )}
-              </View>
+                </View>
+              )}
+
+              {/* Add New Address Button */}
+              {savedAddresses.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => router.push('/(profile)/address')}
+                  className="mb-4 flex-row items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-600 dark:bg-zinc-900">
+                  <Feather name="plus" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                  <Text
+                    className="ml-2 text-base font-medium text-zinc-600 dark:text-zinc-300"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    Add New Address
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Date & Time Section */}
@@ -598,14 +509,18 @@ const Information = () => {
               console.log('📋 Subscription ID:', subscriptionId);
               console.log('🍔 Menu ID:', menuId);
               
-              // Use selected address (which now includes both saved addresses and searched addresses)
+              // Use selected saved address only
               const deliveryAddress = selectedAddress;
 
               console.log('📍 Final delivery address:', deliveryAddress);
 
               if (!deliveryAddress || !selectedDate) {
                 console.log('❌ Missing information - Address:', !!deliveryAddress, 'Date:', !!selectedDate);
-                Alert.alert('Missing Information', 'Please select an address and delivery date.');
+                if (!deliveryAddress) {
+                  Alert.alert('Missing Address', 'Please select a saved address or add a new one from your profile.');
+                } else {
+                  Alert.alert('Missing Information', 'Please select a delivery date.');
+                }
                 return;
               }
 
@@ -622,10 +537,17 @@ const Information = () => {
                 return;
               }
 
-              // Validate address coordinates
-              if (!deliveryAddress.coordinates || 
-                  typeof deliveryAddress.coordinates.latitude !== 'number' || 
-                  typeof deliveryAddress.coordinates.longitude !== 'number') {
+              // Validate address coordinates (handle both coordinate formats)
+              const hasValidCoords = deliveryAddress.coordinates && (
+                ('latitude' in deliveryAddress.coordinates && 
+                 typeof deliveryAddress.coordinates.latitude === 'number' && 
+                 typeof deliveryAddress.coordinates.longitude === 'number') ||
+                ('coordinates' in deliveryAddress.coordinates && 
+                 Array.isArray(deliveryAddress.coordinates.coordinates) &&
+                 deliveryAddress.coordinates.coordinates.length === 2)
+              );
+              
+              if (!hasValidCoords) {
                 console.log('❌ Invalid address coordinates:', deliveryAddress.coordinates);
                 Alert.alert('Invalid Address', 'Selected address is missing location data. Please select a different address.');
                 return;

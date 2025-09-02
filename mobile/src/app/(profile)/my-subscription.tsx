@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator,
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import { orderService } from '@/services/order.service';
+import { subscriptionService } from '@/services/subscription.service';
 import { UserSubscription } from '@/types/userSubscription.types';
 
 const MySubscription = () => {
@@ -21,7 +21,7 @@ const MySubscription = () => {
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
-      const response = await orderService.getUserSubscriptions();
+      const response = await subscriptionService.getUserSubscriptions();
       
       if (response.success && response.data) {
         setSubscriptions(response.data.subscriptions);
@@ -61,7 +61,7 @@ const MySubscription = () => {
           onPress: async () => {
             try {
               setCancelling(subscriptionId);
-              const response = await orderService.cancelSubscription(subscriptionId, 'User requested cancellation');
+              const response = await subscriptionService.cancelSubscription(subscriptionId, 'User requested cancellation');
               
               if (response.success) {
                 Alert.alert('Success', 'Subscription cancelled successfully');

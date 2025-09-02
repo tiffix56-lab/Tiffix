@@ -1,4 +1,5 @@
 import { apiService } from './api.service';
+import { API_ENDPOINTS } from '../constants/api';
 import { ApiResponse } from '../types/auth.types';
 
 export interface UserSettings {
@@ -21,11 +22,11 @@ export interface UserSettings {
 
 class SettingsService {
   async getUserSettings(): Promise<ApiResponse<UserSettings>> {
-    return await apiService.get<UserSettings>('/user/settings');
+    return await apiService.get<UserSettings>(API_ENDPOINTS.USER.PREFERENCES);
   }
 
   async updateUserSettings(settings: Partial<UserSettings>): Promise<ApiResponse> {
-    return await apiService.put('/user/settings', settings);
+    return await apiService.patch(API_ENDPOINTS.USER.PREFERENCES, settings);
   }
 }
 

@@ -13,7 +13,9 @@ import {
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import * as ImagePicker from 'expo-image-picker';
 import { userService } from '@/services/user.service';
+import { uploadService } from '@/services/upload.service';
 import { User } from '@/types/user.types';
 
 const EditProfile = () => {
@@ -24,6 +26,7 @@ const EditProfile = () => {
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -82,6 +85,71 @@ const EditProfile = () => {
     }
   };
 
+  const handleImagePick = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await uploadProfileImage(result.assets[0]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+      console.error('Image picker error:', error);
+    }
+  };
+
+  const uploadProfileImage = async (asset: ImagePicker.ImagePickerAsset) => {
+    try {
+      setUploading(true);
+      
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        type: asset.mimeType || 'image/jpeg',
+        name: asset.fileName || 'profile.jpg',
+      } as any);
+      formData.append('category', 'profile');
+
+      const response = await uploadService.uploadProfilePhoto(formData as any);
+      
+      if (response.success && response.data) {
+        // Update user profile with new image URL
+        const updateResponse = await userService.updateUserProfile({
+          fullName: name.trim(),
+          phoneNumber: mobileNumber.trim() || undefined,
+          gender: gender,
+          profilePicture: response.data.url,
+        });
+        
+        if (updateResponse.success) {
+          Alert.alert('Success', 'Profile picture updated successfully');
+          fetchUserData(); // Refresh user data
+        } else {
+          Alert.alert('Error', 'Failed to update profile picture');
+        }
+      } else {
+        Alert.alert('Error', response.message || 'Failed to upload image');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to upload image');
+      console.error('Upload error:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
@@ -103,17 +171,24 @@ const EditProfile = () => {
             <View className="relative mb-4">
               <Image
                 source={{
-                  uri: 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
+                  uri: user?.profilePicture || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
                 }}
                 className="h-24 w-24 rounded-full"
                 resizeMode="cover"
               />
-              <TouchableOpacity className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800">
-                <Feather
-                  name="camera"
-                  size={16}
-                  color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'}
-                />
+              <TouchableOpacity 
+                onPress={handleImagePick}
+                disabled={uploading}
+                className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800">
+                {uploading ? (
+                  <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+                ) : (
+                  <Feather
+                    name="camera"
+                    size={16}
+                    color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'}
+                  />
+                )}
               </TouchableOpacity>
             </View>
             <Text

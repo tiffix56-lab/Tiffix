@@ -74,6 +74,48 @@ class SubscriptionService {
     return await apiService.get<{ subscription: Subscription }>(`${API_ENDPOINTS.SUBSCRIPTION.GET_ALL}/${id}`);
   }
 
+  async getUserSubscriptions(): Promise<ApiResponse<{ subscriptions: any[] }>> {
+    try {
+      const response = await apiService.get<{ subscriptions: any[] }>(
+        API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS
+      );
+      
+      if (!response.success && (response.message?.includes('not found') || response.message?.includes('No subscriptions'))) {
+        return {
+          success: true,
+          message: 'No subscriptions yet',
+          data: { subscriptions: [] }
+        };
+      }
+      
+      return response;
+    } catch (error) {
+      return {
+        success: true,
+        message: 'No subscriptions yet', 
+        data: { subscriptions: [] }
+      };
+    }
+  }
+
+  async getUserSubscriptionById(subscriptionId: string): Promise<ApiResponse<{ subscription: any }>> {
+    return await apiService.get<{ subscription: any }>(`${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}`);
+  }
+
+  async cancelSubscription(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
+    return await apiService.post<{ message: string }>(
+      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/cancel`,
+      { reason }
+    );
+  }
+
+  async requestVendorSwitch(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
+    return await apiService.post<{ message: string }>(
+      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/request-vendor-switch`,
+      { reason }
+    );
+  }
+
   // Generate available time slots based on subscription meal timings
   generateTimeSlots(subscription: Subscription): TimeSlot[] {
     const slots: TimeSlot[] = [];

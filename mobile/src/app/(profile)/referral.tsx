@@ -13,12 +13,12 @@ import {
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import { referralService, ReferralData } from '../../services/referral.service';
+import { referralService, ReferralStats } from '../../services/referral.service';
 import Toast from 'react-native-toast-message';
 
 const Referral = () => {
   const { colorScheme } = useColorScheme();
-  const [referralData, setReferralData] = useState<ReferralData | null>(null);
+  const [referralData, setReferralData] = useState<ReferralStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [isSendingInvite, setIsSendingInvite] = useState(false);
@@ -29,7 +29,7 @@ const Referral = () => {
 
   const loadReferralData = async () => {
     try {
-      const response = await referralService.getReferralData();
+      const response = await referralService.getReferralStats();
       if (response.success && response.data) {
         setReferralData(response.data);
       }
@@ -53,34 +53,21 @@ const Referral = () => {
 
   const handleSendInvite = async () => {
     if (!email) return;
-
-    setIsSendingInvite(true);
-    try {
-      const result = await referralService.sendInvite(email);
-      
-      if (result.success) {
-        Toast.show({
-          type: 'success',
-          text1: 'Invite Sent',
-          text2: 'Invitation sent successfully',
-        });
-        setEmail('');
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Send Failed',
-          text2: result.message,
-        });
-      }
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Send Failed',
-        text2: 'Something went wrong',
-      });
-    } finally {
-      setIsSendingInvite(false);
+    if (!referralData?.referralLink) {
+      Alert.alert('Error', 'Referral link not available');
+      return;
     }
+
+    // For now, just copy the referral link and show success
+    // In a real app, you'd integrate with sharing/email APIs
+    Clipboard.setString(referralData.referralLink);
+    
+    Toast.show({
+      type: 'success',
+      text1: 'Referral Link Copied',
+      text2: 'Share this link with your friend',
+    });
+    setEmail('');
   };
 
   return (
@@ -130,7 +117,7 @@ const Referral = () => {
             <Text
               className="mb-4 text-center text-lg text-black dark:text-white"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Refer a friend and Earn upto $100
+              Refer a friend and Earn up to ₹100
             </Text>
 
             {/* Referral Code Input */}
@@ -170,7 +157,7 @@ const Referral = () => {
             <Text
               className="text-center text-sm text-zinc-600 dark:text-zinc-400"
               style={{ fontFamily: 'Poppins_400Regular' }}>
-              Invite your friends to join TIFFIX and get upto 10% on each friend order
+              Total Referrals: {referralData?.totalReferrals || 0} | Earnings: ₹{referralData?.totalCreditsEarned || 0}\n\nInvite your friends to join TIFFIX and get up to 10% on each friend order
             </Text>
           </View>
 

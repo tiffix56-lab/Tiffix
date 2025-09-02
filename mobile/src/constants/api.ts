@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
     LOCATION: '/auth/location',
     GOOGLE: '/auth/google',
     FACEBOOK: '/auth/facebook',
+    INIT_PROFILE_FILL: '/auth/init-profile-fill',
   },
   USER: {
     PROFILE: '/user-profiles',
@@ -27,9 +28,34 @@ export const API_ENDPOINTS = {
     GET_ALL: '/subscriptions',
     GET_BY_ID: '/subscriptions',
     PURCHASE: '/subscription-purchase',
+    MY_SUBSCRIPTIONS: '/my-subscriptions',
   },
-  DELIVERY: {
-    SAVE_INFO: '/delivery-info',
+  ORDERS: {
+    MY_ORDERS: '/my-orders',
+    GET_BY_ID: '/orders',
+    SKIP: '/orders',
+    CANCEL: '/orders',
+  },
+  REVIEWS: {
+    CREATE: '/reviews',
+    MY_REVIEWS: '/my-reviews',
+    UPDATE: '/reviews',
+    DELETE: '/reviews',
+    PUBLIC_SUBSCRIPTION: '/public/subscriptions',
+    PUBLIC_VENDOR: '/public/vendors',
+    PUBLIC_ORDER: '/public/orders',
+  },
+  REFERRAL: {
+    VALIDATE: '/referral/validate',
+    LEADERBOARD: '/referral/leaderboard',
+    GENERATE_LINK: '/referral/generate-link',
+    STATS: '/referral/stats',
+  },
+  TRANSACTIONS: {
+    MY_TRANSACTIONS: '/my-transactions',
+  },
+  UPLOAD: {
+    FILE: '/upload-file',
   },
 } as const;
 

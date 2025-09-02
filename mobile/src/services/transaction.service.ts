@@ -1,4 +1,5 @@
 import { apiService } from './api.service';
+import { API_ENDPOINTS } from '../constants/api';
 import { ApiResponse } from '../types/auth.types';
 
 export interface Transaction {
@@ -12,7 +13,7 @@ export interface Transaction {
   finalAmount: number;
   status: 'pending' | 'success' | 'failed' | 'refunded';
   type: 'subscription_purchase' | 'refund';
-  paymentGateway: 'razorpay';
+  paymentGateway: 'phonepe';
   gatewayOrderId?: string;
   gatewayPaymentId?: string;
   gatewaySignature?: string;
@@ -46,7 +47,7 @@ export interface TransactionResponse {
 class TransactionService {
   async getUserTransactions(): Promise<ApiResponse<TransactionResponse>> {
     try {
-      const response = await apiService.get<TransactionResponse>('/my-transactions');
+      const response = await apiService.get<TransactionResponse>(API_ENDPOINTS.TRANSACTIONS.MY_TRANSACTIONS);
       
       if (!response.success && (response.message?.includes('not found') || response.message?.includes('No transactions'))) {
         return {
@@ -67,7 +68,7 @@ class TransactionService {
   }
 
   async getTransactionById(id: string): Promise<ApiResponse<{ transaction: Transaction }>> {
-    return await apiService.get<{ transaction: Transaction }>(`/my-transactions/${id}`);
+    return await apiService.get<{ transaction: Transaction }>(`${API_ENDPOINTS.TRANSACTIONS.MY_TRANSACTIONS}/${id}`);
   }
 }
 

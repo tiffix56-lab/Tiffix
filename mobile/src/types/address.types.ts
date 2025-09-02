@@ -8,6 +8,9 @@ export interface Address {
   coordinates: {
     latitude: number;
     longitude: number;
+  } | {
+    type: string;
+    coordinates: [number, number];
   };
   isDefault: boolean;
 }

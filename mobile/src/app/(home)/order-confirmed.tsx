@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityInd
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import { orderService } from '@/services/order.service';
+import { subscriptionService } from '@/services/subscription.service';
 
 interface OrderConfirmationData {
   subscriptionId: string;
@@ -28,7 +28,7 @@ const OrderConfirmed = () => {
       setLoading(true);
       
       // Fetch user subscriptions to get the confirmed order details
-      const response = await orderService.getUserSubscriptions();
+      const response = await subscriptionService.getUserSubscriptions();
       
       if (response.success && response.data) {
         // Find the subscription that was just created

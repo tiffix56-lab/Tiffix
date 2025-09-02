@@ -23,29 +23,13 @@ class MenuService {
   }
 
   async getMenuById(id: string): Promise<ApiResponse<{ menu: MenuItem }>> {
-    // Since backend doesn't have individual menu endpoint, get all and filter
-    const allMenus = await this.getMenus();
-    if (allMenus.success && allMenus.data?.menus) {
-      const menu = allMenus.data.menus.find(m => m._id === id);
-      if (menu) {
-        return {
-          success: true,
-          message: 'Menu found',
-          data: { menu }
-        } as ApiResponse<{ menu: MenuItem }>;
-      }
-    }
-    return {
-      success: false,
-      message: 'Menu not found',
-      data: undefined
-    };
+    return await apiService.get<{ menu: MenuItem }>(`${API_ENDPOINTS.MENU.GET_BY_ID}/${id}`);
   }
 
   async getVendorMenus(query?: Omit<MenuQuery, 'vendorCategory'>): Promise<ApiResponse<MenuResponse>> {
     return await this.getMenus({
       ...query,
-      vendorCategory: 'vendor',
+      vendorCategory: 'food_vendor',
     });
   }
 
