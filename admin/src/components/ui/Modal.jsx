@@ -53,33 +53,31 @@ const Modal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-black/90 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* Modal */}
       <div 
         className={`
-          relative w-full ${sizes[size]} bg-gray-800/95 backdrop-blur-xl 
-          border border-gray-700/50 rounded-2xl shadow-2xl shadow-black/50
-          animate-scale-in ${className}
+          relative w-full ${sizes[size]} bg-black 
+          border border-orange-500/30 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto
+          ${className}
         `}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-700/50">
-            <h3 className="text-xl font-semibold text-white">
+          <div className="flex items-center justify-between p-6 border-b border-orange-500/20">
+            <h3 className="text-xl font-bold text-white">
               {title}
             </h3>
             {showCloseButton && (
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-700/50"
+                className="p-2 rounded-lg text-orange-400 hover:text-white hover:bg-orange-500/20 transition-colors"
               >
-                <X className="w-4 h-4" />
-              </Button>
+                <X className="w-5 h-5" />
+              </button>
             )}
           </div>
         )}
@@ -94,7 +92,7 @@ const Modal = ({
 };
 
 const ModalHeader = ({ children, className = '' }) => (
-  <div className={`mb-4 ${className}`}>
+  <div className={`mb-6 ${className}`}>
     {children}
   </div>
 );
@@ -106,7 +104,7 @@ const ModalBody = ({ children, className = '' }) => (
 );
 
 const ModalFooter = ({ children, className = '' }) => (
-  <div className={`flex items-center justify-end gap-3 pt-4 border-t border-gray-700/50 ${className}`}>
+  <div className={`flex items-center justify-end gap-3 pt-6 border-t border-orange-500/20 ${className}`}>
     {children}
   </div>
 );

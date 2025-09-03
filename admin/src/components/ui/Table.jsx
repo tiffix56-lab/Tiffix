@@ -3,7 +3,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 const Table = ({ children, className = '' }) => {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-700/30 bg-gray-800/50 backdrop-blur-sm">
+    <div className="overflow-hidden rounded-lg border border-orange-500/30 bg-black backdrop-blur-sm shadow-sm">
       <div className="overflow-x-auto">
         <table className={`w-full ${className}`}>
           {children}
@@ -14,13 +14,13 @@ const Table = ({ children, className = '' }) => {
 };
 
 const TableHeader = ({ children, className = '' }) => (
-  <thead className={`bg-gray-800/80 ${className}`}>
+  <thead className={`bg-orange-500/10 ${className}`}>
     {children}
   </thead>
 );
 
 const TableBody = ({ children, className = '' }) => (
-  <tbody className={`divide-y divide-gray-700/30 ${className}`}>
+  <tbody className={`divide-y divide-orange-500/20 ${className}`}>
     {children}
   </tbody>
 );
@@ -28,7 +28,7 @@ const TableBody = ({ children, className = '' }) => (
 const TableRow = ({ children, className = '', hover = true, ...props }) => (
   <tr 
     className={`
-      ${hover ? 'hover:bg-gray-700/30 transition-colors duration-150' : ''}
+      ${hover ? 'hover:bg-orange-500/10 transition-colors duration-150' : ''}
       ${className}
     `}
     {...props}
@@ -59,8 +59,8 @@ const TableHead = ({
   return (
     <th 
       className={`
-        px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider
-        ${sortable ? 'cursor-pointer hover:text-white select-none' : ''}
+        px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wide
+        ${sortable ? 'cursor-pointer hover:text-orange-400 select-none' : ''}
         ${className}
       `}
       onClick={handleSort}
@@ -76,7 +76,7 @@ const TableHead = ({
 
 const TableCell = ({ children, className = '', ...props }) => (
   <td 
-    className={`px-6 py-4 text-sm text-gray-300 ${className}`}
+    className={`px-4 py-3 text-sm text-white ${className}`}
     {...props}
   >
     {children}
@@ -87,13 +87,13 @@ const TableEmpty = ({ message = 'No data available', colSpan }) => (
   <tr>
     <td 
       colSpan={colSpan} 
-      className="px-6 py-12 text-center text-gray-400"
+      className="px-4 py-8 text-center text-orange-300"
     >
       <div className="flex flex-col items-center gap-2">
-        <div className="w-12 h-12 rounded-full bg-gray-700/50 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-gray-500 rounded border-dashed" />
+        <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+          <div className="w-5 h-5 border-2 border-orange-500 rounded border-dashed" />
         </div>
-        <p>{message}</p>
+        <p className="text-sm">{message}</p>
       </div>
     </td>
   </tr>

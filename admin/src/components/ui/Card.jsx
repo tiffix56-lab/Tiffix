@@ -3,7 +3,7 @@ import React from 'react';
 const Card = ({ 
   children, 
   className = '', 
-  padding = 'p-6', 
+  padding = 'p-4', 
   hover = false,
   glass = false,
   gradient = false 
@@ -11,11 +11,11 @@ const Card = ({
   const baseClasses = `
     rounded-xl border transition-all duration-200 overflow-hidden
     ${glass 
-      ? 'bg-gray-800/30 backdrop-blur-xl border-gray-700/50' 
-      : 'bg-gray-800/80 border-gray-700/30'
+      ? 'bg-[#1E2938]/80 backdrop-blur-lg border-orange-500/30 shadow-lg' 
+      : 'bg-[#1E2938] border-orange-500/20 shadow-md'
     }
-    ${hover ? 'hover:shadow-lg hover:shadow-gray-900/20 hover:border-gray-600/50 hover:-translate-y-1' : ''}
-    ${gradient ? 'bg-gradient-to-br from-gray-800/90 via-gray-800/70 to-gray-900/90' : ''}
+    ${hover ? 'hover:shadow-lg hover:shadow-orange-500/10 hover:border-orange-500/30 hover:-translate-y-0.5' : ''}
+    ${gradient ? 'bg-[#1E2938]' : ''}
   `;
   
   return (
@@ -26,7 +26,7 @@ const Card = ({
 };
 
 const CardHeader = ({ children, className = '' }) => (
-  <div className={`mb-4 pb-4 border-b border-gray-700/50 ${className}`}>
+  <div className={`mb-4 pb-3 border-b border-orange-500/20 ${className}`}>
     {children}
   </div>
 );
@@ -35,7 +35,7 @@ const CardTitle = ({ children, className = '', size = 'lg' }) => {
   const sizeClasses = {
     sm: 'text-sm font-semibold',
     md: 'text-base font-semibold',
-    lg: 'text-lg font-semibold',
+    lg: 'text-lg font-bold',
     xl: 'text-xl font-bold'
   };
   
@@ -53,7 +53,7 @@ const CardContent = ({ children, className = '' }) => (
 );
 
 const CardFooter = ({ children, className = '' }) => (
-  <div className={`mt-4 pt-4 border-t border-gray-700/50 ${className}`}>
+  <div className={`mt-4 pt-3 border-t border-orange-500/20 ${className}`}>
     {children}
   </div>
 );

@@ -33,101 +33,103 @@ function AdminLayout() {
   };
 
   return (
-    <div className="flex w-screen h-screen bg-gray-900">
+    <div className="flex h-screen bg-black overflow-hidden">
       {/* Mobile menu button */}
       <div className="md:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg bg-gray-800 text-orange-400 hover:bg-gray-700 transition-colors"
+          className="p-2 rounded-lg bg-black/90 backdrop-blur-sm text-orange-400 hover:bg-orange-500/20 transition-colors shadow-lg border border-orange-500/30"
         >
-          <Menu className="w-6 h-6" />
+          <Menu className="w-5 h-5" />
         </button>
       </div>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
-          className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-50"
+          className="md:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={`
-        fixed md:static inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-800 to-gray-900 
-        border-r border-gray-700 p-6 flex flex-col transition-transform duration-300 ease-in-out
+        fixed md:static inset-y-0 left-0 z-50 w-64 bg-black backdrop-blur-xl
+        border-r border-orange-500/30 flex flex-col transition-transform duration-300 ease-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Close button for mobile */}
         <button
           onClick={() => setSidebarOpen(false)}
-          className="md:hidden absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+          className="md:hidden absolute top-4 right-4 p-1.5 rounded-md text-orange-400 hover:text-white hover:bg-orange-500/20 transition-colors"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Logo */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+        <div className="px-4 py-5 border-b border-orange-500/30">
+          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-500">
             Tiffix
           </h2>
-          <p className="text-gray-400 text-sm mt-1">Admin Panel</p>
+          <p className="text-white text-xs mt-0.5">Admin Panel</p>
         </div>
         
-        {/* Navigation */}
-        <nav className="flex flex-col gap-2 flex-1">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-            
-            return (
-              <Link 
-                key={item.name}
-                to={item.href} 
-                onClick={() => setSidebarOpen(false)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200
-                  ${active 
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25' 
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                  }
-                `}
-              >
-                <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-400'}`} />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
+        {/* Navigation - Scrollable */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <div className="space-y-1">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              
+              return (
+                <Link 
+                  key={item.name}
+                  to={item.href} 
+                  onClick={() => setSidebarOpen(false)}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group
+                    ${active 
+                      ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' 
+                      : 'text-white hover:text-orange-400 hover:bg-orange-500/20'
+                    }
+                  `}
+                >
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-orange-400' : 'text-orange-500 group-hover:text-orange-400'}`} />
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Footer */}
-        <div className="mt-auto pt-6 border-t border-gray-700 space-y-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/50">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center">
-              <span className="text-white text-sm font-semibold">
+        <div className="p-3 border-t border-orange-500/30">
+          <div className="flex items-center gap-3 p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 mb-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 flex items-center justify-center flex-shrink-0">
+              <span className="text-black text-xs font-bold">
                 {user?.name?.charAt(0)?.toUpperCase() || 'A'}
               </span>
             </div>
-            <div className="flex-1">
-              <p className="text-white text-sm font-medium">{user?.name || 'Admin User'}</p>
-              <p className="text-gray-400 text-xs">{user?.email || 'admin@tiffix.com'}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-white text-xs font-medium truncate">{user?.name || 'Admin User'}</p>
+              <p className="text-orange-300 text-xs truncate">{user?.email || 'admin@tiffix.com'}</p>
             </div>
           </div>
           
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-gray-300 hover:text-white hover:bg-gray-700/50 transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-white hover:text-orange-400 hover:bg-orange-500/20 transition-colors group"
           >
-            <LogOut className="w-5 h-5 text-gray-400" />
-            <span>Logout</span>
+            <LogOut className="w-4 h-4 text-orange-500 group-hover:text-orange-400" />
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 bg-gray-900 md:ml-0 min-h-screen">
-        <div className="h-full overflow-y-auto">
-          <div className="min-h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          <div className="min-h-full bg-black">
             <Outlet />
           </div>
         </div>

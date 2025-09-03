@@ -14,40 +14,36 @@ const Button = ({
   ...props
 }) => {
   const baseClasses = `
-    inline-flex items-center justify-center font-medium rounded-xl
-    transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-    disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden
+    inline-flex items-center justify-center font-medium rounded-lg
+    transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900
+    disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden
+    active:scale-95
   `;
 
   const variants = {
     primary: `
-      bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25
-      hover:from-primary-400 hover:to-primary-500 hover:shadow-primary-500/40 hover:scale-[1.02]
-      focus:ring-primary-500 active:scale-[0.98]
+      bg-orange-500 text-white shadow-md
+      hover:bg-orange-400 hover:shadow-lg focus:ring-orange-500/50
     `,
     secondary: `
-      bg-gradient-to-r from-secondary-500 to-secondary-600 text-white shadow-lg shadow-secondary-500/25
-      hover:from-secondary-400 hover:to-secondary-500 hover:shadow-secondary-500/40 hover:scale-[1.02]
-      focus:ring-secondary-500 active:scale-[0.98]
+      bg-slate-700 text-slate-100 shadow-sm border border-slate-600/50
+      hover:bg-slate-600 hover:border-slate-500 focus:ring-slate-500/50
     `,
     outline: `
-      border-2 border-gray-600 text-gray-300 bg-transparent
-      hover:border-primary-500 hover:text-primary-400 hover:bg-primary-500/10
-      focus:ring-primary-500
+      border border-orange-500 text-orange-500 bg-transparent
+      hover:bg-orange-500 hover:text-white focus:ring-orange-500/50
     `,
     ghost: `
-      text-gray-300 bg-transparent hover:bg-gray-700/50 hover:text-white
-      focus:ring-gray-500
+      text-slate-300 bg-transparent hover:bg-slate-700/50 hover:text-orange-400
+      focus:ring-slate-500/50
     `,
     danger: `
-      bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25
-      hover:from-red-400 hover:to-red-500 hover:shadow-red-500/40 hover:scale-[1.02]
-      focus:ring-red-500 active:scale-[0.98]
+      bg-red-600 text-white shadow-md
+      hover:bg-red-500 hover:shadow-lg focus:ring-red-500/50
     `,
     success: `
-      bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25
-      hover:from-green-400 hover:to-green-500 hover:shadow-green-500/40 hover:scale-[1.02]
-      focus:ring-green-500 active:scale-[0.98]
+      bg-emerald-600 text-white shadow-md
+      hover:bg-emerald-500 hover:shadow-lg focus:ring-emerald-500/50
     `
   };
 
@@ -55,8 +51,8 @@ const Button = ({
     xs: 'px-2.5 py-1.5 text-xs gap-1.5',
     sm: 'px-3 py-2 text-sm gap-2',
     md: 'px-4 py-2.5 text-sm gap-2',
-    lg: 'px-6 py-3 text-base gap-2.5',
-    xl: 'px-8 py-4 text-lg gap-3'
+    lg: 'px-5 py-3 text-base gap-2.5',
+    xl: 'px-6 py-3.5 text-base gap-3'
   };
 
   return (

@@ -179,13 +179,13 @@ function Order() {
   const getStatusBadge = (order) => {
     let status = order.status
     let config = {
-      upcoming: { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-400' },
-      confirmed: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-400' },
-      preparing: { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-400' },
-      out_for_delivery: { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-400' },
-      delivered: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-400' },
-      cancelled: { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-400' },
-      skipped: { bg: 'bg-gray-100', text: 'text-gray-800', dot: 'bg-gray-400' }
+      upcoming: { bg: 'bg-blue-500/20', text: 'text-blue-300', dot: 'bg-blue-400' },
+      confirmed: { bg: 'bg-green-500/20', text: 'text-green-300', dot: 'bg-green-400' },
+      preparing: { bg: 'bg-yellow-500/20', text: 'text-yellow-300', dot: 'bg-yellow-400' },
+      out_for_delivery: { bg: 'bg-purple-500/20', text: 'text-purple-300', dot: 'bg-purple-400' },
+      delivered: { bg: 'bg-green-500/20', text: 'text-green-300', dot: 'bg-green-400' },
+      cancelled: { bg: 'bg-red-500/20', text: 'text-red-300', dot: 'bg-red-400' },
+      skipped: { bg: 'bg-orange-500/20', text: 'text-orange-300', dot: 'bg-orange-400' }
     }
 
     // Override status if skipped or cancelled
@@ -228,7 +228,7 @@ function Order() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Order Management</h1>
-          <p className="text-gray-400 mt-1">Manage and monitor all orders across the platform</p>
+          <p className="text-orange-300 mt-1">Manage and monitor all orders across the platform</p>
         </div>
         <button
           onClick={fetchOrders}
@@ -241,60 +241,60 @@ function Order() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <div className="bg-[#1E2938] p-6 rounded-xl border border-orange-500/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Orders</p>
+              <p className="text-orange-300 text-sm">Total Orders</p>
               <p className="text-2xl font-bold text-white">{stats.totalOrders}</p>
             </div>
             <Package className="w-8 h-8 text-orange-400" />
           </div>
         </div>
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <div className="bg-[#1E2938] p-6 rounded-xl border border-orange-500/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Today's Orders</p>
+              <p className="text-orange-300 text-sm">Today's Orders</p>
               <p className="text-2xl font-bold text-white">{stats.todayOrders}</p>
             </div>
             <Calendar className="w-8 h-8 text-blue-400" />
           </div>
         </div>
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <div className="bg-[#1E2938] p-6 rounded-xl border border-orange-500/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Pending Deliveries</p>
+              <p className="text-orange-300 text-sm">Pending Deliveries</p>
               <p className="text-2xl font-bold text-white">{stats.pendingDeliveries}</p>
             </div>
             <Truck className="w-8 h-8 text-purple-400" />
           </div>
         </div>
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <div className="bg-[#1E2938] p-6 rounded-xl border border-orange-500/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Completed</p>
+              <p className="text-orange-300 text-sm">Completed</p>
               <p className="text-2xl font-bold text-white">{stats.completedOrders}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-400" />
           </div>
         </div>
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <div className="bg-[#1E2938] p-6 rounded-xl border border-orange-500/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Skipped</p>
+              <p className="text-orange-300 text-sm">Skipped</p>
               <p className="text-2xl font-bold text-white">{stats.skippedOrders}</p>
             </div>
             <AlertCircle className="w-8 h-8 text-yellow-400" />
           </div>
         </div>
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <div className="bg-[#1E2938] p-6 rounded-xl border border-orange-500/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Cancelled</p>
+              <p className="text-orange-300 text-sm">Cancelled</p>
               <p className="text-2xl font-bold text-white">{stats.cancelledOrders}</p>
             </div>
             <XCircle className="w-8 h-8 text-red-400" />
@@ -306,13 +306,13 @@ function Order() {
       <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
+            <Filter className="w-5 h-5 text-orange-400" />
             <h2 className="text-lg font-semibold text-white">Search & Filters</h2>
           </div>
           {hasActiveFilters() && (
             <button
               onClick={clearAllFilters}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#1E2938] text-white rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/30"
             >
               <RotateCcw className="w-4 h-4" />
               Clear All
@@ -323,19 +323,19 @@ function Order() {
         {/* Search Bar */}
         <div className="mb-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search by order number, customer name, or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="pl-10 pr-20 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full"
+              className="pl-10 pr-20 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white placeholder-orange-300/50 focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-20 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                className="absolute right-20 top-1/2 transform -translate-y-1/2 text-orange-300 hover:text-orange-400"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -354,7 +354,7 @@ function Order() {
           <select
             value={filters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
           >
             {orderStatuses.map(status => (
               <option key={status.value} value={status.value}>
@@ -366,7 +366,7 @@ function Order() {
           <select
             value={filters.vendorId}
             onChange={(e) => handleFilterChange('vendorId', e.target.value)}
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
           >
             <option value="">All Vendors</option>
             {vendors.map(vendor => (
@@ -379,7 +379,7 @@ function Order() {
           <select
             value={filters.days}
             onChange={(e) => handleFilterChange('days', e.target.value)}
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
           >
             <option value="">All Days</option>
             <option value="1">Today</option>
@@ -388,17 +388,17 @@ function Order() {
           </select>
 
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400 w-4 h-4" />
             <input
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="pl-10 pr-10 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="pl-10 pr-10 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
             {filters.startDate && (
               <button
                 onClick={() => handleFilterChange('startDate', '')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-orange-300 hover:text-orange-400"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -406,17 +406,17 @@ function Order() {
           </div>
 
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400 w-4 h-4" />
             <input
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="pl-10 pr-10 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="pl-10 pr-10 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
             {filters.endDate && (
               <button
                 onClick={() => handleFilterChange('endDate', '')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-orange-300 hover:text-orange-400"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -426,7 +426,7 @@ function Order() {
           {/* <select
             value={filters.sortOrder}
             onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
           >
             <option value="desc">Latest First</option>
             <option value="asc">Oldest First</option>
@@ -435,56 +435,56 @@ function Order() {
 
         {/* Active Filters Summary */}
         {hasActiveFilters() && (
-          <div className="mt-4 p-3 bg-gray-700 rounded-lg">
+          <div className="mt-4 p-3 bg-[#1E2938] rounded-lg border border-orange-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-400 font-medium">Active Filters:</span>
+              <Filter className="w-4 h-4 text-orange-400" />
+              <span className="text-sm text-orange-300 font-medium">Active Filters:</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {searchTerm && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-600 text-gray-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
                   Search: "{searchTerm}"
-                  <button onClick={() => setSearchTerm('')} className="text-gray-500 hover:text-gray-300">
+                  <button onClick={() => setSearchTerm('')} className="text-orange-300 hover:text-orange-400">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               )}
               {filters.status && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-600 text-gray-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
                   Status: {filters.status.replace('_', ' ')}
-                  <button onClick={() => handleFilterChange('status', '')} className="text-gray-500 hover:text-gray-300">
+                  <button onClick={() => handleFilterChange('status', '')} className="text-orange-300 hover:text-orange-400">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               )}
               {filters.vendorId && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-600 text-gray-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
                   Vendor: {vendors.find(v => v._id === filters.vendorId)?.name || 'Selected'}
-                  <button onClick={() => handleFilterChange('vendorId', '')} className="text-gray-500 hover:text-gray-300">
+                  <button onClick={() => handleFilterChange('vendorId', '')} className="text-orange-300 hover:text-orange-400">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               )}
               {filters.days && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-600 text-gray-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
                   Days: {filters.days === '1' ? 'Today' : filters.days === '7' ? 'Next 7 Days' : filters.days === '30' ? 'Next 30 Days' : filters.days}
-                  <button onClick={() => handleFilterChange('days', '')} className="text-gray-500 hover:text-gray-300">
+                  <button onClick={() => handleFilterChange('days', '')} className="text-orange-300 hover:text-orange-400">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               )}
               {filters.startDate && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-600 text-gray-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
                   From: {new Date(filters.startDate).toLocaleDateString()}
-                  <button onClick={() => handleFilterChange('startDate', '')} className="text-gray-500 hover:text-gray-300">
+                  <button onClick={() => handleFilterChange('startDate', '')} className="text-orange-300 hover:text-orange-400">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               )}
               {filters.endDate && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-600 text-gray-300 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
                   To: {new Date(filters.endDate).toLocaleDateString()}
-                  <button onClick={() => handleFilterChange('endDate', '')} className="text-gray-500 hover:text-gray-300">
+                  <button onClick={() => handleFilterChange('endDate', '')} className="text-orange-300 hover:text-orange-400">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -495,10 +495,10 @@ function Order() {
       </div>
 
       {/* Orders List */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-700">
+      <div className="bg-[#1E2938] rounded-xl border border-orange-500/30 overflow-hidden">
+        <div className="px-6 py-4 border-b border-orange-500/30">
           <div className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-gray-400" />
+            <Package className="w-5 h-5 text-orange-400" />
             <h3 className="text-lg font-semibold text-white">Orders List</h3>
           </div>
         </div>
@@ -507,44 +507,44 @@ function Order() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto mb-4" />
-              <div className="text-lg text-gray-400">Loading orders...</div>
+              <div className="text-lg text-orange-300">Loading orders...</div>
             </div>
           </div>
         ) : orders?.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full">
-              <thead className="bg-gray-700">
+              <thead className="bg-orange-500/10">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Order Details</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Menu Items</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Vendor</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Delivery</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Order Details</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Menu Items</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Vendor</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Delivery</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-800 divide-y divide-gray-700">
+              <tbody className="bg-[#1E2938] divide-y divide-orange-500/20">
                 {orders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-700/50">
+                  <tr key={order._id} className="hover:bg-orange-500/10">
                     <td className="px-6 py-4">
                       <div className="text-sm">
                         <div className="text-white font-mono font-medium">
                           {order.orderNumber || `#${order._id?.slice(-6)}`}
                         </div>
-                        <div className="text-gray-400 text-xs mt-1">
+                        <div className="text-orange-300 text-xs mt-1">
                           {formatDateTime(order.createdAt)}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-400" />
+                        <User className="w-4 h-4 text-orange-400" />
                         <div>
                           <div className="text-sm text-white font-medium">
                             {order.userId?.name || 'N/A'}
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-orange-300">
                             {order.userId?.phoneNumber?.internationalNumber || 'N/A'}
                           </div>
                         </div>
@@ -558,16 +558,16 @@ function Order() {
                               {order.selectedMenus[0].foodTitle}
                             </div>
                             {order.selectedMenus.length > 1 && (
-                              <div className="text-xs text-gray-400">
+                              <div className="text-xs text-orange-300">
                                 +{order.selectedMenus.length - 1} more items
                               </div>
                             )}
-                            <div className="text-xs text-gray-400 capitalize mt-1">
+                            <div className="text-xs text-orange-300 capitalize mt-1">
                               {order.mealType?.replace('_', ' ')}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-gray-400">No items</span>
+                          <span className="text-orange-300">No items</span>
                         )}
                       </div>
                     </td>
@@ -576,7 +576,7 @@ function Order() {
                         <div className="text-white font-medium">
                           {order.vendorDetails?.vendorId?.businessInfo?.businessName || 'N/A'}
                         </div>
-                        <div className="text-xs text-gray-400 capitalize">
+                        <div className="text-xs text-orange-300 capitalize">
                           {order.vendorDetails?.vendorType?.replace('_', ' ') || ''}
                         </div>
                       </div>
@@ -584,14 +584,14 @@ function Order() {
                     <td className="px-6 py-4">
                       <div className="text-sm">
                         <div className="flex items-center gap-1 text-white">
-                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <Calendar className="w-4 h-4 text-orange-400" />
                           {formatDate(order.deliveryDate)}
                         </div>
-                        <div className="flex items-center gap-1 text-gray-400 mt-1">
+                        <div className="flex items-center gap-1 text-orange-300 mt-1">
                           <Clock className="w-4 h-4" />
                           {order.deliveryTime || 'N/A'}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-orange-300/70 mt-1">
                           {order.deliveryAddress?.city}
                         </div>
                       </div>
@@ -635,9 +635,9 @@ function Order() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <Package className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-            <div className="text-lg text-gray-400 mb-2">No orders found</div>
-            <div className="text-sm text-gray-500">Orders will appear here when customers place them</div>
+            <Package className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+            <div className="text-lg text-white mb-2">No orders found</div>
+            <div className="text-sm text-orange-300">Orders will appear here when customers place them</div>
           </div>
         )}
       </div>
@@ -645,12 +645,12 @@ function Order() {
       {/* Order Details Modal */}
       {showDetailsModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-4xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#1E2938] rounded-xl p-6 w-full max-w-4xl border border-orange-500/30 max-h-[90vh] overflow-y-auto scrollbar-hide">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">Order Details</h3>
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-orange-300 hover:text-white"
               >
                 ×
               </button>
@@ -660,17 +660,17 @@ function Order() {
               {/* Order Header */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-gray-400 text-sm">Order Number</p>
+                  <p className="text-orange-300 text-sm">Order Number</p>
                   <p className="text-white font-mono font-medium">
                     {selectedOrder.orderNumber || `#${selectedOrder._id?.slice(-8)}`}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Status</p>
+                  <p className="text-orange-300 text-sm">Status</p>
                   {getStatusBadge(selectedOrder)}
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Credits Used</p>
+                  <p className="text-orange-300 text-sm">Credits Used</p>
                   <p className="text-white">{selectedOrder.creditsUsed || 0}</p>
                 </div>
               </div>
@@ -681,19 +681,19 @@ function Order() {
                   <User className="w-4 h-4" />
                   Customer Information
                 </h4>
-                <div className="bg-gray-700 p-4 rounded-lg">
+                <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
                   <div className="mb-4">
-                    <p className="text-gray-400 text-sm">User ID</p>
+                    <p className="text-orange-300 text-sm">User ID</p>
                     <p className="text-white font-mono text-sm">{selectedOrder.userId || 'N/A'}</p>
                   </div>
                   <div className="mt-4">
-                    <p className="text-gray-400 text-sm mb-2">Delivery Address</p>
-                    <div className="text-gray-300 text-sm">
+                    <p className="text-orange-300 text-sm mb-2">Delivery Address</p>
+                    <div className="text-white text-sm">
                       <p>{selectedOrder.deliveryAddress?.street}</p>
                       <p>{selectedOrder.deliveryAddress?.city}, {selectedOrder.deliveryAddress?.state}</p>
                       <p>{selectedOrder.deliveryAddress?.zipCode}</p>
                       {selectedOrder.deliveryAddress?.landmark && (
-                        <p className="text-gray-400 mt-1">Landmark: {selectedOrder.deliveryAddress.landmark}</p>
+                        <p className="text-orange-300 mt-1">Landmark: {selectedOrder.deliveryAddress.landmark}</p>
                       )}
                     </div>
                   </div>
@@ -707,9 +707,9 @@ function Order() {
                     <ChefHat className="w-4 h-4" />
                     Menu Items ({selectedOrder.mealType})
                   </h4>
-                  <div className="bg-gray-700 p-4 rounded-lg space-y-3">
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg space-y-3">
                     {selectedOrder.selectedMenus.map((menu, index) => (
-                      <div key={menu._id || index} className="flex items-start gap-3 p-3 bg-gray-600 rounded-lg">
+                      <div key={menu._id || index} className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
                         {menu.foodImage && (
                           <img 
                             src={menu.foodImage} 
@@ -727,12 +727,12 @@ function Order() {
                               <p className="text-orange-400 font-semibold">₹{menu.price}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-gray-400 text-sm font-mono">ID: {menu._id}</p>
+                              <p className="text-orange-300 text-sm font-mono">ID: {menu._id}</p>
                             </div>
                           </div>
-                          <p className="text-gray-300 text-sm mb-2">{menu.description?.short}</p>
+                          <p className="text-white text-sm mb-2">{menu.description?.short}</p>
                           {menu.detailedItemList && (
-                            <p className="text-gray-400 text-xs mb-2">Items: {menu.detailedItemList}</p>
+                            <p className="text-orange-300 text-xs mb-2">Items: {menu.detailedItemList}</p>
                           )}
                         </div>
                       </div>
@@ -748,21 +748,21 @@ function Order() {
                     <Calendar className="w-4 h-4" />
                     Daily Meal Information
                   </h4>
-                  <div className="bg-gray-700 p-4 rounded-lg">
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-gray-400 text-sm">Meal Date</p>
+                        <p className="text-orange-300 text-sm">Meal Date</p>
                         <p className="text-white">{formatDate(selectedOrder.dailyMealId.mealDate)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Daily Meal ID</p>
+                        <p className="text-orange-300 text-sm">Daily Meal ID</p>
                         <p className="text-white font-mono text-xs">{selectedOrder.dailyMealId._id}</p>
                       </div>
                     </div>
                     {selectedOrder.dailyMealId.notes && (
                       <div className="mt-4">
-                        <p className="text-gray-400 text-sm mb-2">Notes</p>
-                        <p className="text-gray-300 text-sm bg-gray-600 p-3 rounded">
+                        <p className="text-orange-300 text-sm mb-2">Notes</p>
+                        <p className="text-white text-sm bg-orange-500/10 border border-orange-500/20 p-3 rounded">
                           {selectedOrder.dailyMealId.notes}
                         </p>
                       </div>
@@ -778,18 +778,18 @@ function Order() {
                     <Package className="w-4 h-4" />
                     Subscription Details
                   </h4>
-                  <div className="bg-gray-700 p-4 rounded-lg">
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
                     <div className="grid grid-cols-4 gap-4 mb-4">
                       <div>
-                        <p className="text-gray-400 text-sm">Plan Name</p>
+                        <p className="text-orange-300 text-sm">Plan Name</p>
                         <p className="text-white">{selectedOrder.userSubscriptionId.subscriptionId?.planName || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Category</p>
+                        <p className="text-orange-300 text-sm">Category</p>
                         <p className="text-white capitalize">{selectedOrder.userSubscriptionId.subscriptionId?.category || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Status</p>
+                        <p className="text-orange-300 text-sm">Status</p>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                           selectedOrder.userSubscriptionId.status === 'active' 
                             ? 'bg-green-100 text-green-800' 
@@ -799,34 +799,34 @@ function Order() {
                         </span>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Credits</p>
+                        <p className="text-orange-300 text-sm">Credits</p>
                         <p className="text-white">{selectedOrder.userSubscriptionId.creditsUsed || 0}/{selectedOrder.userSubscriptionId.creditsGranted || 0}</p>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-4 gap-4 mb-4">
                       <div>
-                        <p className="text-gray-400 text-sm">Original Price</p>
+                        <p className="text-orange-300 text-sm">Original Price</p>
                         <p className="text-white">₹{selectedOrder.userSubscriptionId.originalPrice || 0}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Final Price</p>
+                        <p className="text-orange-300 text-sm">Final Price</p>
                         <p className="text-orange-400 font-semibold">₹{selectedOrder.userSubscriptionId.finalPrice || 0}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Discount</p>
+                        <p className="text-orange-300 text-sm">Discount</p>
                         <p className="text-green-400">₹{selectedOrder.userSubscriptionId.discountApplied || 0}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Skip Credits</p>
+                        <p className="text-orange-300 text-sm">Skip Credits</p>
                         <p className="text-white">{selectedOrder.userSubscriptionId.skipCreditUsed || 0}/{selectedOrder.userSubscriptionId.skipCreditAvailable || 0}</p>
                       </div>
                     </div>
 
                     {selectedOrder.userSubscriptionId.subscriptionId?.description && (
                       <div className="mb-4">
-                        <p className="text-gray-400 text-sm mb-2">Description</p>
-                        <p className="text-gray-300 text-sm bg-gray-600 p-3 rounded">
+                        <p className="text-orange-300 text-sm mb-2">Description</p>
+                        <p className="text-white text-sm bg-orange-500/10 border border-orange-500/20 p-3 rounded">
                           {selectedOrder.userSubscriptionId.subscriptionId.description}
                         </p>
                       </div>
@@ -835,15 +835,15 @@ function Order() {
                     {/* Meal Timing */}
                     {selectedOrder.userSubscriptionId.mealTiming && (
                       <div className="mb-4">
-                        <p className="text-gray-400 text-sm mb-2">Meal Timing</p>
+                        <p className="text-orange-300 text-sm mb-2">Meal Timing</p>
                         <div className="flex gap-4">
                           {selectedOrder.userSubscriptionId.mealTiming.lunch?.enabled && (
-                            <div className="bg-gray-600 px-3 py-2 rounded">
+                            <div className="bg-orange-500/20 border border-orange-500/30 px-3 py-2 rounded">
                               <span className="text-white text-sm">Lunch: {selectedOrder.userSubscriptionId.mealTiming.lunch.time}</span>
                             </div>
                           )}
                           {selectedOrder.userSubscriptionId.mealTiming.dinner?.enabled && (
-                            <div className="bg-gray-600 px-3 py-2 rounded">
+                            <div className="bg-orange-500/20 border border-orange-500/30 px-3 py-2 rounded">
                               <span className="text-white text-sm">Dinner: {selectedOrder.userSubscriptionId.mealTiming.dinner.time}</span>
                             </div>
                           )}
@@ -854,11 +854,11 @@ function Order() {
                     {/* Subscription Period */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-400 text-sm">Start Date</p>
+                        <p className="text-orange-300 text-sm">Start Date</p>
                         <p className="text-white">{formatDate(selectedOrder.userSubscriptionId.startDate)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">End Date</p>
+                        <p className="text-orange-300 text-sm">End Date</p>
                         <p className="text-white">{formatDate(selectedOrder.userSubscriptionId.endDate)}</p>
                       </div>
                     </div>
@@ -872,37 +872,37 @@ function Order() {
                   <MapPin className="w-4 h-4" />
                   Vendor Information
                 </h4>
-                <div className="bg-gray-700 p-4 rounded-lg">
+                <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div>
-                      <p className="text-gray-400 text-sm">Business Name</p>
+                      <p className="text-orange-300 text-sm">Business Name</p>
                       <p className="text-white">{selectedOrder.vendorDetails?.vendorId?.businessInfo?.businessName || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Type</p>
+                      <p className="text-orange-300 text-sm">Type</p>
                       <p className="text-white capitalize">
                         {selectedOrder.vendorDetails?.vendorType?.replace('_', ' ') || 'N/A'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Vendor ID</p>
+                      <p className="text-orange-300 text-sm">Vendor ID</p>
                       <p className="text-white font-mono text-xs">{selectedOrder.vendorDetails?.vendorId?._id || 'N/A'}</p>
                     </div>
                   </div>
                   
                   {/* Vendor Assignment Info */}
                   {selectedOrder.userSubscriptionId?.vendorDetails && (
-                    <div className="border-t border-gray-600 pt-4">
-                      <p className="text-gray-400 text-sm mb-3">Vendor Assignment</p>
+                    <div className="border-t border-orange-500/30 pt-4">
+                      <p className="text-orange-300 text-sm mb-3">Vendor Assignment</p>
                       <div className="grid grid-cols-3 gap-4">
                         <div>
-                          <p className="text-gray-400 text-xs">Current Vendor</p>
+                          <p className="text-orange-300 text-xs">Current Vendor</p>
                           <p className="text-white text-sm">
                             {selectedOrder.userSubscriptionId.vendorDetails.isVendorAssigned ? 'Yes' : 'No'}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 text-xs">Assigned Date</p>
+                          <p className="text-orange-300 text-xs">Assigned Date</p>
                           <p className="text-white text-sm">
                             {selectedOrder.userSubscriptionId.vendorDetails.currentVendor?.assignedAt 
                               ? formatDate(selectedOrder.userSubscriptionId.vendorDetails.currentVendor.assignedAt)
@@ -911,7 +911,7 @@ function Order() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 text-xs">Switch Used</p>
+                          <p className="text-orange-300 text-xs">Switch Used</p>
                           <p className="text-white text-sm">
                             {selectedOrder.userSubscriptionId.vendorDetails.vendorSwitchUsed ? 'Yes' : 'No'}
                           </p>
@@ -928,18 +928,18 @@ function Order() {
                   <Truck className="w-4 h-4" />
                   Delivery Information
                 </h4>
-                <div className="bg-gray-700 p-4 rounded-lg">
+                <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <p className="text-gray-400 text-sm">Delivery Date</p>
+                      <p className="text-orange-300 text-sm">Delivery Date</p>
                       <p className="text-white">{formatDate(selectedOrder.deliveryDate)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Delivery Time</p>
+                      <p className="text-orange-300 text-sm">Delivery Time</p>
                       <p className="text-white">{selectedOrder.deliveryTime || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Order Created</p>
+                      <p className="text-orange-300 text-sm">Order Created</p>
                       <p className="text-white">{formatDateTime(selectedOrder.createdAt)}</p>
                     </div>
                   </div>
@@ -947,7 +947,7 @@ function Order() {
                   {/* Delivery Photos */}
                   {selectedOrder.deliveryConfirmation?.deliveryPhotos?.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-gray-400 text-sm mb-2">Delivery Photos</p>
+                      <p className="text-orange-300 text-sm mb-2">Delivery Photos</p>
                       <div className="flex gap-2">
                         {selectedOrder.deliveryConfirmation.deliveryPhotos.map((photo, index) => (
                           <img 
@@ -1001,7 +1001,7 @@ function Order() {
                     <Activity className="w-4 h-4" />
                     Status History
                   </h4>
-                  <div className="bg-gray-700 p-4 rounded-lg space-y-3">
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg space-y-3">
                     {selectedOrder.statusHistory.map((history, index) => (
                       <div key={index} className="border-l-2 border-orange-500 pl-4">
                         <div className="flex justify-between items-start mb-1">
@@ -1023,7 +1023,7 @@ function Order() {
 
               {/* Action Buttons */}
               {selectedOrder.status === 'out_for_delivery' && !selectedOrder.skipDetails?.isSkipped && !selectedOrder.cancellationDetails?.isCancelled && (
-                <div className="flex gap-3 pt-4 border-t border-gray-700">
+                <div className="flex gap-3 pt-4 border-t border-orange-500/30">
                   <button
                     onClick={() => {
                       setShowDetailsModal(false)
@@ -1044,12 +1044,12 @@ function Order() {
       {/* Confirm Delivery Modal */}
       {showDeliveryModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg border border-gray-700">
+          <div className="bg-[#1E2938] rounded-xl p-6 w-full max-w-lg border border-orange-500/30">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">Confirm Order Delivery</h3>
               <button
                 onClick={() => setShowDeliveryModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-orange-300 hover:text-white"
               >
                 ×
               </button>
@@ -1057,13 +1057,13 @@ function Order() {
             
             <div className="space-y-4">
               <div>
-                <p className="text-gray-300 mb-2">Order: {selectedOrder.orderNumber || `#${selectedOrder._id?.slice(-8)}`}</p>
-                <p className="text-gray-400 text-sm">Customer: {selectedOrder.userId?.name}</p>
+                <p className="text-white mb-2">Order: {selectedOrder.orderNumber || `#${selectedOrder._id?.slice(-8)}`}</p>
+                <p className="text-orange-300 text-sm">Customer: {selectedOrder.userId?.name}</p>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-white mb-2">
                   Delivery Notes (Optional)
                 </label>
                 <textarea
@@ -1071,19 +1071,19 @@ function Order() {
                   onChange={(e) => setDeliveryForm(prev => ({ ...prev, notes: e.target.value }))}
                   rows={3}
                   placeholder="Add delivery confirmation notes..."
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white placeholder-orange-300/50 focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
               {/* Photo URLs */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-white mb-2">
                   Delivery Photo URLs (Optional)
                 </label>
                 <input
                   type="text"
                   placeholder="Enter photo URL..."
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white placeholder-orange-300/50 focus:ring-2 focus:ring-orange-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && e.target.value.trim()) {
                       setDeliveryForm(prev => ({
@@ -1097,7 +1097,7 @@ function Order() {
                 {deliveryForm.photos.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {deliveryForm.photos.map((photo, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm text-gray-300">
+                      <div key={index} className="flex items-center gap-2 text-sm text-white">
                         <Camera className="w-4 h-4" />
                         <span className="flex-1 truncate">{photo}</span>
                         <button
@@ -1119,7 +1119,7 @@ function Order() {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowDeliveryModal(false)}
-                  className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-500 transition-colors"
+                  className="flex-1 bg-[#1E2938] border border-orange-500/30 text-white py-2 px-4 rounded-lg hover:bg-orange-500/20 transition-colors"
                 >
                   Cancel
                 </button>

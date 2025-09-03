@@ -13,9 +13,9 @@ const Badge = ({
   `;
 
   const variants = {
-    default: 'bg-gray-700/50 text-gray-300',
-    primary: 'bg-primary-500/20 text-primary-400 border border-primary-500/30',
-    secondary: 'bg-secondary-500/20 text-secondary-400 border border-secondary-500/30',
+    default: 'bg-zinc-800 text-white border border-orange-500/20',
+    primary: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+    secondary: 'bg-zinc-900 text-white border border-orange-500/20',
     success: 'bg-green-500/20 text-green-400 border border-green-500/30',
     warning: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
     danger: 'bg-red-500/20 text-red-400 border border-red-500/30',
@@ -29,9 +29,9 @@ const Badge = ({
   };
 
   const dotColors = {
-    default: 'bg-gray-400',
-    primary: 'bg-primary-400',
-    secondary: 'bg-secondary-400',
+    default: 'bg-orange-500',
+    primary: 'bg-orange-400',
+    secondary: 'bg-orange-500',
     success: 'bg-green-400',
     warning: 'bg-yellow-400',
     danger: 'bg-red-400',
