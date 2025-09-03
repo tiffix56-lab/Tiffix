@@ -17,6 +17,7 @@ import vendorAssignmentController from '../controller/vendorAssignmentController
 import dailyMealController from '../controller/orderController/dailyMeal.controller.js'
 import orderController from '../controller/orderController/order.controller.js'
 import reviewController from '../controller/reviewController/review.controller.js'
+import adminController from '../controller/AdminController/admin.controller.js'
 import { uploadFiles } from '../middleware/multerHandler.js'
 import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
@@ -285,5 +286,14 @@ router.route('/admin/reviews/stats').get(authentication, authorization([EUserRol
 router.route('/public/subscriptions/:subscriptionId/reviews').get(reviewController.getSubscriptionReviews)
 router.route('/public/vendors/:vendorId/reviews').get(reviewController.getPublicVendorReviews)
 router.route('/public/orders/:orderId/review').get(reviewController.getOrderReview)
+
+// ############### ADMIN DASHBOARD & ANALYTICS ROUTES ####################
+// Comprehensive dashboard statistics and analytics for admin panel
+router.route('/admin/dashboard/stats').get(authentication, authorization([EUserRole.ADMIN]), adminController.getDashboardStats)
+router.route('/admin/analytics/users').get(authentication, authorization([EUserRole.ADMIN]), adminController.getUserAnalytics)
+router.route('/admin/analytics/orders').get(authentication, authorization([EUserRole.ADMIN]), adminController.getOrderAnalytics)
+router.route('/admin/analytics/revenue').get(authentication, authorization([EUserRole.ADMIN]), adminController.getRevenueAnalytics)
+router.route('/admin/analytics/vendors').get(authentication, authorization([EUserRole.ADMIN]), adminController.getVendorAnalytics)
+router.route('/admin/analytics/zones').get(authentication, authorization([EUserRole.ADMIN]), adminController.getZoneAnalytics)
 
 export default router
