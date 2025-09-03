@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, ActivityIndicator, Alert, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, ActivityIndicator, Alert, AppState, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
@@ -21,7 +21,27 @@ const PaymentVerification = () => {
       }
     };
 
+    // Listen for deep links (when PhonePe redirects back)
+    const handleDeepLink = (url: string) => {
+      console.log('Deep link received:', url);
+      if (url.includes('payment-success') || url.includes('payment-complete')) {
+        checkPaymentStatus();
+      }
+    };
+
     const subscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    // Listen for initial URL if app was opened via deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    // Listen for incoming URLs while app is running
+    const linkingSubscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
     
     // Auto-check after a delay
     const timeout = setTimeout(() => {
@@ -32,6 +52,7 @@ const PaymentVerification = () => {
 
     return () => {
       subscription?.remove();
+      linkingSubscription?.remove();
       clearTimeout(timeout);
     };
   }, []);
@@ -40,36 +61,114 @@ const PaymentVerification = () => {
     try {
       setVerifying(true);
       
-      // For PhonePe, we need to manually verify the payment
-      // This would typically involve checking the transaction status
-      const verificationData = {
-        userSubscriptionId: userSubscriptionId as string,
-        phonepe_transaction_id: orderId as string,
-        phonepe_merchant_id: process.env.EXPO_PUBLIC_PHONEPE_MERCHANT_ID || '',
-        phonepe_checksum: '', // This would come from PhonePe callback
-      };
+      console.log('Checking payment status for orderId:', orderId);
 
-      const response = await orderService.verifyPayment(verificationData);
+      // First check payment status using orderId (more reliable)
+      const paymentStatusResponse = await orderService.checkPaymentStatus(orderId as string);
 
-      if (response.success) {
-        // Clear order data
-        await orderStore.clearOrderData();
+      if (paymentStatusResponse.success && paymentStatusResponse.data) {
+        const { status, paymentStatus, subscription } = paymentStatusResponse.data;
         
-        // Navigate to success screen
-        router.replace({
-          pathname: '/(home)/order-confirmed',
-          params: {
-            subscriptionId: '',
-            userSubscriptionId: userSubscriptionId as string,
-            paymentId: orderId as string,
-          },
-        });
+        console.log('Payment status check result:', { status, paymentStatus });
+        
+        if (status === 'success' && paymentStatus === 'completed') {
+          // Payment was successful and processed
+          await orderStore.clearOrderData();
+          
+          Alert.alert(
+            'Payment Successful!',
+            'Your subscription has been activated successfully.',
+            [
+              {
+                text: 'Continue',
+                onPress: () => {
+                  router.replace({
+                    pathname: '/(home)/order-confirmed',
+                    params: {
+                      subscriptionId: '',
+                      userSubscriptionId: subscription?.id || userSubscriptionId as string,
+                      paymentId: orderId as string,
+                    },
+                  });
+                }
+              }
+            ]
+          );
+          return;
+        } else if (status === 'failed') {
+          console.log('Payment failed');
+          Alert.alert(
+            'Payment Failed',
+            'Your payment was not successful. Please try again.',
+            [
+              {
+                text: 'Try Again',
+                onPress: () => router.back()
+              }
+            ]
+          );
+          return;
+        }
+      }
+
+      // Fallback: Check subscription status if payment status check fails
+      console.log('Fallback: Checking subscription status');
+      const statusResponse = await orderService.checkSubscriptionStatus(userSubscriptionId as string);
+
+      if (statusResponse.success && statusResponse.data) {
+        const subscription = statusResponse.data.subscription;
+        const status = subscription?.status || statusResponse.data.status;
+        
+        console.log('Current subscription status:', status);
+        
+        if (status === 'active') {
+          // Payment was successful and webhook processed it
+          await orderStore.clearOrderData();
+          
+          Alert.alert(
+            'Payment Successful!',
+            'Your subscription has been activated successfully.',
+            [
+              {
+                text: 'Continue',
+                onPress: () => {
+                  router.replace({
+                    pathname: '/(home)/order-confirmed',
+                    params: {
+                      subscriptionId: '',
+                      userSubscriptionId: userSubscriptionId as string,
+                      paymentId: orderId as string,
+                    },
+                  });
+                }
+              }
+            ]
+          );
+        } else if (status === 'pending') {
+          console.log('Subscription still pending - webhook may not have processed yet');
+          // Give webhook more time to process
+          setTimeout(() => {
+            if (!manualCheck) {
+              setManualCheck(true);
+            }
+          }, 5000);
+        } else {
+          console.log('Subscription status unexpected:', status);
+          setManualCheck(true);
+        }
       } else {
+        console.log('Failed to check subscription status:', statusResponse.message);
+        // Fallback to manual check
         setManualCheck(true);
       }
     } catch (error) {
-      console.error('Payment verification error:', error);
-      setManualCheck(true);
+      console.error('Status check error:', error);
+      // Give webhook more time or show manual check
+      setTimeout(() => {
+        if (!manualCheck) {
+          setManualCheck(true);
+        }
+      }, 5000);
     } finally {
       setVerifying(false);
     }

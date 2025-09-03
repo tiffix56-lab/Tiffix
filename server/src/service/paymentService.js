@@ -334,14 +334,52 @@ class PaymentService {
 
     async handlePaymentCaptured(payment) {
         try {
-            const transaction = await Transaction.findOne({
+            console.log('=== HANDLING PAYMENT CAPTURED ===');
+            console.log('Payment data:', JSON.stringify(payment, null, 2));
+            
+            // Try multiple ways to find the transaction
+            let transaction = await Transaction.findOne({
                 gatewayOrderId: payment.order_id
-            })
+            });
+            
+            if (!transaction) {
+                console.log('Transaction not found by gatewayOrderId, trying transactionId');
+                transaction = await Transaction.findOne({
+                    transactionId: payment.order_id
+                });
+            }
+            
+            if (!transaction) {
+                console.log('Transaction not found by transactionId, trying merchantTransactionId');
+                transaction = await Transaction.findOne({
+                    $or: [
+                        { gatewayOrderId: payment.merchantTransactionId },
+                        { transactionId: payment.merchantTransactionId }
+                    ]
+                });
+            }
+
+            console.log('Transaction lookup result:', {
+                found: !!transaction,
+                transactionId: transaction?._id,
+                currentStatus: transaction?.status,
+                lookupKey: payment.order_id
+            });
 
             if (transaction && transaction.status !== 'success') {
+                console.log('Processing successful payment for transaction:', transaction._id);
                 await this.processSuccessfulPayment(transaction.transactionId, {
-                    phonepe_transaction_id: payment.id
-                })
+                    phonepe_transaction_id: payment.id || payment.transactionId
+                });
+                console.log('Payment processing completed successfully');
+            } else if (!transaction) {
+                console.error('CRITICAL: Transaction not found for payment:', {
+                    orderId: payment.order_id,
+                    merchantTransactionId: payment.merchantTransactionId,
+                    transactionId: payment.id
+                });
+            } else {
+                console.log('Transaction already processed or status is success');
             }
         } catch (error) {
             console.error('Error handling payment captured webhook:', error)

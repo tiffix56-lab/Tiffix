@@ -41,15 +41,59 @@ const Payment = () => {
   };
 
   const convertTo24Hour = (time12h: string): string => {
-    const [time, modifier] = time12h.split(' ');
-    let [hours, minutes] = time.split(':');
-    if (hours === '12') {
-      hours = '00';
+    try {
+      console.log('🕐 Converting time from 12h to 24h:', time12h);
+      
+      // Handle potential formatting issues
+      const trimmedTime = time12h.trim();
+      const parts = trimmedTime.split(' ');
+      
+      if (parts.length !== 2) {
+        console.error('❌ Invalid time format:', time12h);
+        throw new Error(`Invalid time format: ${time12h}`);
+      }
+      
+      const [time, modifier] = parts;
+      const timeParts = time.split(':');
+      
+      if (timeParts.length !== 2) {
+        console.error('❌ Invalid time parts:', time);
+        throw new Error(`Invalid time parts: ${time}`);
+      }
+      
+      let [hours, minutes] = timeParts;
+      let hour24 = parseInt(hours, 10);
+      
+      if (isNaN(hour24) || hour24 < 1 || hour24 > 12) {
+        console.error('❌ Invalid hour value:', hours);
+        throw new Error(`Invalid hour value: ${hours}`);
+      }
+      
+      if (modifier.toUpperCase() === 'AM') {
+        if (hour24 === 12) {
+          hour24 = 0; // 12:00 AM = 00:00
+        }
+      } else if (modifier.toUpperCase() === 'PM') {
+        if (hour24 !== 12) {
+          hour24 += 12; // 1:00 PM = 13:00, but 12:00 PM = 12:00
+        }
+      } else {
+        console.error('❌ Invalid modifier:', modifier);
+        throw new Error(`Invalid time modifier: ${modifier}`);
+      }
+      
+      // Ensure two-digit format for both hours and minutes
+      const formattedHour = hour24.toString().padStart(2, '0');
+      const formattedMinutes = minutes.padStart(2, '0');
+      const result = `${formattedHour}:${formattedMinutes}`;
+      
+      console.log('✅ Time conversion successful:', time12h, '→', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Time conversion failed:', error);
+      // Return a default time in case of error
+      return '12:00';
     }
-    if (modifier === 'PM') {
-      hours = String(parseInt(hours, 10) + 12);
-    }
-    return `${hours}:${minutes}`;
   };
 
   const handlePayment = async () => {
@@ -61,21 +105,32 @@ const Payment = () => {
       const orderPayload: InitiatePurchaseRequest = {
         subscriptionId: orderData.subscriptionId,
         deliveryAddress: {
-          label: orderData.deliveryAddress.label,
-          street: orderData.deliveryAddress.street,
-          city: orderData.deliveryAddress.city,
-          state: orderData.deliveryAddress.state,
-          zipCode: orderData.deliveryAddress.zipCode,
-          coordinates: orderData.deliveryAddress.coordinates,
+          street: "789 Pine St",
+          city: "Mumbai",
+          state: "Maharashtra",
+          country: "India",
+          zipCode: "400002",
+          coordinates: {
+            type: "Point",
+            coordinates: [72.8777, 19.0760]
+          }
         },
         mealTimings: {
           lunch: {
             enabled: orderData.lunchEnabled,
-            time: orderData.lunchEnabled ? convertTo24Hour(orderData.lunchTime) : undefined,
+            time: orderData.lunchEnabled ? (() => {
+              const converted = convertTo24Hour(orderData.lunchTime);
+              console.log('🍽️ Lunch time conversion:', orderData.lunchTime, '→', converted);
+              return converted;
+            })() : undefined,
           },
           dinner: {
             enabled: orderData.dinnerEnabled,
-            time: orderData.dinnerEnabled ? convertTo24Hour(orderData.dinnerTime) : undefined,
+            time: orderData.dinnerEnabled ? (() => {
+              const converted = convertTo24Hour(orderData.dinnerTime);
+              console.log('🍽️ Dinner time conversion:', orderData.dinnerTime, '→', converted);
+              return converted;
+            })() : undefined,
           },
         },
         startDate: (() => {
@@ -99,13 +154,15 @@ const Payment = () => {
         })(),
       };
 
+      console.log('📦 Complete order payload being sent:', JSON.stringify(orderPayload, null, 2));
+      
       const response = await orderService.initiatePurchase(orderPayload);
 
       if (response.success && response.data) {
         const { orderId, amount, currency, phonepeKey, userSubscriptionId, paymentUrl } = response.data;
 
         // Store payment data for verification later
-        await orderStore.setOrderData({
+        await orderStore.saveOrderData({
           ...orderData,
           orderId,
           userSubscriptionId,

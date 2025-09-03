@@ -21,23 +21,32 @@ export interface UploadRequest {
 
 class UploadService {
   async uploadFile(file: File | Blob | FormData, category?: string): Promise<ApiResponse<UploadResponse>> {
+    console.log('📁 UploadService.uploadFile called', {
+      fileType: file instanceof FormData ? 'FormData' : typeof file,
+      category
+    });
+    
     let formData: FormData;
     
     if (file instanceof FormData) {
       formData = file;
+      console.log('📦 Using provided FormData');
     } else {
       formData = new FormData();
       formData.append('file', file);
       if (category) {
         formData.append('category', category);
       }
+      console.log('📦 Created new FormData with category:', category);
     }
 
-    return await apiService.post<UploadResponse>(API_ENDPOINTS.UPLOAD.FILE, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    console.log('🌐 Calling API endpoint:', API_ENDPOINTS.UPLOAD.FILE);
+    
+    // Let React Native handle the Content-Type header for FormData automatically
+    const response = await apiService.post<UploadResponse>(API_ENDPOINTS.UPLOAD.FILE, formData);
+    
+    console.log('📤 Upload service response:', response);
+    return response;
   }
 
   async uploadProfilePhoto(file: File | Blob | FormData): Promise<ApiResponse<UploadResponse>> {

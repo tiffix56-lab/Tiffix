@@ -103,7 +103,26 @@ const Profile = () => {
   ];
 
   const handleMenuPress = (route: string) => {
-    router.push(`/(profile)${route}`);
+    if (route === '/logout') {
+      // Show confirmation dialog for logout
+      Alert.alert(
+        'Confirm Logout',
+        'Are you sure you want to logout?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Logout',
+            style: 'destructive',
+            onPress: () => router.push(`/(profile)${route}`),
+          },
+        ]
+      );
+    } else {
+      router.push(`/(profile)${route}`);
+    }
   };
 
   const handlePhotoPress = async () => {
@@ -162,35 +181,57 @@ const Profile = () => {
     try {
       setUploadingPhoto(true);
       
-      // Create FormData for file upload
+      console.log('📱 Starting photo upload from profile page...', {
+        uri: asset.uri,
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize
+      });
+      
+      // Create FormData for file upload with proper React Native format
       const formData = new FormData();
-      formData.append('file', {
+      
+      // For React Native, we need to create the file object with specific structure
+      const fileObject = {
         uri: asset.uri,
         type: asset.mimeType || 'image/jpeg',
-        name: asset.fileName || 'profile.jpg',
-      } as any);
+        name: asset.fileName || `profile_${Date.now()}.jpg`,
+      };
+      
+      console.log('📦 File object for upload:', fileObject);
+      
+      formData.append('file', fileObject as any);
       formData.append('category', 'profile');
 
+      console.log('🚀 Calling upload service...');
       const uploadResponse = await uploadService.uploadProfilePhoto(formData as any);
       
+      console.log('📤 Upload response:', uploadResponse);
+      
       if (uploadResponse.success && uploadResponse.data) {
+        console.log('✅ Upload successful, updating user profile...');
+        
         // Update user profile with new avatar URL
         const updateResponse = await userService.updateUserProfile({
           avatar: uploadResponse.data.url,
         });
         
+        console.log('👤 Profile update response:', updateResponse);
+        
         if (updateResponse.success) {
           Alert.alert('Success', 'Profile photo updated successfully');
           fetchUserData(); // Refresh user data
         } else {
-          Alert.alert('Error', 'Failed to update profile photo');
+          console.error('❌ Profile update failed:', updateResponse.message);
+          Alert.alert('Error', updateResponse.message || 'Failed to update profile photo');
         }
       } else {
-        Alert.alert('Error', 'Failed to upload photo');
+        console.error('❌ Upload failed:', uploadResponse.message);
+        Alert.alert('Error', uploadResponse.message || 'Failed to upload photo');
       }
     } catch (error) {
-      console.error('Photo upload error:', error);
-      Alert.alert('Error', 'Failed to upload photo');
+      console.error('❌ Photo upload error:', error);
+      Alert.alert('Error', 'Failed to upload photo. Please try again.');
     } finally {
       setUploadingPhoto(false);
     }
@@ -217,7 +258,7 @@ const Profile = () => {
             <View className="relative mb-4">
               <Image
                 source={{
-                  uri: user?.avatar || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
+                  uri: user?.avatar || user?.profilePicture || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
                 }}
                 className="h-24 w-24 rounded-full"
                 resizeMode="cover"
@@ -243,7 +284,7 @@ const Profile = () => {
               <Text
                 className="text-xl font-semibold text-black dark:text-white"
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                {user?.fullName || 'User'}
+                {user?.name || user?.fullName || 'User'}
               </Text>
             )}
           </View>

@@ -19,12 +19,18 @@ class ApiService {
     }
   }
 
-  async post<T>(url: string, data?: any): Promise<ApiResponse<T>> {
+  async post<T>(url: string, data?: any, config?: any): Promise<ApiResponse<T>> {
     try {
       console.log('🌐 API POST request to:', url);
-      console.log('📦 Request payload:', JSON.stringify(data, null, 2));
       
-      const response: AxiosResponse = await api.post(url, data);
+      // Don't log FormData content as it can't be stringified
+      if (data instanceof FormData) {
+        console.log('📦 Request payload: FormData upload');
+      } else {
+        console.log('📦 Request payload:', JSON.stringify(data, null, 2));
+      }
+      
+      const response: AxiosResponse = await api.post(url, data, config);
       
       console.log('✅ API POST response:', response.data);
       return {

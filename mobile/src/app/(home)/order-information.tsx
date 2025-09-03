@@ -107,12 +107,16 @@ const OrderInformation = () => {
                   </Text>
                   <Text
                     className="text-base text-black dark:text-white"
-                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    style={{ fontFamily: 'Poppins_500Medium' }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail">
                     {parsedOrderData.selectedMenu.foodTitle}
                   </Text>
                   <Text
                     className="text-sm text-zinc-500 dark:text-zinc-400"
-                    style={{ fontFamily: 'Poppins_400Regular' }}>
+                    style={{ fontFamily: 'Poppins_400Regular' }}
+                    numberOfLines={3}
+                    ellipsizeMode="tail">
                     {parsedOrderData.selectedMenu.description.short}
                   </Text>
                 </View>
@@ -122,15 +126,17 @@ const OrderInformation = () => {
             
             {/* Subscription Details */}
             <View className="mb-4">
-              <View className="mb-3 flex-row justify-between">
+              <View className="mb-3 flex-row justify-between items-start">
                 <Text
-                  className="text-base text-black dark:text-white"
+                  className="text-base text-black dark:text-white flex-shrink-0"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
                   Subscription Plan:
                 </Text>
                 <Text
-                  className="text-base text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  className="text-base text-black dark:text-white flex-1 text-right ml-2"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}
+                  numberOfLines={2}
+                  ellipsizeMode="tail">
                   {parsedOrderData.selectedSubscription.planName}
                 </Text>
               </View>
@@ -158,30 +164,34 @@ const OrderInformation = () => {
                   {parsedOrderData.deliveryDate}
                 </Text>
               </View>
-              <View className="mb-3 flex-row justify-between">
+              <View className="mb-3">
                 <Text
-                  className="text-base text-black dark:text-white"
+                  className="text-base text-black dark:text-white mb-2"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
                   Meal Times:
                 </Text>
                 <Text
                   className="text-base text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}
+                  numberOfLines={2}
+                  ellipsizeMode="tail">
                   {[
                     parsedOrderData.lunchEnabled ? `Lunch: ${parsedOrderData.lunchTime}` : null,
                     parsedOrderData.dinnerEnabled ? `Dinner: ${parsedOrderData.dinnerTime}` : null
                   ].filter(Boolean).join(', ')}
                 </Text>
               </View>
-              <View className="flex-row justify-between">
+              <View>
                 <Text
-                  className="text-base text-black dark:text-white"
+                  className="text-base text-black dark:text-white mb-2"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
                   Address:
                 </Text>
                 <Text
                   className="text-base text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}
+                  numberOfLines={3}
+                  ellipsizeMode="tail">
                   {parsedOrderData.deliveryAddress.label}
                 </Text>
               </View>

@@ -168,9 +168,11 @@ router.route('/admin/promo-codes/:id/stats').get(authentication, authorization([
 // User subscription purchase routes
 router.route('/subscription-purchase/initiate').post(authentication, subscriptionPurchaseController.initiatePurchase)
 router.route('/subscription-purchase/verify-payment').post(authentication, subscriptionPurchaseController.verifyPayment)
+router.route('/subscription-purchase/check-payment-status/:orderId').get(authentication, subscriptionPurchaseController.checkPaymentStatus)
 
 // PhonePe callback routes (public - no authentication required for webhooks)
 router.route('/payments/phonepe/callback').post(subscriptionPurchaseController.phonepeCallback)
+router.route('/payments/phonepe/callback').get(subscriptionPurchaseController.phonepeCallback)
 router.route('/payments/phonepe/refund-callback').post(subscriptionPurchaseController.phonepeRefundCallback)
 
 // User subscription management
@@ -285,5 +287,9 @@ router.route('/admin/reviews/stats').get(authentication, authorization([EUserRol
 router.route('/public/subscriptions/:subscriptionId/reviews').get(reviewController.getSubscriptionReviews)
 router.route('/public/vendors/:vendorId/reviews').get(reviewController.getPublicVendorReviews)
 router.route('/public/orders/:orderId/review').get(reviewController.getOrderReview)
+
+// ############### FILE UPLOAD ROUTES ####################
+// File upload route with authentication (users can upload their own files)
+router.route('/upload-file').post(authentication, uploadFiles, apiController.uploadFile)
 
 export default router

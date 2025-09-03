@@ -13,6 +13,9 @@ export interface OrderData {
   dinnerTime: string;
   lunchEnabled: boolean;
   dinnerEnabled: boolean;
+  orderId?: string;
+  userSubscriptionId?: string;
+  paymentAmount?: number;
 }
 
 export const orderStore = {

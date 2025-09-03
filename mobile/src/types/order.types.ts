@@ -23,14 +23,14 @@ export interface InitiatePurchaseRequest {
   subscriptionId: string;
   promoCode?: string;
   deliveryAddress: {
-    label: string;
     street: string;
     city: string;
     state: string;
+    country: string;
     zipCode: string;
     coordinates: {
-      latitude: number;
-      longitude: number;
+      type: "Point";
+      coordinates: [number, number];
     };
   };
   mealTimings: {

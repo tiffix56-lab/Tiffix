@@ -56,6 +56,46 @@ class OrderService {
     return response;
   }
 
+  async checkSubscriptionStatus(userSubscriptionId: string): Promise<ApiResponse<{ 
+    subscription: any;
+    status: string;
+  }>> {
+    console.log('Checking subscription status for:', userSubscriptionId);
+    console.log('🔗 Status check endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${userSubscriptionId}`);
+    
+    const response = await apiService.get<{ 
+      subscription: any;
+      status: string;
+    }>(
+      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${userSubscriptionId}`
+    );
+    
+    console.log('📊 Subscription status response:', response);
+    return response;
+  }
+
+  async checkPaymentStatus(orderId: string): Promise<ApiResponse<{
+    status: string;
+    paymentStatus: string;
+    subscription?: any;
+    message?: string;
+  }>> {
+    console.log('Checking payment status for orderId:', orderId);
+    console.log('🔗 Payment status endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/check-payment-status/${orderId}`);
+    
+    const response = await apiService.get<{
+      status: string;
+      paymentStatus: string;
+      subscription?: any;
+      message?: string;
+    }>(
+      `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/check-payment-status/${orderId}`
+    );
+    
+    console.log('💳 Payment status response:', response);
+    return response;
+  }
+
   async getMyOrders(): Promise<ApiResponse<{ orders: any[] }>> {
     try {
       const response = await apiService.get<{ orders: any[] }>(

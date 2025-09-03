@@ -731,13 +731,43 @@ export default {
     // PhonePe callback handler for payment completion
     phonepeCallback: async (req, res, next) => {
         try {
-            console.log('PhonePe callback received:', req.body);
+            console.log('=== PHONEPE WEBHOOK RECEIVED ===');
+            console.log('Headers:', JSON.stringify(req.headers, null, 2));
+            console.log('Body:', JSON.stringify(req.body, null, 2));
+            console.log('Query params:', JSON.stringify(req.query, null, 2));
+            console.log('URL path:', req.path);
             
             const signature = req.headers['x-verify'];
             const event = req.body;
 
-            // Handle webhook with payment service
-            await paymentService.handleWebhook(event, signature);
+            console.log('Webhook signature:', signature);
+            console.log('Event keys:', Object.keys(event));
+            
+            if (req.method === 'GET') {
+                console.log('GET callback received - extracting orderId from query');
+                const { orderId } = req.query;
+                
+                if (orderId) {
+                    const transaction = await Transaction.findOne({
+                        $or: [
+                            { gatewayOrderId: orderId },
+                            { transactionId: orderId }
+                        ]
+                    });
+                    
+                    if (transaction) {
+                        console.log('Transaction found via GET callback:', transaction._id);
+                        await paymentService.processSuccessfulPayment(
+                            transaction.transactionId,
+                            { phonepe_transaction_id: orderId }
+                        );
+                    } else {
+                        console.log('Transaction not found for GET callback orderId:', orderId);
+                    }
+                }
+            } else {
+                await paymentService.handleWebhook(event, signature);
+            }
 
             // Respond to PhonePe with success
             res.status(200).json({
@@ -746,11 +776,11 @@ export default {
             });
 
         } catch (error) {
-            console.error('PhonePe callback error:', {
-                message: error.message,
-                stack: error.stack,
-                body: req.body
-            });
+            console.error('=== PHONEPE CALLBACK ERROR ===');
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            console.error('Request body:', JSON.stringify(req.body, null, 2));
+            console.error('Request headers:', JSON.stringify(req.headers, null, 2));
 
             // Always respond with 200 to PhonePe to avoid retry storms
             res.status(200).json({
@@ -760,7 +790,72 @@ export default {
         }
     },
 
-    // PhonePe refund callback handler
+    checkPaymentStatus: async (req, res, next) => {
+        try {
+            const { orderId } = req.params;
+            const userId = req.authenticatedUser._id;
+            
+            console.log('Checking payment status for orderId:', orderId, 'userId:', userId);
+
+            const transaction = await Transaction.findOne({ 
+                gatewayOrderId: orderId,
+                userId
+            }).populate('userSubscriptionId');
+
+            if (!transaction) {
+                console.log('Transaction not found for orderId:', orderId);
+                return httpError(next, new Error('Transaction not found'), req, 404);
+            }
+
+            console.log('Transaction found:', {
+                id: transaction._id,
+                status: transaction.status,
+                userSubscriptionId: transaction.userSubscriptionId
+            });
+
+            if (transaction.status === 'success' && transaction.userSubscriptionId) {
+                const userSubscription = await UserSubscription.findById(
+                    transaction.userSubscriptionId
+                ).populate('subscriptionId', 'planName category');
+
+                if (userSubscription && userSubscription.status === 'active') {
+                    console.log('Payment verified - subscription is active');
+                    return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                        status: 'success',
+                        paymentStatus: 'completed',
+                        subscription: {
+                            id: userSubscription._id,
+                            status: userSubscription.status,
+                            planName: userSubscription.subscriptionId?.planName,
+                            startDate: userSubscription.startDate,
+                            endDate: userSubscription.endDate
+                        }
+                    });
+                }
+            }
+
+            const status = transaction.status === 'failed' ? 'failed' : 'pending';
+            console.log('Payment status:', status);
+            
+            return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                status,
+                paymentStatus: status,
+                message: status === 'pending' ? 'Payment is being processed' : 'Payment failed'
+            });
+
+        } catch (error) {
+            console.error('Check payment status error:', {
+                message: error.message,
+                stack: error.stack,
+                orderId: req.params?.orderId,
+                userId: req.authenticatedUser?._id
+            });
+
+            const errorMessage = error.message || 'Internal server error while checking payment status';
+            return httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
     phonepeRefundCallback: async (req, res, next) => {
         try {
             console.log('PhonePe refund callback received:', req.body);

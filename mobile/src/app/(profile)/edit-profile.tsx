@@ -41,7 +41,7 @@ const EditProfile = () => {
       if (response.success && response.data) {
         const userData = response.data.user;
         setUser(userData);
-        setName(userData.fullName || '');
+        setName(userData.name || userData.fullName || '');
         setMobileNumber(userData.phoneNumber || '');
         setGender(userData.gender || 'male');
       } else {
@@ -64,7 +64,7 @@ const EditProfile = () => {
     try {
       setSaving(true);
       const updateData = {
-        fullName: name.trim(),
+        name: name.trim(),
         phoneNumber: mobileNumber.trim() || undefined,
         gender: gender,
       };
@@ -114,37 +114,59 @@ const EditProfile = () => {
     try {
       setUploading(true);
       
-      const formData = new FormData();
-      formData.append('file', {
+      console.log('📱 Starting profile image upload from edit-profile...', {
         uri: asset.uri,
-        type: asset.mimeType || 'image/jpeg',
-        name: asset.fileName || 'profile.jpg',
-      } as any);
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize
+      });
+      
+      const formData = new FormData();
+      
+      // Create proper file object for React Native
+      const fileData = {
+        uri: asset.uri,
+        type: asset.mimeType || 'image/jpeg', 
+        name: asset.fileName || `profile_edit_${Date.now()}.jpg`,
+      };
+      
+      console.log('📦 File data for upload:', fileData);
+      
+      formData.append('file', fileData as any);
       formData.append('category', 'profile');
 
-      const response = await uploadService.uploadProfilePhoto(formData as any);
+      console.log('🚀 Uploading profile image...');
+      const response = await uploadService.uploadProfilePhoto(formData);
+      
+      console.log('📤 Profile image upload response:', response);
       
       if (response.success && response.data) {
+        console.log('✅ Image upload successful, updating user profile...');
+        
         // Update user profile with new image URL
         const updateResponse = await userService.updateUserProfile({
-          fullName: name.trim(),
+          name: name.trim(),
           phoneNumber: mobileNumber.trim() || undefined,
           gender: gender,
-          profilePicture: response.data.url,
+          avatar: response.data.url,
         });
+        
+        console.log('👤 User profile update response:', updateResponse);
         
         if (updateResponse.success) {
           Alert.alert('Success', 'Profile picture updated successfully');
           fetchUserData(); // Refresh user data
         } else {
-          Alert.alert('Error', 'Failed to update profile picture');
+          console.error('❌ Profile update failed:', updateResponse.message);
+          Alert.alert('Error', updateResponse.message || 'Failed to update profile picture');
         }
       } else {
+        console.error('❌ Image upload failed:', response.message);
         Alert.alert('Error', response.message || 'Failed to upload image');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to upload image');
-      console.error('Upload error:', error);
+      console.error('❌ Profile image upload error:', error);
+      Alert.alert('Error', 'Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -171,7 +193,7 @@ const EditProfile = () => {
             <View className="relative mb-4">
               <Image
                 source={{
-                  uri: user?.profilePicture || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
+                  uri: user?.avatar || user?.profilePicture || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
                 }}
                 className="h-24 w-24 rounded-full"
                 resizeMode="cover"
@@ -194,7 +216,7 @@ const EditProfile = () => {
             <Text
               className="text-xl font-semibold text-black dark:text-white"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              {user?.fullName || 'User'}
+              {user?.name || user?.fullName || 'User'}
             </Text>
           </View>
           <View className="h-10 w-10" />
