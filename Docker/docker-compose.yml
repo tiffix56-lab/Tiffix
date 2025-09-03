@@ -16,20 +16,20 @@ services:
     profiles:
       - development
 
-  client:
-    container_name: client
+  admin:
+    container_name: admin
     build:
       context: ..
-      dockerfile: ./Docker/Dockerfile.client
-      target: client-development
+      dockerfile: ./Docker/Dockerfile.admin
+      target: admin-development
     ports:
       - '5173:5173'
     restart: always
     env_file: 
       - ../.env.development
     volumes:
-      - ../client/src:/app/src
-      - ../client/package.json:/app/package.json
+      - ../admin/src:/app/src
+      - ../admin/package.json:/app/package.json
       - /usr/src/app/node_modules
     depends_on:
       - server
@@ -60,12 +60,12 @@ services:
       - development
 
   # Production environment
-  prod-client:
-    container_name: prod-client
+  prod-admin:
+    container_name: prod-admin
     build:
       context: ..
-      dockerfile: ./Docker/Dockerfile.client
-      target: client-production
+      dockerfile: ./Docker/Dockerfile.admin
+      target: admin-production
     restart: always
     env_file:
       - ../.env.production
@@ -108,17 +108,17 @@ services:
       - prod-net
     depends_on:
       - prod-server
-      - prod-client
+      - prod-admin
     profiles:
       - production
 
   # QA environment
-  qa-client:
-    container_name: qa-client
+  qa-admin:
+    container_name: qa-admin
     build:
       context: ..
-      dockerfile: ./Docker/Dockerfile.client
-      target: client-qa
+      dockerfile: ./Docker/Dockerfile.admin
+      target: admin-qa
     restart: always
     env_file:
       - ../.env.qa
@@ -161,7 +161,7 @@ services:
       - qa-net
     depends_on:
       - qa-server
-      - qa-client
+      - qa-admin
     profiles:
       - qa
 

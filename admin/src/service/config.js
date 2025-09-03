@@ -1,12 +1,12 @@
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios, { AxiosError } from 'axios';
 
-const baseURL = import.meta.env.VITE_SERVER_URL as string;
+const baseURL = import.meta.env.VITE_SERVER_URL || "https://tiffix.in/api/v1";
 if (!baseURL) {
-    throw new Error(`VITE_SERVER_URL environment variable is not defined ${baseURL}`);
-  }
+  throw new Error(`VITE_SERVER_URL environment variable is not defined ${baseURL}`);
+}
 
-const servicesAxiosInstance: AxiosInstance = axios.create({
-    baseURL: baseURL
+const servicesAxiosInstance = axios.create({
+  baseURL: baseURL
 });
 
 servicesAxiosInstance.interceptors.request.use(
@@ -17,7 +17,7 @@ servicesAxiosInstance.interceptors.request.use(
     }
     return config;
   },
-  (error: unknown) => {
+  (error) => {
     if (error instanceof AxiosError) {
       return Promise.reject(new Error(error.message || 'Request failed'));
     }
