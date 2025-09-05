@@ -766,6 +766,7 @@ export default {
                     }
                 }
             } else {
+                console.log('POST webhook received');
                 await paymentService.handleWebhook(event, signature);
             }
 
@@ -814,8 +815,10 @@ export default {
                     
                     // Check if payment was already processed
                     if (transaction.status === 'success') {
+                        console.log('Transaction already processed successfully');
                         paymentSuccess = true;
-                    } else {
+                    } else if (transaction.status === 'pending') {
+                        console.log('Processing pending transaction...');
                         // Process the payment
                         try {
                             const result = await paymentService.processSuccessfulPayment(
@@ -823,9 +826,24 @@ export default {
                                 { phonepe_transaction_id: orderId }
                             );
                             paymentSuccess = result && result.success !== false;
+                            console.log('Payment processing completed:', paymentSuccess);
                         } catch (processError) {
                             console.error('Payment processing error:', processError);
                             paymentSuccess = false;
+                        }
+                    } else {
+                        console.log('Transaction status is:', transaction.status);
+                        paymentSuccess = false;
+                    }
+                    
+                    // Double-check by verifying the UserSubscription status
+                    if (userSubscriptionId) {
+                        const userSubscription = await UserSubscription.findById(userSubscriptionId);
+                        if (userSubscription && userSubscription.status === 'active') {
+                            console.log('UserSubscription is active, payment verified');
+                            paymentSuccess = true;
+                        } else {
+                            console.log('UserSubscription status:', userSubscription?.status);
                         }
                     }
                 } else {

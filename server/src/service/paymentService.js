@@ -102,41 +102,78 @@ class PaymentService {
 
     async processSuccessfulPayment(transactionId, paymentData) {
         try {
+            console.log('=== PROCESSING SUCCESSFUL PAYMENT ===');
+            console.log('Transaction ID:', transactionId);
+            console.log('Payment Data:', paymentData);
+
             const transaction = await Transaction.findOne({ transactionId })
                 .populate('subscriptionId')
-                .populate('userId')
+                .populate('userId');
 
             if (!transaction) {
-                throw new Error('Transaction not found')
+                console.error('Transaction not found for transactionId:', transactionId);
+                throw new Error('Transaction not found');
             }
+
+            console.log('Transaction found:', {
+                id: transaction._id,
+                status: transaction.status,
+                userSubscriptionId: transaction.userSubscriptionId
+            });
 
             if (transaction.status === 'success') {
+                console.log('Transaction already processed successfully');
                 return {
-                    success: false,
-                    error: 'Transaction already processed'
-                }
+                    success: true,
+                    message: 'Transaction already processed'
+                };
             }
 
-            // Mark transaction as successful
-            await transaction.markAsSuccess(
-                paymentData.phonepe_transaction_id,
-                transaction.subscriptionId.mealsPerPlan
-            )
+            // Update transaction status
+            transaction.status = 'success';
+            transaction.paymentId = paymentData.phonepe_transaction_id;
+            transaction.phonepeTransactionId = paymentData.phonepe_transaction_id;
+            transaction.completedAt = new Date();
+            await transaction.save();
 
-            // Create user subscription
-            const userSubscription = await this.createUserSubscription(transaction)
+            console.log('Transaction updated to success');
+
+            // Find and activate the user subscription
+            const userSubscription = await UserSubscription.findById(transaction.userSubscriptionId);
+            if (!userSubscription) {
+                console.error('UserSubscription not found for ID:', transaction.userSubscriptionId);
+                throw new Error('User subscription not found');
+            }
+
+            console.log('UserSubscription found:', {
+                id: userSubscription._id,
+                status: userSubscription.status
+            });
+
+            // Activate subscription if not already active
+            if (userSubscription.status !== 'active') {
+                userSubscription.status = 'active';
+                userSubscription.paymentCompletedAt = new Date();
+                await userSubscription.save();
+                console.log('UserSubscription activated');
+            }
 
             // Update subscription purchase count
-            await transaction.subscriptionId.incrementPurchases()
+            if (transaction.subscriptionId) {
+                await transaction.subscriptionId.incrementPurchases();
+                console.log('Subscription purchase count updated');
+            }
 
             return {
                 success: true,
                 transaction,
                 userSubscription,
-            }
+            };
         } catch (error) {
-            console.error('Payment processing error:', error)
-            throw error
+            console.error('=== PAYMENT PROCESSING ERROR ===');
+            console.error('Error:', error.message);
+            console.error('Stack:', error.stack);
+            throw error;
         }
     }
 

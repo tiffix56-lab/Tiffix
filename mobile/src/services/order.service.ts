@@ -61,13 +61,13 @@ class OrderService {
     status: string;
   }>> {
     console.log('Checking subscription status for:', userSubscriptionId);
-    console.log('🔗 Status check endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${userSubscriptionId}`);
+    console.log('🔗 Status check endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/subscription-status/${userSubscriptionId}`);
     
     const response = await apiService.get<{ 
       subscription: any;
       status: string;
     }>(
-      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${userSubscriptionId}`
+      `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/subscription-status/${userSubscriptionId}`
     );
     
     console.log('📊 Subscription status response:', response);

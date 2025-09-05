@@ -29,6 +29,15 @@
       "bundleIdentifier": "com.tiffix.mobile",
       "config": {
         "googleMapsApiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
+      },
+      "associatedDomains": ["applinks:tiffix.in"],
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "tiffix.mobile.deeplink",
+            "CFBundleURLSchemes": ["tiffix"]
+          }
+        ]
       }
     },
     "android": {
