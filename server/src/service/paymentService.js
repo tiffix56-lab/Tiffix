@@ -41,7 +41,7 @@ class PaymentService {
             const request = StandardCheckoutPayRequest.builder()
                 .merchantOrderId(orderId)
                 .amount(amount * 100) // Convert to paise
-                .redirectUrl(`${config.server.url}/v1/payments/phonepe/callback?orderId=${orderId}`)
+                .redirectUrl(`${config.server.url}/v1/payments/phonepe/redirect?orderId=${orderId}`)
                 .build();
 
             console.log('PhonePe REQUEST:', this.phonepeClient);

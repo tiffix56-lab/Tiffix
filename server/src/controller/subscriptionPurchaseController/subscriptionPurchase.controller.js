@@ -743,9 +743,6 @@ export default {
             console.log('Webhook signature:', signature);
             console.log('Event keys:', Object.keys(event));
             
-            let paymentSuccess = false;
-            let userSubscriptionId = null;
-            
             if (req.method === 'GET') {
                 console.log('GET callback received - extracting orderId from query');
                 const { orderId } = req.query;
@@ -760,64 +757,23 @@ export default {
                     
                     if (transaction) {
                         console.log('Transaction found via GET callback:', transaction._id);
-                        userSubscriptionId = transaction.userSubscriptionId;
-                        
-                        // Process the payment
-                        const result = await paymentService.processSuccessfulPayment(
+                        await paymentService.processSuccessfulPayment(
                             transaction.transactionId,
                             { phonepe_transaction_id: orderId }
                         );
-                        
-                        paymentSuccess = result && result.success !== false;
                     } else {
                         console.log('Transaction not found for GET callback orderId:', orderId);
                     }
                 }
-                
-                // For GET requests (browser redirects), redirect to mobile app
-                const deepLinkUrl = paymentSuccess 
-                    ? `tiffix://payment-success?orderId=${req.query.orderId}&userSubscriptionId=${userSubscriptionId || ''}`
-                    : `tiffix://payment-failed?orderId=${req.query.orderId}`;
-                
-                console.log('Redirecting to mobile app:', deepLinkUrl);
-                
-                // Send HTML response that attempts to redirect to the app
-                res.status(200).send(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Payment Processing</title>
-                        <meta name="viewport" content="width=device-width, initial-scale=1">
-                    </head>
-                    <body>
-                        <script>
-                            // Try to redirect to the app
-                            window.location.href = '${deepLinkUrl}';
-                            
-                            // Fallback message after a delay
-                            setTimeout(function() {
-                                document.body.innerHTML = '<div style="text-align:center; padding:50px; font-family:Arial,sans-serif;"><h2>Payment ${paymentSuccess ? 'Successful' : 'Failed'}</h2><p>Please return to the Tiffix app to continue.</p><a href="${deepLinkUrl}" style="background:#007AFF;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Open Tiffix App</a></div>';
-                            }, 2000);
-                        </script>
-                        <div style="text-align:center; padding:50px; font-family:Arial,sans-serif;">
-                            <h2>Processing payment...</h2>
-                            <p>You will be redirected to the Tiffix app shortly.</p>
-                        </div>
-                    </body>
-                    </html>
-                `);
-                return;
             } else {
-                // POST webhook
                 await paymentService.handleWebhook(event, signature);
-                
-                // Respond to PhonePe webhook with success
-                res.status(200).json({
-                    success: true,
-                    message: 'Callback processed successfully'
-                });
-                return;
             }
+
+            // Respond to PhonePe with success
+            res.status(200).json({
+                success: true,
+                message: 'Callback processed successfully'
+            });
 
         } catch (error) {
             console.error('=== PHONEPE CALLBACK ERROR ===');
@@ -831,6 +787,107 @@ export default {
                 success: false,
                 error: 'Callback processing failed'
             });
+        }
+    },
+
+    // PhonePe redirect handler for user redirects after payment
+    phonepeRedirect: async (req, res, next) => {
+        try {
+            console.log('=== PHONEPE REDIRECT RECEIVED ===');
+            console.log('Query params:', JSON.stringify(req.query, null, 2));
+            
+            const { orderId } = req.query;
+            let paymentSuccess = false;
+            let userSubscriptionId = null;
+            
+            if (orderId) {
+                const transaction = await Transaction.findOne({
+                    $or: [
+                        { gatewayOrderId: orderId },
+                        { transactionId: orderId }
+                    ]
+                });
+                
+                if (transaction) {
+                    console.log('Transaction found via redirect:', transaction._id);
+                    userSubscriptionId = transaction.userSubscriptionId;
+                    
+                    // Check if payment was already processed
+                    if (transaction.status === 'success') {
+                        paymentSuccess = true;
+                    } else {
+                        // Process the payment
+                        try {
+                            const result = await paymentService.processSuccessfulPayment(
+                                transaction.transactionId,
+                                { phonepe_transaction_id: orderId }
+                            );
+                            paymentSuccess = result && result.success !== false;
+                        } catch (processError) {
+                            console.error('Payment processing error:', processError);
+                            paymentSuccess = false;
+                        }
+                    }
+                } else {
+                    console.log('Transaction not found for redirect orderId:', orderId);
+                }
+            }
+            
+            // Redirect to mobile app
+            const deepLinkUrl = paymentSuccess 
+                ? `tiffix://payment-success?orderId=${orderId}&userSubscriptionId=${userSubscriptionId || ''}`
+                : `tiffix://payment-failed?orderId=${orderId}`;
+            
+            console.log('Redirecting to mobile app via deep link:', deepLinkUrl);
+            
+            // Send HTML response that attempts to redirect to the app
+            res.status(200).send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Payment Processing</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                </head>
+                <body>
+                    <script>
+                        // Try to redirect to the app immediately
+                        window.location.href = '${deepLinkUrl}';
+                        
+                        // Fallback message after a delay
+                        setTimeout(function() {
+                            document.body.innerHTML = '<div style="text-align:center; padding:50px; font-family:Arial,sans-serif;"><h2>Payment ${paymentSuccess ? 'Successful' : 'Failed'}</h2><p>Please return to the Tiffix app to continue.</p><a href="${deepLinkUrl}" style="background:#007AFF;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Open Tiffix App</a></div>';
+                        }, 2000);
+                    </script>
+                    <div style="text-align:center; padding:50px; font-family:Arial,sans-serif;">
+                        <h2>Processing payment...</h2>
+                        <p>You will be redirected to the Tiffix app shortly.</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            
+        } catch (error) {
+            console.error('=== PHONEPE REDIRECT ERROR ===');
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            console.error('Request query:', JSON.stringify(req.query, null, 2));
+
+            // Redirect to app with error
+            const deepLinkUrl = `tiffix://payment-failed?orderId=${req.query.orderId || ''}`;
+            res.status(200).send(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Payment Error</title></head>
+                <body>
+                    <script>window.location.href = '${deepLinkUrl}';</script>
+                    <div style="text-align:center; padding:50px; font-family:Arial,sans-serif;">
+                        <h2>Something went wrong</h2>
+                        <p>Please return to the Tiffix app.</p>
+                        <a href="${deepLinkUrl}">Open Tiffix App</a>
+                    </div>
+                </body>
+                </html>
+            `);
         }
     },
 

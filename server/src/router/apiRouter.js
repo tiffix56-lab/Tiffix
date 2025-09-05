@@ -172,6 +172,9 @@ router.route('/subscription-purchase/verify-payment').post(authentication, subsc
 router.route('/subscription-purchase/check-payment-status/:orderId').get(authentication, subscriptionPurchaseController.checkPaymentStatus)
 router.route('/subscription-purchase/subscription-status/:userSubscriptionId').get(authentication, subscriptionPurchaseController.getSubscriptionStatus)
 
+// PhonePe redirect route (for user redirects after payment)
+router.route('/payments/phonepe/redirect').get(subscriptionPurchaseController.phonepeRedirect)
+
 // PhonePe callback routes (public - no authentication required for webhooks)
 router.route('/payments/phonepe/callback').post(subscriptionPurchaseController.phonepeCallback)
 router.route('/payments/phonepe/callback').get(subscriptionPurchaseController.phonepeCallback)
