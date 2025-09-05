@@ -1,8 +1,24 @@
 export interface UserSubscription {
   _id: string;
   userId: string;
-  subscriptionId: string;
-  transactionId: string;
+  subscriptionId: {
+    _id: string;
+    planName: string;
+    duration: string;
+    durationDays: number;
+    originalPrice: number;
+    discountedPrice: number;
+    category: 'food_vendor' | 'home_chef';
+    features: string[];
+  };
+  transactionId: {
+    _id: string;
+    amount: number;
+    finalAmount: number;
+    paymentId: string;
+    completedAt: string;
+    status: string;
+  };
   creditsGranted: number;
   creditsUsed: number;
   skipCreditAvailable: number;
@@ -10,7 +26,6 @@ export interface UserSubscription {
   startDate: string;
   endDate: string;
   deliveryAddress: {
-    label: string;
     street: string;
     city: string;
     state: string;
@@ -33,20 +48,39 @@ export interface UserSubscription {
   originalPrice: number;
   finalPrice: number;
   discountApplied: number;
-  promoCodeUsed?: string;
+  promoCodeUsed?: {
+    _id: string;
+    code: string;
+    discountType: string;
+    discountValue: number;
+  };
   status: 'pending' | 'active' | 'paused' | 'cancelled' | 'completed' | 'expired';
-  autoRenewal: boolean;
-  vendorAssigned?: string;
+  vendorDetails: {
+    isVendorAssigned: boolean;
+    vendorSwitchUsed: boolean;
+    currentVendor?: {
+      vendorId: string;
+      vendorType: string;
+      assignedBy: string;
+      assignedAt: string;
+    };
+  };
   createdAt: string;
   updatedAt: string;
-  subscription?: {
-    planName: string;
-    duration: string;
-    durationDays: number;
-    mealsPerPlan: number;
-    userSkipMealPerPlan: number;
-    category: 'vendor' | 'home_chef';
-    features: string[];
+  // Enhanced fields from backend
+  analytics?: {
+    remainingDays: number;
+    dailyMealCount: number;
+    remainingCredits: number;
+    creditsUsedPercentage: number;
+    isActive: boolean;
+    isExpired: boolean;
+  };
+  formattedDates?: {
+    startDate: string;
+    endDate: string;
+    startDateTime: string;
+    endDateTime: string;
   };
 }
 

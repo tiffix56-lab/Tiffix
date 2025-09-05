@@ -105,15 +105,23 @@ const MySubscription = () => {
   };
 
   const getCurrentSubscriptions = () => {
-    return subscriptions.filter(sub => 
-      sub.status === 'active' || sub.status === 'pending'
-    );
+    return subscriptions.filter(sub => {
+      // Use analytics data if available, otherwise fallback to status
+      if (sub.analytics?.isActive !== undefined) {
+        return sub.analytics.isActive && !sub.analytics.isExpired;
+      }
+      return sub.status === 'active' || sub.status === 'pending';
+    });
   };
 
   const getPastSubscriptions = () => {
-    return subscriptions.filter(sub => 
-      sub.status === 'completed' || sub.status === 'cancelled' || sub.status === 'expired'
-    );
+    return subscriptions.filter(sub => {
+      // Use analytics data if available, otherwise fallback to status
+      if (sub.analytics?.isExpired !== undefined) {
+        return sub.analytics.isExpired || sub.status === 'completed' || sub.status === 'cancelled';
+      }
+      return sub.status === 'completed' || sub.status === 'cancelled' || sub.status === 'expired';
+    });
   };
 
   return (
@@ -256,7 +264,7 @@ const MySubscription = () => {
                         <Text
                           className="text-xl font-semibold text-black dark:text-white"
                           style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                          {subscription.subscription?.planName || 'Subscription Plan'}
+                          {subscription.subscriptionId?.planName || 'Subscription Plan'}
                         </Text>
                         <View className={`rounded-md px-3 py-1 ${getStatusColor(subscription.status)}`}>
                           <Text
@@ -269,7 +277,7 @@ const MySubscription = () => {
 
                       {/* Benefits */}
                       <View className="mb-4 space-y-2">
-                        {subscription.subscription?.features?.map((feature, index) => (
+                        {subscription.subscriptionId?.features?.map((feature, index) => (
                           <View key={index} className="flex-row items-center">
                             <View className="mr-3 h-2 w-2 rounded-full bg-gray-400" />
                             <Text
@@ -292,10 +300,56 @@ const MySubscription = () => {
                           <Text
                             className="text-sm text-green-600 dark:text-green-400"
                             style={{ fontFamily: 'Poppins_400Regular' }}>
-                            {subscription.creditsGranted - subscription.creditsUsed} Meals Remaining
+                            {subscription.analytics?.remainingCredits || (subscription.creditsGranted - subscription.creditsUsed)} Meals Remaining
                           </Text>
                         </View>
+                        {subscription.analytics?.remainingDays !== undefined && subscription.analytics.remainingDays > 0 && (
+                          <View className="flex-row items-center">
+                            <View className="mr-3 h-2 w-2 rounded-full bg-blue-500" />
+                            <Text
+                              className="text-sm text-blue-600 dark:text-blue-400"
+                              style={{ fontFamily: 'Poppins_400Regular' }}>
+                              {subscription.analytics.remainingDays} Days Left
+                            </Text>
+                          </View>
+                        )}
+                        {subscription.vendorDetails?.isVendorAssigned && (
+                          <View className="flex-row items-center">
+                            <View className="mr-3 h-2 w-2 rounded-full bg-purple-500" />
+                            <Text
+                              className="text-sm text-purple-600 dark:text-purple-400"
+                              style={{ fontFamily: 'Poppins_400Regular' }}>
+                              Vendor Assigned
+                            </Text>
+                          </View>
+                        )}
                       </View>
+
+                      {/* Progress Bar */}
+                      {subscription.analytics && (
+                        <View className="mb-4">
+                          <View className="mb-2 flex-row items-center justify-between">
+                            <Text
+                              className="text-xs text-gray-600 dark:text-gray-400"
+                              style={{ fontFamily: 'Poppins_400Regular' }}>
+                              Meals Used
+                            </Text>
+                            <Text
+                              className="text-xs text-gray-600 dark:text-gray-400"
+                              style={{ fontFamily: 'Poppins_500Medium' }}>
+                              {Math.round(subscription.analytics.creditsUsedPercentage)}%
+                            </Text>
+                          </View>
+                          <View className="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+                            <View 
+                              className="h-2 rounded-full bg-green-500"
+                              style={{ 
+                                width: `${Math.min(100, Math.max(0, subscription.analytics.creditsUsedPercentage))}%` 
+                              }}
+                            />
+                          </View>
+                        </View>
+                      )}
 
                       {/* Price */}
                       <View className="mb-4 items-end">
@@ -314,7 +368,7 @@ const MySubscription = () => {
                         <Text
                           className="text-sm text-gray-600 dark:text-gray-300"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
-                          {subscription.subscription?.duration || 'Custom'}
+                          {subscription.subscriptionId?.duration || 'Custom'}
                         </Text>
                       </View>
 
@@ -328,7 +382,7 @@ const MySubscription = () => {
                         <Text
                           className="ml-2 text-sm text-gray-600 dark:text-gray-300"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
-                          {formatDate(subscription.startDate)} to {formatDate(subscription.endDate)}
+                          {subscription.formattedDates?.startDate || formatDate(subscription.startDate)} to {subscription.formattedDates?.endDate || formatDate(subscription.endDate)}
                         </Text>
                       </View>
 
@@ -415,7 +469,7 @@ const MySubscription = () => {
                         <Text
                           className="text-xl font-semibold text-black dark:text-white"
                           style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                          {subscription.subscription?.planName || 'Subscription Plan'}
+                          {subscription.subscriptionId?.planName || 'Subscription Plan'}
                         </Text>
                         <View className={`rounded-md px-3 py-1 ${getStatusColor(subscription.status)}`}>
                           <Text
@@ -428,7 +482,7 @@ const MySubscription = () => {
 
                       {/* Benefits */}
                       <View className="mb-4 space-y-2">
-                        {subscription.subscription?.features?.map((feature, index) => (
+                        {subscription.subscriptionId?.features?.map((feature, index) => (
                           <View key={index} className="flex-row items-center">
                             <View className="mr-3 h-2 w-2 rounded-full bg-gray-400" />
                             <Text
@@ -465,7 +519,7 @@ const MySubscription = () => {
                         <Text
                           className="text-sm text-gray-600 dark:text-gray-300"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
-                          {subscription.subscription?.duration || 'Custom'}
+                          {subscription.subscriptionId?.duration || 'Custom'}
                         </Text>
                       </View>
 
@@ -479,7 +533,7 @@ const MySubscription = () => {
                         <Text
                           className="ml-2 text-sm text-gray-600 dark:text-gray-300"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
-                          {formatDate(subscription.startDate)} to {formatDate(subscription.endDate)}
+                          {subscription.formattedDates?.startDate || formatDate(subscription.startDate)} to {subscription.formattedDates?.endDate || formatDate(subscription.endDate)}
                         </Text>
                       </View>
 

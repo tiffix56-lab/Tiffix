@@ -185,6 +185,18 @@ export default {
                 console.log('💰 No promo code applied, final price:', finalPrice);
             }
 
+            // Add GST (18%) to the final price for payment
+            const gstRate = 0.18; // 18% GST
+            const gstAmount = Math.round(finalPrice * gstRate);
+            const finalPriceWithGST = finalPrice + gstAmount;
+            
+            console.log('💰 Price calculation:', {
+                basePrice: finalPrice,
+                gstRate: `${gstRate * 100}%`,
+                gstAmount,
+                finalPriceWithGST
+            });
+
             const subscriptionStartDate = startDate ?
                 TimezoneUtil.toIST(startDate) :
                 TimezoneUtil.now();
@@ -199,15 +211,17 @@ export default {
             const finalStartDate = TimezoneUtil.startOfDay(subscriptionStartDate);
             const finalEndDate = TimezoneUtil.endOfDay(subscriptionEndDate);
 
-            // Create payment order
+            // Create payment order with GST
             const paymentOrder = await paymentService.createOrder({
-                amount: finalPrice,
+                amount: finalPriceWithGST,
                 currency: 'INR',
                 receipt: `subscription_${Date.now()}`,
                 notes: {
                     userId: userId.toString(),
                     subscriptionId: subscriptionId.toString(),
-                    type: 'subscription_purchase'
+                    type: 'subscription_purchase',
+                    baseAmount: finalPrice.toString(),
+                    gstAmount: gstAmount.toString()
                 }
             });
 
@@ -215,18 +229,21 @@ export default {
             const transaction = new Transaction({
                 userId,
                 subscriptionId,
-                amount: finalPrice,
-                finalAmount: finalPrice,
+                amount: finalPriceWithGST,
+                finalAmount: finalPriceWithGST,
                 transactionId: paymentOrder.id,
                 gatewayTransactionId: paymentOrder.id,
                 originalAmount: subscription.discountedPrice,
                 discountAmount: discountApplied,
-                finalAmount: finalPrice, promoCodeUsed: promoCodeData?._id || null,
+                promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
                 type: 'subscription_purchase',
                 paymentGateway: 'phonepe',
                 paymentMethod: 'phonepe',
-                gatewayOrderId: paymentOrder.id
+                gatewayOrderId: paymentOrder.id,
+                // Store GST details
+                gstAmount: gstAmount,
+                baseAmount: finalPrice
             });
 
             await transaction.save();
@@ -257,7 +274,9 @@ export default {
 
             httpResponse(req, res, 201, responseMessage.customMessage("PURCHASE INITIATED"), {
                 orderId: paymentOrder.id,
-                amount: finalPrice,
+                amount: finalPriceWithGST,
+                baseAmount: finalPrice,
+                gstAmount: gstAmount,
                 currency: 'INR',
                 userSubscriptionId: userSubscription._id,
                 phonepeKey: process.env.PHONEPAY_CLIENT_ID,
@@ -269,6 +288,12 @@ export default {
                     startDate: TimezoneUtil.format(finalStartDate, 'date'),
                     endDate: TimezoneUtil.format(finalEndDate, 'date'),
                     timezone: 'Asia/Kolkata (IST)'
+                },
+                priceBreakdown: {
+                    basePrice: finalPrice,
+                    gstRate: '18%',
+                    gstAmount: gstAmount,
+                    totalAmount: finalPriceWithGST
                 }
             });
 
@@ -444,8 +469,13 @@ export default {
     // Get user subscriptions with filters
     getUserSubscriptions: async (req, res, next) => {
         try {
+            console.log('=== GET USER SUBSCRIPTIONS ===');
+            console.log('User ID:', req.authenticatedUser._id);
+            console.log('Query params:', req.query);
+
             const { error } = validateJoiSchema(ValidateUserSubscriptionQuery, req.query);
             if (error) {
+                console.log('Validation error:', error);
                 return httpError(next, error, req, 422);
             }
 
@@ -473,13 +503,18 @@ export default {
                 if (endDate) query.startDate.$lte = TimezoneUtil.endOfDay(endDate);
             }
 
+            console.log('Query for UserSubscription:', query);
+
             const userSubscriptions = await UserSubscription.find(query)
-                .populate('subscriptionId', 'planName category duration durationDays originalPrice discountedPrice')
+                .populate('subscriptionId', 'planName category duration durationDays originalPrice discountedPrice features')
                 .populate('vendorDetails.currentVendor.vendorId', 'businessInfo')
                 .populate('promoCodeUsed', 'code discountType discountValue')
+                .populate('transactionId', 'amount finalAmount paymentId completedAt status')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit));
+
+            console.log('Found user subscriptions:', userSubscriptions.length);
 
             // Filter by category if specified
             let filteredSubscriptions = userSubscriptions;
@@ -489,11 +524,41 @@ export default {
                 );
             }
 
+            // Enhanced subscription data with computed fields
+            const enhancedSubscriptions = filteredSubscriptions.map(sub => {
+                const remainingDays = sub.getDaysRemaining();
+                const dailyMealCount = sub.getDailyMealCount();
+                const remainingCredits = sub.getRemainingCredits();
+                
+                return {
+                    ...sub.toObject(),
+                    analytics: {
+                        remainingDays: Math.max(0, remainingDays),
+                        dailyMealCount,
+                        remainingCredits,
+                        creditsUsedPercentage: (sub.creditsUsed / sub.creditsGranted) * 100,
+                        isActive: sub.isActive(),
+                        isExpired: sub.CheckisExpired()
+                    },
+                    formattedDates: {
+                        startDate: TimezoneUtil.format(sub.startDate, 'date'),
+                        endDate: TimezoneUtil.format(sub.endDate, 'date'),
+                        startDateTime: TimezoneUtil.format(sub.startDate, 'datetime'),
+                        endDateTime: TimezoneUtil.format(sub.endDate, 'datetime')
+                    }
+                };
+            });
+
             const totalSubscriptions = await UserSubscription.countDocuments(query);
             const totalPages = Math.ceil(totalSubscriptions / limit);
 
+            console.log('Sending subscriptions response:', {
+                total: enhancedSubscriptions.length,
+                totalInDB: totalSubscriptions
+            });
+
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                subscriptions: filteredSubscriptions,
+                subscriptions: enhancedSubscriptions,
                 pagination: {
                     currentPage: Number(page),
                     totalPages,
@@ -858,31 +923,8 @@ export default {
             
             console.log('Redirecting to mobile app via deep link:', deepLinkUrl);
             
-            // Send HTML response that attempts to redirect to the app
-            res.status(200).send(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Payment Processing</title>
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
-                </head>
-                <body>
-                    <script>
-                        // Try to redirect to the app immediately
-                        window.location.href = '${deepLinkUrl}';
-                        
-                        // Fallback message after a delay
-                        setTimeout(function() {
-                            document.body.innerHTML = '<div style="text-align:center; padding:50px; font-family:Arial,sans-serif;"><h2>Payment ${paymentSuccess ? 'Successful' : 'Failed'}</h2><p>Please return to the Tiffix app to continue.</p><a href="${deepLinkUrl}" style="background:#007AFF;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Open Tiffix App</a></div>';
-                        }, 2000);
-                    </script>
-                    <div style="text-align:center; padding:50px; font-family:Arial,sans-serif;">
-                        <h2>Processing payment...</h2>
-                        <p>You will be redirected to the Tiffix app shortly.</p>
-                    </div>
-                </body>
-                </html>
-            `);
+            // Redirect directly to the app
+            res.redirect(302, deepLinkUrl);
             
         } catch (error) {
             console.error('=== PHONEPE REDIRECT ERROR ===');
