@@ -743,6 +743,9 @@ export default {
             console.log('Webhook signature:', signature);
             console.log('Event keys:', Object.keys(event));
             
+            let paymentSuccess = false;
+            let userSubscriptionId = null;
+            
             if (req.method === 'GET') {
                 console.log('GET callback received - extracting orderId from query');
                 const { orderId } = req.query;
@@ -757,23 +760,64 @@ export default {
                     
                     if (transaction) {
                         console.log('Transaction found via GET callback:', transaction._id);
-                        await paymentService.processSuccessfulPayment(
+                        userSubscriptionId = transaction.userSubscriptionId;
+                        
+                        // Process the payment
+                        const result = await paymentService.processSuccessfulPayment(
                             transaction.transactionId,
                             { phonepe_transaction_id: orderId }
                         );
+                        
+                        paymentSuccess = result && result.success !== false;
                     } else {
                         console.log('Transaction not found for GET callback orderId:', orderId);
                     }
                 }
+                
+                // For GET requests (browser redirects), redirect to mobile app
+                const deepLinkUrl = paymentSuccess 
+                    ? `tiffix://payment-success?orderId=${req.query.orderId}&userSubscriptionId=${userSubscriptionId || ''}`
+                    : `tiffix://payment-failed?orderId=${req.query.orderId}`;
+                
+                console.log('Redirecting to mobile app:', deepLinkUrl);
+                
+                // Send HTML response that attempts to redirect to the app
+                res.status(200).send(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Payment Processing</title>
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                    </head>
+                    <body>
+                        <script>
+                            // Try to redirect to the app
+                            window.location.href = '${deepLinkUrl}';
+                            
+                            // Fallback message after a delay
+                            setTimeout(function() {
+                                document.body.innerHTML = '<div style="text-align:center; padding:50px; font-family:Arial,sans-serif;"><h2>Payment ${paymentSuccess ? 'Successful' : 'Failed'}</h2><p>Please return to the Tiffix app to continue.</p><a href="${deepLinkUrl}" style="background:#007AFF;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Open Tiffix App</a></div>';
+                            }, 2000);
+                        </script>
+                        <div style="text-align:center; padding:50px; font-family:Arial,sans-serif;">
+                            <h2>Processing payment...</h2>
+                            <p>You will be redirected to the Tiffix app shortly.</p>
+                        </div>
+                    </body>
+                    </html>
+                `);
+                return;
             } else {
+                // POST webhook
                 await paymentService.handleWebhook(event, signature);
+                
+                // Respond to PhonePe webhook with success
+                res.status(200).json({
+                    success: true,
+                    message: 'Callback processed successfully'
+                });
+                return;
             }
-
-            // Respond to PhonePe with success
-            res.status(200).json({
-                success: true,
-                message: 'Callback processed successfully'
-            });
 
         } catch (error) {
             console.error('=== PHONEPE CALLBACK ERROR ===');
@@ -884,6 +928,57 @@ export default {
                 success: false,
                 error: 'Refund callback processing failed'
             });
+        }
+    },
+
+    // Get subscription status by userSubscriptionId
+    getSubscriptionStatus: async (req, res, next) => {
+        try {
+            const { userSubscriptionId } = req.params;
+            const userId = req.authenticatedUser._id;
+            
+            console.log('Checking subscription status for userSubscriptionId:', userSubscriptionId, 'userId:', userId);
+
+            const userSubscription = await UserSubscription.findOne({ 
+                _id: userSubscriptionId,
+                userId
+            }).populate('subscriptionId', 'planName category');
+
+            if (!userSubscription) {
+                console.log('User subscription not found for userSubscriptionId:', userSubscriptionId);
+                return httpError(next, new Error('Subscription not found'), req, 404);
+            }
+
+            console.log('User subscription found:', {
+                id: userSubscription._id,
+                status: userSubscription.status,
+                planName: userSubscription.subscriptionId?.planName
+            });
+
+            return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                status: userSubscription.status,
+                subscription: {
+                    id: userSubscription._id,
+                    status: userSubscription.status,
+                    planName: userSubscription.subscriptionId?.planName,
+                    category: userSubscription.subscriptionId?.category,
+                    startDate: userSubscription.startDate,
+                    endDate: userSubscription.endDate,
+                    creditsGranted: userSubscription.creditsGranted,
+                    creditsUsed: userSubscription.creditsUsed
+                }
+            });
+
+        } catch (error) {
+            console.error('Get subscription status error:', {
+                message: error.message,
+                stack: error.stack,
+                userSubscriptionId: req.params?.userSubscriptionId,
+                userId: req.authenticatedUser?._id
+            });
+
+            const errorMessage = error.message || 'Internal server error while checking subscription status';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     }
 };

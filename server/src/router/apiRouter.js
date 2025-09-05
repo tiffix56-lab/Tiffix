@@ -170,6 +170,7 @@ router.route('/admin/promo-codes/:id/stats').get(authentication, authorization([
 router.route('/subscription-purchase/initiate').post(authentication, subscriptionPurchaseController.initiatePurchase)
 router.route('/subscription-purchase/verify-payment').post(authentication, subscriptionPurchaseController.verifyPayment)
 router.route('/subscription-purchase/check-payment-status/:orderId').get(authentication, subscriptionPurchaseController.checkPaymentStatus)
+router.route('/subscription-purchase/subscription-status/:userSubscriptionId').get(authentication, subscriptionPurchaseController.getSubscriptionStatus)
 
 // PhonePe callback routes (public - no authentication required for webhooks)
 router.route('/payments/phonepe/callback').post(subscriptionPurchaseController.phonepeCallback)
