@@ -93,7 +93,7 @@ export default {
     getReferralLeaderboard: async (req, res, next) => {
         try {
             const { limit = 10 } = req.query;
-            const limitNumber = Math.min(parseInt(limit) || 10, 50); // Max 50 entries
+            const limitNumber = Math.min(parseInt(limit) || 10, 50);
 
             const leaderboard = await referralService.getReferralLeaderboard(limitNumber);
 

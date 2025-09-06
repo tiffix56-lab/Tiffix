@@ -24,7 +24,6 @@ export default {
                 return httpError(next, error, req, 422)
             }
 
-            // Check if promo code already exists
             const existingPromoCode = await PromoCode.findOne({
                 code: value.code.toUpperCase()
             })
@@ -32,7 +31,6 @@ export default {
                 return httpError(next, new Error('Promo code already exists'), req, 409)
             }
 
-            // Validate applicable subscriptions if provided
             if (value.applicableSubscriptions && value.applicableSubscriptions.length > 0) {
                 const subscriptions = await Subscription.find({
                     _id: { $in: value.applicableSubscriptions }
@@ -182,7 +180,6 @@ export default {
                 return httpError(next, new Error('Promo code not found'), req, 404)
             }
 
-            // Check if code is being changed and if new code already exists
             if (value.code && value.code.toUpperCase() !== existingPromoCode.code) {
                 const codeExists = await PromoCode.findOne({
                     code: value.code.toUpperCase(),

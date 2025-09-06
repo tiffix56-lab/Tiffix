@@ -35,7 +35,7 @@ export default {
             if (allMenuIds.length > 0) {
                 // Remove duplicates to handle cases where same menu is used for lunch and dinner
                 const uniqueMenuIds = [...new Set(allMenuIds)];
-                
+
                 const validMenus = await Menu.find({
                     _id: { $in: uniqueMenuIds },
                     vendorCategory: subscription.category,
@@ -71,13 +71,11 @@ export default {
             await newDailyMeal.save();
             const dailyMeal = newDailyMeal;
 
-            // AUTO-CREATE ORDERS FOR ALL USERS WITH THIS SUBSCRIPTION
             let orderCreationResult = null;
             try {
                 orderCreationResult = await orderCreationService.createOrdersForDailyMeal(dailyMeal, userId);
             } catch (error) {
                 console.error('❌ Error in order creation:', error);
-                // Continue - meal was set successfully, but order creation had issues
             }
 
             const finalMeal = await DailyMeal.findById(dailyMeal._id)
@@ -111,10 +109,8 @@ export default {
                 sortOrder = 'desc'
             } = req.query;
 
-            // Build query object
             const query = { isActive };
 
-            // Handle date filtering
             if (startDate && endDate) {
                 // Date range query
                 query.mealDate = {
@@ -122,13 +118,10 @@ export default {
                     $lte: TimezoneUtil.endOfDay(new Date(endDate))
                 };
             } else if (startDate) {
-                // From specific date onwards
                 query.mealDate = { $gte: TimezoneUtil.startOfDay(new Date(startDate)) };
             } else if (endDate) {
-                // Up to specific date
                 query.mealDate = { $lte: TimezoneUtil.endOfDay(new Date(endDate)) };
             } else {
-                // Default to today's meals if no date filter provided
                 const today = TimezoneUtil.startOfDay();
                 const tomorrow = TimezoneUtil.addDays(1, today);
                 query.mealDate = {
@@ -137,7 +130,6 @@ export default {
                 };
             }
 
-            // Additional filters
             if (vendorType) {
                 query.vendorType = vendorType;
             }
@@ -146,11 +138,9 @@ export default {
                 query.subscriptionId = subscriptionId;
             }
 
-            // Build sort object
             const sortObj = {};
             sortObj[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-            // Execute query with pagination
             const meals = await DailyMeal.find(query)
                 .populate('subscriptionId', 'planName category')
                 .populate('selectedMenus.lunchMenus selectedMenus.dinnerMenus')
@@ -161,7 +151,6 @@ export default {
 
             const total = await DailyMeal.countDocuments(query);
 
-            // Determine response type based on query
             const isToday = !startDate && !endDate;
             const isDateRange = startDate || endDate;
 

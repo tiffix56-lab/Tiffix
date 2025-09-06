@@ -9,7 +9,7 @@ import {
     ValidateVendorCustomerQuery,
     ValidateVendorAnalyticsQuery
 } from '../../service/validationService.js'
-
+import LocationZone from '../../models/locationZone.model.js'
 export default {
     getAllMyCustomers: async (req, res, next) => {
         try {
@@ -75,7 +75,6 @@ export default {
             const sort = {};
             sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-            // Aggregation pipeline for complex filtering
             const pipeline = [
                 {
                     $match: query
@@ -109,7 +108,6 @@ export default {
                 { $unwind: { path: '$promoCodeUsed', preserveNullAndEmptyArrays: true } }
             ];
 
-            // Search filter (after lookups)
             if (search) {
                 pipeline.push({
                     $match: {
@@ -141,10 +139,8 @@ export default {
                 });
             }
 
-            // Add sort
             pipeline.push({ $sort: sort });
 
-            // Get total count
             const countPipeline = [...pipeline, { $count: 'total' }];
             const countResult = await UserSubscription.aggregate(countPipeline);
             const totalCustomers = countResult.length > 0 ? countResult[0].total : 0;
@@ -152,7 +148,6 @@ export default {
             // Add pagination
             pipeline.push({ $skip: skip }, { $limit: Number(limit) });
 
-            // Project required fields
             pipeline.push({
                 $project: {
                     _id: 1,
@@ -182,7 +177,6 @@ export default {
                     'subscriptionId.durationDays': 1,
                     'promoCodeUsed.code': 1,
                     'promoCodeUsed.discountValue': 1,
-                    // Calculated fields
                     daysRemaining: {
                         $ceil: {
                             $divide: [
@@ -300,13 +294,11 @@ export default {
             const { subscriptionId } = req.params;
             const vendorId = req.authenticatedUser._id;
 
-            // Find vendor profile
             const vendorProfile = await VendorProfile.findOne({ userId: vendorId });
             if (!vendorProfile) {
                 return httpError(next, new Error('Vendor profile not found'), req, 404);
             }
 
-            // Find subscription and verify it belongs to this vendor
             const subscription = await UserSubscription.findOne({
                 _id: subscriptionId,
                 'vendorDetails.currentVendor.vendorId': vendorProfile._id,
@@ -323,12 +315,10 @@ export default {
                 return httpError(next, new Error('Customer subscription not found or not assigned to you'), req, 404);
             }
 
-            // Get delivery zone info
-            const LocationZone = (await import('../../models/locationZone.model.js')).default;
+
             const deliveryZones = await LocationZone.findByPincode(subscription.deliveryAddress.zipCode);
             const deliveryZone = deliveryZones && deliveryZones.length > 0 ? deliveryZones[0] : null;
 
-            // Calculate analytics
             const remainingDays = subscription.getDaysRemaining();
             const dailyMealCount = subscription.getDailyMealCount();
             const totalMealsExpected = Math.max(0, remainingDays * dailyMealCount);
@@ -336,11 +326,9 @@ export default {
                 ? (subscription.creditsUsed / subscription.creditsGranted) * 100
                 : 0;
 
-            // Get meal preferences from user
             const mealTypes = subscription.getMealTypes();
             const customerPreferences = subscription.userId?.preferences || {};
 
-            // Calculate assignment duration
             const assignedAt = subscription.vendorDetails.currentVendor?.assignedAt;
             const assignmentDuration = assignedAt
                 ? Math.floor((TimezoneUtil.now() - assignedAt) / (1000 * 60 * 60 * 24))

@@ -23,7 +23,6 @@ export default {
                 return httpError(next, new Error('User with this email already exists'), req, 400);
             }
 
-            // Parse phone number like in register function
             const { countryCode, isoCode, internationalNumber } = quicker.parsePhoneNumber(`+${value.user.phoneNumber}`);
             if (!countryCode || !isoCode || !internationalNumber) {
                 return httpError(next, new Error('Invalid phone number format'), req, 422);
@@ -54,7 +53,6 @@ export default {
             const newUser = new User(userData);
             const savedUser = await newUser.save();
 
-            // Create vendor profile
             const vendorProfileData = {
                 ...value.vendorProfile,
                 userId: savedUser._id
@@ -128,7 +126,6 @@ export default {
 
             const total = await VendorProfile.countDocuments(filter);
 
-            // Calculate stats for the current query
             const stats = {
                 totalVendors: total,
                 verifiedVendors: await VendorProfile.countDocuments({ ...filter, isVerified: true }),
@@ -389,7 +386,6 @@ export default {
 
             // Update user info if provided
             if (value.user && Object.keys(value.user).length > 0) {
-                // Check if email is being updated and if it already exists
                 if (value.user.emailAddress) {
                     const existingUser = await User.findOne({
                         emailAddress: value.user.emailAddress,
@@ -403,7 +399,6 @@ export default {
                 await User.findByIdAndUpdate(userId, value.user, { new: true });
             }
 
-            // Update vendor profile if provided
             let updatedProfile = vendorProfile;
             if (value.vendorProfile && Object.keys(value.vendorProfile).length > 0) {
                 updatedProfile = await VendorProfile.findByIdAndUpdate(vendorProfile._id, value.vendorProfile, {
@@ -412,7 +407,6 @@ export default {
                 });
             }
 
-            // Populate with updated user info
             await updatedProfile.populate('userId', 'name gender emailAddress phoneNumber');
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {

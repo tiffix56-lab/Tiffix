@@ -10,11 +10,11 @@ import { EUserRole } from '../../constant/application.js';
 
 export default {
     // ############### USER CONTROLLERS ###############
-    
+
     getUserOrders: async (req, res, next) => {
         try {
             const { userId, role } = req.authenticatedUser;
-            
+
             // Only users can access this endpoint
             if (role !== EUserRole.USER) {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
@@ -27,14 +27,12 @@ export default {
 
             const { status, search, startDate, endDate, page = 1, limit = 20, days } = value;
 
-            // Build query
             const query = { userId };
-            
+
             if (status) {
                 query.status = status;
             }
-            
-            // Handle date filters
+
             if (startDate && endDate) {
                 query.deliveryDate = {
                     $gte: TimezoneUtil.startOfDay(startDate),
@@ -45,7 +43,6 @@ export default {
             } else if (endDate) {
                 query.deliveryDate = { $lte: TimezoneUtil.endOfDay(endDate) };
             } else if (days) {
-                // Get orders for next X days from today
                 const today = TimezoneUtil.startOfDay();
                 const futureDate = TimezoneUtil.addDays(days, today);
                 query.deliveryDate = {
@@ -56,7 +53,6 @@ export default {
 
             let orders;
             if (search) {
-                // Use aggregation for search functionality
                 orders = await Order.aggregate([
                     { $match: query },
                     {
@@ -107,7 +103,6 @@ export default {
                     { $limit: parseInt(limit) }
                 ])
             } else {
-                // Use regular find with populate when no search
                 orders = await Order.find(query)
                     .populate('selectedMenus', 'foodTitle foodImage price')
                     .populate('vendorDetails.vendorId', 'businessInfo.businessName')
@@ -169,7 +164,6 @@ export default {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
 
-            // Check if order can be skipped (2 hours before delivery)
             const now = TimezoneUtil.now();
             const deliveryDateTime = TimezoneUtil.parseTimeString(order.deliveryTime, order.deliveryDate);
             const timeDifference = deliveryDateTime.getTime() - now.getTime();
@@ -179,7 +173,6 @@ export default {
                 return httpError(next, new Error(`Cannot skip ${order.mealType} order. Must skip at least 2 hours before delivery time (${order.deliveryTime})`), req, 400);
             }
 
-            // Check if order status allows skipping
             if (order.status !== EOrderStatus.UPCOMING) {
                 return httpError(next, new Error(`Cannot skip order with status: ${order.status}`), req, 400);
             }
@@ -232,7 +225,7 @@ export default {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
 
-            // Check if order can be cancelled (2 hours before delivery for consistency)
+            // Check if order can be cancelled (2 hours before delivery )
             const now = TimezoneUtil.now();
             const deliveryDateTime = TimezoneUtil.parseTimeString(order.deliveryTime, order.deliveryDate);
             const timeDifference = deliveryDateTime.getTime() - now.getTime();
@@ -242,14 +235,12 @@ export default {
                 return httpError(next, new Error(`Cannot cancel ${order.mealType} order. Must cancel at least 2 hours before delivery time (${order.deliveryTime})`), req, 400);
             }
 
-            // Check if order status allows cancelling
             if (order.status !== EOrderStatus.UPCOMING) {
                 return httpError(next, new Error(`Cannot cancel order with status: ${order.status}`), req, 400);
             }
 
             await order.cancelOrder(cancelReason, userId);
 
-            // Deduct credits for cancellation (no refund)
             const userSubscription = await UserSubscription.findById(order.userSubscriptionId);
             if (userSubscription.canUseCredits(1)) {
                 await userSubscription.useCredits(1);
@@ -257,7 +248,7 @@ export default {
 
             const updatedOrder = await Order.findById(orderId).populate('selectedMenus', 'foodTitle');
 
-            httpResponse(req, res, 200, responseMessage.SUCCESS, { 
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 order: updatedOrder,
                 message: `${order.mealType} order cancelled. Credits have been deducted (no refund).`
             });
@@ -290,14 +281,12 @@ export default {
 
             const { status, search, startDate, endDate, page = 1, limit = 20, days } = value;
 
-            // Build query for vendor orders
             const query = { 'vendorDetails.vendorId': vendorProfile._id };
-            
+
             if (status) {
                 query.status = status;
             }
-            
-            // Handle date filters
+
             if (startDate && endDate) {
                 query.deliveryDate = {
                     $gte: TimezoneUtil.startOfDay(startDate),
@@ -318,7 +307,6 @@ export default {
 
             let orders;
             if (search) {
-                // Use aggregation for search functionality
                 orders = await Order.aggregate([
                     { $match: query },
                     {
@@ -369,7 +357,6 @@ export default {
                     { $limit: parseInt(limit) }
                 ])
             } else {
-                // Use regular find with populate when no search
                 orders = await Order.find(query)
                     .populate('userId', 'name phoneNumber')
                     .populate('selectedMenus', 'foodTitle foodImage')
@@ -420,23 +407,20 @@ export default {
                 return httpError(next, new Error(responseMessage.ERROR.NOT_FOUND('Order')), req, 404);
             }
 
-            // Check if order is in a final state (cannot be updated)
             const finalStates = [EOrderStatus.SKIPPED, EOrderStatus.CANCELLED];
             if (finalStates.includes(order.status)) {
                 return httpError(next, new Error(`Cannot update order status. Order is already ${order.status}.`), req, 400);
             }
 
-            // Prevent setting order to final states through this endpoint
             if (finalStates.includes(status)) {
                 return httpError(next, new Error(`Cannot set order status to ${status}. Use skipOrder or cancelOrder endpoints instead.`), req, 400);
             }
 
-            // Validate logical status progression (prevent going backwards in delivery flow)
             const statusProgression = {
                 [EOrderStatus.UPCOMING]: [EOrderStatus.PREPARING],
                 [EOrderStatus.PREPARING]: [EOrderStatus.OUT_FOR_DELIVERY],
                 [EOrderStatus.OUT_FOR_DELIVERY]: [EOrderStatus.DELIVERED],
-                [EOrderStatus.DELIVERED]: [] // Final state, no progression allowed
+                [EOrderStatus.DELIVERED]: []
             };
 
             if (order.status !== status) {
@@ -446,19 +430,16 @@ export default {
                 }
             }
 
-            // Vendors can only update their own orders
             if (role === EUserRole.VENDOR) {
                 const vendorProfile = await VendorProfile.findOne({ userId });
                 if (!vendorProfile || order.vendorDetails.vendorId.toString() !== vendorProfile._id.toString()) {
                     return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
                 }
-                
-                // Vendors cannot mark order as delivered - only admin can confirm delivery
+
                 if (status === EOrderStatus.DELIVERED) {
                     return httpError(next, new Error('Vendors cannot mark orders as delivered. Only admin can confirm delivery through the confirm-delivery endpoint.'), req, 403);
                 }
-                
-                // Vendors can only set specific statuses
+
                 const allowedVendorStatuses = [EOrderStatus.PREPARING, EOrderStatus.OUT_FOR_DELIVERY];
                 if (!allowedVendorStatuses.includes(status)) {
                     return httpError(next, new Error(`Vendors can only set status to: ${allowedVendorStatuses.join(', ')}`), req, 403);
@@ -496,9 +477,8 @@ export default {
 
             const { status, search, startDate, endDate, page = 1, limit = 20, days, vendorId } = value;
 
-            // Build query
             const query = {};
-            
+
             if (status) {
                 query.status = status;
             }
@@ -506,8 +486,7 @@ export default {
             if (vendorId) {
                 query['vendorDetails.vendorId'] = vendorId;
             }
-            
-            // Handle date filters
+
             if (startDate && endDate) {
                 query.deliveryDate = {
                     $gte: TimezoneUtil.startOfDay(startDate),
@@ -528,7 +507,6 @@ export default {
 
             let orders;
             if (search) {
-                // Use aggregation for search functionality
                 orders = await Order.aggregate([
                     { $match: query },
                     {
@@ -590,7 +568,6 @@ export default {
                     { $limit: parseInt(limit) }
                 ])
             } else {
-                // Use regular find with populate when no search
                 orders = await Order.find(query)
                     .populate('userId', 'name phoneNumber emailAddress')
                     .populate('selectedMenus', 'foodTitle')
@@ -687,7 +664,6 @@ export default {
                 return httpError(next, new Error(responseMessage.ERROR.NOT_FOUND('Order')), req, 404);
             }
 
-            // Check authorization based on role
             if (role === EUserRole.USER) {
                 if (order.userId.toString() !== userId.toString()) {
                     return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
@@ -698,9 +674,7 @@ export default {
                     return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
                 }
             }
-            // Admin can view any order
 
-            // Add additional info for users
             const orderWithInfo = {
                 ...order.toJSON(),
                 ...(role === EUserRole.USER && {

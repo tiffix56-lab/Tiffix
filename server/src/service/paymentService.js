@@ -373,19 +373,19 @@ class PaymentService {
         try {
             console.log('=== HANDLING PAYMENT CAPTURED ===');
             console.log('Payment data:', JSON.stringify(payment, null, 2));
-            
+
             // Try multiple ways to find the transaction
             let transaction = await Transaction.findOne({
                 gatewayOrderId: payment.order_id
             });
-            
+
             if (!transaction) {
                 console.log('Transaction not found by gatewayOrderId, trying transactionId');
                 transaction = await Transaction.findOne({
                     transactionId: payment.order_id
                 });
             }
-            
+
             if (!transaction) {
                 console.log('Transaction not found by transactionId, trying merchantTransactionId');
                 transaction = await Transaction.findOne({

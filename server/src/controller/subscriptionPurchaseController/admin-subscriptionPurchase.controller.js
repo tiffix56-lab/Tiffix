@@ -9,7 +9,8 @@ import {
     ValidateAdminSubscriptionQuery,
     ValidateAdminStatsQuery
 } from '../../service/validationService.js'
-
+import VendorAssignmentRequest from '../../models/vendorSwitchRequest.model.js'
+import LocationZone from '../../models/locationZone.model.js'
 export default {
     getAllPurchaseSubscriptions: async (req, res, next) => {
         try {
@@ -57,7 +58,6 @@ export default {
                 }
             }
 
-            // Vendor assignment filter
             if (vendorAssigned) {
                 if (vendorAssigned === 'assigned') {
                     query['vendorDetails.isVendorAssigned'] = true;
@@ -66,30 +66,25 @@ export default {
                 }
             }
 
-            // Date range filter
             if (dateFrom || dateTo) {
                 query.createdAt = {};
                 if (dateFrom) query.createdAt.$gte = TimezoneUtil.toIST(dateFrom);
                 if (dateTo) query.createdAt.$lte = TimezoneUtil.endOfDay(dateTo);
             }
 
-            // Price range filter
             if (priceMin || priceMax) {
                 query.finalPrice = {};
                 if (priceMin) query.finalPrice.$gte = parseFloat(priceMin);
                 if (priceMax) query.finalPrice.$lte = parseFloat(priceMax);
             }
 
-            // Specific subscription filter
             if (subscriptionId) {
                 query.subscriptionId = subscriptionId;
             }
 
-            // Build sort object
             const sort = {};
             sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-            // Execute aggregation pipeline for complex filtering
             const pipeline = [
                 {
                     $lookup: {
@@ -137,12 +132,10 @@ export default {
                 { $unwind: { path: '$promoCodeUsed', preserveNullAndEmptyArrays: true } }
             ];
 
-            // Add match stage for filtering
             if (Object.keys(query).length > 0) {
                 pipeline.push({ $match: query });
             }
 
-            // Category filter (after lookup)
             if (category) {
                 pipeline.push({
                     $match: {
@@ -151,18 +144,14 @@ export default {
                 });
             }
 
-            // Add sort stage
             pipeline.push({ $sort: sort });
 
-            // Get total count
             const countPipeline = [...pipeline, { $count: 'total' }];
             const countResult = await UserSubscription.aggregate(countPipeline);
             const totalSubscriptions = countResult.length > 0 ? countResult[0].total : 0;
 
-            // Add pagination
             pipeline.push({ $skip: skip }, { $limit: Number(limit) });
 
-            // Project only needed fields
             pipeline.push({
                 $project: {
                     _id: 1,
@@ -203,7 +192,6 @@ export default {
             const subscriptions = await UserSubscription.aggregate(pipeline);
             const totalPages = Math.ceil(totalSubscriptions / limit);
 
-            // Get summary statistics
             const statsQuery = {};
             if (Object.keys(query).length > 0) {
                 Object.assign(statsQuery, query);
@@ -309,8 +297,7 @@ export default {
                 return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
-            // Get related vendor assignment requests
-            const VendorAssignmentRequest = (await import('../../models/vendorSwitchRequest.model.js')).default;
+
             const vendorRequests = await VendorAssignmentRequest.find({
                 userSubscriptionId: subscriptionId
             })
@@ -319,7 +306,6 @@ export default {
                 .populate('processedBy', 'name')
                 .sort({ createdAt: -1 });
 
-            // Calculate analytics
             const remainingDays = subscription.getDaysRemaining();
             const dailyMealCount = subscription.getDailyMealCount();
             const totalMealsExpected = Math.max(0, remainingDays * dailyMealCount);
@@ -327,8 +313,7 @@ export default {
                 ? (subscription.creditsUsed / subscription.creditsGranted) * 100
                 : 0;
 
-            // Get delivery zone information
-            const LocationZone = (await import('../../models/locationZone.model.js')).default;
+
             const deliveryZones = await LocationZone.findByPincode(subscription.deliveryAddress.zipCode);
             const deliveryZone = deliveryZones && deliveryZones.length > 0 ? deliveryZones[0] : null;
 

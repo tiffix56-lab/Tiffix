@@ -12,12 +12,12 @@ import { EUserRole } from '../../constant/application.js';
 
 export default {
     // ############### USER CONTROLLERS ###############
-    
+
     createReview: async (req, res, next) => {
         try {
             const { userId, role } = req.authenticatedUser;
             const { body } = req;
-            
+
             if (role !== EUserRole.USER) {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
@@ -27,10 +27,10 @@ export default {
                 return httpError(next, error, req, 422);
             }
 
-            const { 
-                reviewType, 
-                subscriptionId, 
-                vendorId, 
+            const {
+                reviewType,
+                subscriptionId,
+                vendorId,
                 orderId,
                 rating,
                 reviewText
@@ -46,39 +46,39 @@ export default {
                     subscriptionId,
                     status: 'active'
                 });
-                
+
                 if (!userSubscription) {
                     return httpError(next, new Error('You can only review subscriptions you have purchased'), req, 403);
                 }
-                
+
                 targetItem = await Subscription.findById(subscriptionId);
                 canReview = true;
-                
+
             } else if (reviewType === EReviewType.VENDOR) {
                 const userSubscription = await UserSubscription.findOne({
                     userId,
                     'vendorDetails.currentVendor.vendorId': vendorId,
                     status: 'active'
                 });
-                
+
                 if (!userSubscription) {
                     return httpError(next, new Error('You can only review vendors you have been assigned'), req, 403);
                 }
-                
+
                 targetItem = await VendorProfile.findById(vendorId);
                 canReview = true;
-                
+
             } else if (reviewType === EReviewType.ORDER) {
                 const order = await Order.findOne({
                     _id: orderId,
                     userId,
                     status: EOrderStatus.DELIVERED
                 });
-                
+
                 if (!order) {
                     return httpError(next, new Error('You can only review orders that have been delivered to you'), req, 403);
                 }
-                
+
                 targetItem = order;
                 canReview = true;
             }
@@ -87,7 +87,6 @@ export default {
                 return httpError(next, new Error('Invalid review target'), req, 400);
             }
 
-            // Check for existing review
             const existingReview = await Review.findOne({
                 userId,
                 reviewType,
@@ -133,7 +132,7 @@ export default {
     getUserReviews: async (req, res, next) => {
         try {
             const { userId, role } = req.authenticatedUser;
-            
+
             if (role !== EUserRole.USER) {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
@@ -173,7 +172,7 @@ export default {
             const { userId, role } = req.authenticatedUser;
             const { reviewId } = req.params;
             const { body } = req;
-            
+
             if (role !== EUserRole.USER) {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
@@ -223,7 +222,7 @@ export default {
         try {
             const { userId, role } = req.authenticatedUser;
             const { reviewId } = req.params;
-            
+
             if (role !== EUserRole.USER) {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
@@ -314,10 +313,10 @@ export default {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
 
-            const { 
-                reviewType, 
-                status = EReviewStatus.ACTIVE, 
-                page = 1, 
+            const {
+                reviewType,
+                status = EReviewStatus.ACTIVE,
+                page = 1,
                 limit = 20,
                 minRating,
                 maxRating,
@@ -326,11 +325,11 @@ export default {
             } = req.query;
 
             const query = { status };
-            
+
             if (reviewType) query.reviewType = reviewType;
             if (minRating) query.rating = { $gte: parseInt(minRating) };
             if (maxRating) query.rating = { ...query.rating, $lte: parseInt(maxRating) };
-            
+
             if (startDate || endDate) {
                 query.createdAt = {};
                 if (startDate) query.createdAt.$gte = TimezoneUtil.startOfDay(new Date(startDate));

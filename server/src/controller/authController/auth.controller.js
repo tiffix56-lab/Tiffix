@@ -257,7 +257,6 @@ export default {
                 console.warn('User profile creation failed:', profileError.message);
             }
 
-            // Process referral rewards after email verification
             let referralRewardMessage = '';
             if (user.referral.referredBy && !user.referral.isReferralUsed) {
                 try {
@@ -622,7 +621,7 @@ export default {
 
             const locationData = {
                 type: 'Point',
-                coordinates: [lng, lat], // GeoJSON format: [longitude, latitude]
+                coordinates: [lng, lat],
                 address: address || null,
                 city: city || null,
                 state: state || null,
@@ -632,14 +631,11 @@ export default {
 
             await user.updateLocation(locationData);
 
-            // Check if user has profile and handle default address
             let userProfile = await userProfileModel.findOne({ userId });
             if (userProfile) {
-                // Check if user has no default address or no addresses at all
                 const hasDefaultAddress = userProfile.addresses && userProfile.addresses.some(addr => addr.isDefault);
 
                 if (!hasDefaultAddress || userProfile.addresses.length === 0) {
-                    // Create a new address from location data and mark as default
                     const newAddress = {
                         label: 'Default Address',
                         street: address || 'Not specified',
@@ -653,7 +649,6 @@ export default {
                         isDefault: true
                     };
 
-                    // If there are existing addresses, mark them as non-default
                     if (userProfile.addresses && userProfile.addresses.length > 0) {
                         userProfile.addresses.forEach(addr => {
                             addr.isDefault = false;

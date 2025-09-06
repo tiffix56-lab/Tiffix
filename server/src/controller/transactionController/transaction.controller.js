@@ -201,7 +201,6 @@ export default {
             const start = startDate ? TimezoneUtil.toIST(startDate) : TimezoneUtil.addDays(-30)
             const end = endDate ? TimezoneUtil.endOfDay(endDate) : TimezoneUtil.endOfDay()
 
-            // Get overall transaction statistics
             const dashboardStats = await Transaction.getDashboardStats(start, end)
 
             const stats = {
@@ -219,7 +218,6 @@ export default {
                 stats.total.amount += stat.totalAmount
             })
 
-            // Get revenue analytics with grouping
             let groupByField
             switch (groupBy) {
                 case 'month':
@@ -266,7 +264,6 @@ export default {
             // Get payment method statistics
             const paymentMethodStats = await Transaction.getPaymentMethodStats(start, end)
 
-            // Get subscription type breakdown
             const subscriptionBreakdown = await Transaction.aggregate([
                 {
                     $match: {
@@ -301,7 +298,6 @@ export default {
                 }
             ])
 
-            // Calculate growth percentage (compare with previous period)
             const previousPeriodStart = new Date(start.getTime() - (end.getTime() - start.getTime()))
             const previousStats = await Transaction.getDashboardStats(previousPeriodStart, start)
 
@@ -326,7 +322,6 @@ export default {
                 .sort({ createdAt: -1 })
                 .limit(10)
 
-            // Get failure analysis
             const failureAnalysis = await Transaction.aggregate([
                 {
                     $match: {
@@ -367,7 +362,6 @@ export default {
     },
 
 
-    // Admin: Process refund
     processRefund: async (req, res, next) => {
         try {
             const { id } = req.params
@@ -437,7 +431,6 @@ export default {
 
             const total = await Transaction.countDocuments(filter)
 
-            // Group by failure reasons
             const failureReasons = await Transaction.aggregate([
                 {
                     $match: filter
@@ -513,7 +506,6 @@ export default {
                 res.setHeader('Content-Type', 'text/csv')
                 res.setHeader('Content-Disposition', 'attachment; filename=transactions.csv')
 
-                // Simple CSV conversion (in production, use proper CSV library)
                 const csvHeaders = Object.keys(csvData[0] || {}).join(',')
                 const csvRows = csvData.map(row => Object.values(row).join(','))
                 const csvContent = [csvHeaders, ...csvRows].join('\n')

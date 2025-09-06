@@ -54,7 +54,6 @@ export default {
 
             let requests;
             if (search) {
-                // Use aggregation for search functionality when search is provided
                 requests = await VendorAssignmentRequest.aggregate([
                     { $match: query },
                     {
@@ -114,7 +113,6 @@ export default {
                     { $limit: Number(limit) }
                 ])
             } else {
-                // Use regular find with populate when no search is provided
                 requests = await VendorAssignmentRequest.find(query)
                     .populate('userId', 'name emailAddress phoneNumber')
                     .populate('userSubscriptionId', 'startDate endDate deliveryAddress mealTiming')
@@ -234,7 +232,6 @@ export default {
                 return httpError(next, new Error('Assignment request not found'), req, 404)
             }
 
-            // Get subscription to determine category
             const userSubscription = request.userSubscriptionId
             await userSubscription.populate('subscriptionId')
             const subscriptionCategory = userSubscription.subscriptionId.category
@@ -294,7 +291,6 @@ export default {
             const { vendorId, adminNotes } = req.body
             const adminUserId = req.authenticatedUser._id
 
-            // Validate request exists and is pending
             const request = await VendorAssignmentRequest.findById(requestId)
                 .populate('userSubscriptionId')
 
@@ -318,10 +314,8 @@ export default {
 
             const userSubscription = request.userSubscriptionId
 
-            // Assign vendor to the subscription
             await userSubscription.assignVendor(vendorId, vendor.vendorType, adminUserId)
 
-            // Mark the switch as used if this is a vendor switch request
             if (request.requestType === 'vendor_switch') {
                 await userSubscription.useVendorSwitch()
             }
@@ -430,7 +424,6 @@ export default {
                 return httpError(next, new Error('Assignment request not found'), req, 404)
             }
 
-            // Also populate subscription details
             await request.userSubscriptionId.populate('subscriptionId', 'planName category duration')
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
@@ -576,7 +569,6 @@ export default {
 
             let requests;
             if (search) {
-                // Use aggregation for search functionality when search is provided
                 requests = await VendorAssignmentRequest.aggregate([
                     { $match: query },
                     {
@@ -656,7 +648,6 @@ export default {
                     { $limit: Number(limit) }
                 ])
             } else {
-                // Use regular find with populate when no search is provided
                 requests = await VendorAssignmentRequest.find(query)
                     .populate('userId', 'name emailAddress phoneNumber')
                     .populate('userSubscriptionId', 'startDate endDate')

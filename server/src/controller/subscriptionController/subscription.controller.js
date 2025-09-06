@@ -21,7 +21,6 @@ export default {
             const skip = (page - 1) * limit;
             const query = { isActive: true };
 
-            // Apply filters
             if (category) query.category = category;
             if (duration) query.duration = duration;
 
@@ -162,7 +161,6 @@ export default {
             const skip = (page - 1) * limit;
             const query = {};
 
-            // Apply filters
             if (category) query.category = category;
             if (isActive !== undefined) query.isActive = isActive === 'true';
             if (duration) query.duration = duration;

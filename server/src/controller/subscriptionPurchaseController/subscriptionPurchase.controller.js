@@ -27,7 +27,7 @@ export default {
             console.log('=== INITIATE PURCHASE START ===');
             console.log('Request body:', JSON.stringify(req.body, null, 2));
             console.log('User ID:', req.authenticatedUser?._id);
-            
+
             const { error } = validateJoiSchema(ValidateInitiatePurchase, req.body);
             if (error) {
                 console.log('❌ Validation error:', error.message || error);
@@ -52,7 +52,6 @@ export default {
             }
             console.log("Delivery");
 
-            // Validate delivery address and check service availability
             let deliveryValidation;
             try {
                 deliveryValidation = await LocationZone.validateDeliveryForSubscription(
@@ -88,7 +87,6 @@ export default {
 
             console.log("Delivery validation passed, continuing with subscription creation...");
 
-            // Check if user already has an active subscription (using IST)
             console.log("Checking for existing active subscriptions...");
             const currentIST = TimezoneUtil.now();
             const existingSubscription = await UserSubscription.findOne({
@@ -105,7 +103,6 @@ export default {
 
             console.log("No existing active subscription found, proceeding...");
 
-            // Validate meal timings against subscription plan
             console.log("Validating meal timings...", {
                 requestMealTimings: mealTimings,
                 planMealTimings: subscription.mealTimings
@@ -121,7 +118,6 @@ export default {
                 return httpError(next, new Error('Dinner is not available for this subscription plan'), req, 400);
             }
 
-            // Validate meal timing windows
             console.log("Validating meal timing windows...");
             if (mealTimings.lunch.enabled) {
                 const lunchTime = mealTimings.lunch.time;
@@ -185,11 +181,10 @@ export default {
                 console.log('💰 No promo code applied, final price:', finalPrice);
             }
 
-            // Add GST (18%) to the final price for payment
             const gstRate = 0.18; // 18% GST
             const gstAmount = Math.round(finalPrice * gstRate);
             const finalPriceWithGST = finalPrice + gstAmount;
-            
+
             console.log('💰 Price calculation:', {
                 basePrice: finalPrice,
                 gstRate: `${gstRate * 100}%`,
@@ -225,7 +220,6 @@ export default {
                 }
             });
 
-            // Create transaction record
             const transaction = new Transaction({
                 userId,
                 subscriptionId,
@@ -241,7 +235,6 @@ export default {
                 paymentGateway: 'phonepe',
                 paymentMethod: 'phonepe',
                 gatewayOrderId: paymentOrder.id,
-                // Store GST details
                 gstAmount: gstAmount,
                 baseAmount: finalPrice
             });
@@ -310,7 +303,6 @@ export default {
         }
     },
 
-    // Verify payment and activate subscription
     verifyPayment: async (req, res, next) => {
         try {
             const { error } = validateJoiSchema(ValidateVerifyPayment, req.body);
@@ -363,7 +355,6 @@ export default {
 
             console.log("User subscription found:", userSubscription._id);
 
-            // Verify payment with payment service
             console.log("Verifying payment with payment service...");
             const isPaymentValid = await paymentService.verifyPayment({
                 phonepe_transaction_id,
@@ -378,12 +369,10 @@ export default {
                     userSubscriptionId
                 });
 
-                // Mark transaction as failed
                 transaction.status = 'failed';
                 transaction.failureReason = 'Payment verification failed';
                 await transaction.save();
 
-                // Mark user subscription as failed
                 userSubscription.status = 'failed';
                 await userSubscription.save();
 
@@ -392,7 +381,6 @@ export default {
 
             console.log("Payment verification successful, activating subscription...");
 
-            // Update transaction as successful (using IST)
             const completionTime = TimezoneUtil.now();
             transaction.status = EPaymentStatus.SUCCESS;
             transaction.paymentId = phonepe_transaction_id;
@@ -402,12 +390,10 @@ export default {
             transaction.completedAt = completionTime;
             await transaction.save();
 
-            // Activate user subscription (using IST)
             userSubscription.status = 'active';
             userSubscription.paymentCompletedAt = completionTime;
             await userSubscription.save();
 
-            // Increment subscription purchase count
             const subscription = await Subscription.findById(userSubscription.subscriptionId);
             if (subscription) {
                 await subscription.incrementPurchases();
@@ -466,7 +452,6 @@ export default {
         }
     },
 
-    // Get user subscriptions with filters
     getUserSubscriptions: async (req, res, next) => {
         try {
             console.log('=== GET USER SUBSCRIPTIONS ===');
@@ -492,7 +477,6 @@ export default {
             const skip = (page - 1) * limit;
             const query = { userId };
 
-            // Apply filters
             if (status) {
                 query.status = status;
             }
@@ -516,7 +500,6 @@ export default {
 
             console.log('Found user subscriptions:', userSubscriptions.length);
 
-            // Filter by category if specified
             let filteredSubscriptions = userSubscriptions;
             if (category) {
                 filteredSubscriptions = userSubscriptions.filter(sub =>
@@ -524,12 +507,11 @@ export default {
                 );
             }
 
-            // Enhanced subscription data with computed fields
             const enhancedSubscriptions = filteredSubscriptions.map(sub => {
                 const remainingDays = sub.getDaysRemaining();
                 const dailyMealCount = sub.getDailyMealCount();
                 const remainingCredits = sub.getRemainingCredits();
-                
+
                 return {
                     ...sub.toObject(),
                     analytics: {
@@ -657,7 +639,6 @@ export default {
                 return httpError(next, new Error('Only active subscriptions can be cancelled'), req, 400);
             }
 
-            // Check if cancellation is allowed (e.g., within 24 hours of purchase) using IST
             const nowIST = TimezoneUtil.now();
             const purchaseTime = userSubscription.paymentCompletedAt || userSubscription.createdAt;
             const timeDiff = nowIST - purchaseTime;
@@ -667,13 +648,11 @@ export default {
                 return httpError(next, new Error('Subscription can only be cancelled within 24 hours of purchase'), req, 400);
             }
 
-            // Cancel the subscription (using IST)
             userSubscription.status = 'cancelled';
             userSubscription.cancelledAt = nowIST;
             userSubscription.cancellationReason = reason;
             await userSubscription.save();
 
-            // Process refund if applicable
 
             httpResponse(req, res, 200, responseMessage.customMessage("SUBSCRIPTION CANCELLED"), {
                 subscriptionId: userSubscription._id,
@@ -729,8 +708,8 @@ export default {
             }
 
             // Check if vendor is assigned
-            if (!userSubscription.vendorDetails.isVendorAssigned || 
-                !userSubscription.vendorDetails.currentVendor || 
+            if (!userSubscription.vendorDetails.isVendorAssigned ||
+                !userSubscription.vendorDetails.currentVendor ||
                 !userSubscription.vendorDetails.currentVendor.vendorId) {
                 console.log("Cannot switch vendor - no vendor currently assigned:", {
                     subscriptionId,
@@ -748,7 +727,7 @@ export default {
                 });
                 return httpError(next, new Error('Vendor switch has already been used for this subscription'), req, 400);
             }
-            
+
             console.log("Vendor switch validation passed:", {
                 subscriptionId,
                 currentVendorId: userSubscription.vendorDetails.currentVendor.vendorId,
@@ -756,7 +735,6 @@ export default {
             });
 
 
-            // Find the delivery zone
             const deliveryZone = await LocationZone.findByPincode(userSubscription.deliveryAddress.zipCode);
             const zone = deliveryZone && deliveryZone.length > 0 ? deliveryZone[0] : null;
 
@@ -801,17 +779,17 @@ export default {
             console.log('Body:', JSON.stringify(req.body, null, 2));
             console.log('Query params:', JSON.stringify(req.query, null, 2));
             console.log('URL path:', req.path);
-            
+
             const signature = req.headers['x-verify'];
             const event = req.body;
 
             console.log('Webhook signature:', signature);
             console.log('Event keys:', Object.keys(event));
-            
+
             if (req.method === 'GET') {
                 console.log('GET callback received - extracting orderId from query');
                 const { orderId } = req.query;
-                
+
                 if (orderId) {
                     const transaction = await Transaction.findOne({
                         $or: [
@@ -819,7 +797,7 @@ export default {
                             { transactionId: orderId }
                         ]
                     });
-                    
+
                     if (transaction) {
                         console.log('Transaction found via GET callback:', transaction._id);
                         await paymentService.processSuccessfulPayment(
@@ -861,11 +839,11 @@ export default {
         try {
             console.log('=== PHONEPE REDIRECT RECEIVED ===');
             console.log('Query params:', JSON.stringify(req.query, null, 2));
-            
+
             const { orderId } = req.query;
             let paymentSuccess = false;
             let userSubscriptionId = null;
-            
+
             if (orderId) {
                 const transaction = await Transaction.findOne({
                     $or: [
@@ -873,11 +851,11 @@ export default {
                         { transactionId: orderId }
                     ]
                 });
-                
+
                 if (transaction) {
                     console.log('Transaction found via redirect:', transaction._id);
                     userSubscriptionId = transaction.userSubscriptionId;
-                    
+
                     // Check if payment was already processed
                     if (transaction.status === 'success') {
                         console.log('Transaction already processed successfully');
@@ -900,7 +878,7 @@ export default {
                         console.log('Transaction status is:', transaction.status);
                         paymentSuccess = false;
                     }
-                    
+
                     // Double-check by verifying the UserSubscription status
                     if (userSubscriptionId) {
                         const userSubscription = await UserSubscription.findById(userSubscriptionId);
@@ -915,17 +893,17 @@ export default {
                     console.log('Transaction not found for redirect orderId:', orderId);
                 }
             }
-            
+
             // Redirect to mobile app
-            const deepLinkUrl = paymentSuccess 
+            const deepLinkUrl = paymentSuccess
                 ? `tiffix://payment-success?orderId=${orderId}&userSubscriptionId=${userSubscriptionId || ''}`
                 : `tiffix://payment-failed?orderId=${orderId}`;
-            
+
             console.log('Redirecting to mobile app via deep link:', deepLinkUrl);
-            
+
             // Redirect directly to the app
             res.redirect(302, deepLinkUrl);
-            
+
         } catch (error) {
             console.error('=== PHONEPE REDIRECT ERROR ===');
             console.error('Error message:', error.message);
@@ -955,10 +933,10 @@ export default {
         try {
             const { orderId } = req.params;
             const userId = req.authenticatedUser._id;
-            
+
             console.log('Checking payment status for orderId:', orderId, 'userId:', userId);
 
-            const transaction = await Transaction.findOne({ 
+            const transaction = await Transaction.findOne({
                 gatewayOrderId: orderId,
                 userId
             }).populate('userSubscriptionId');
@@ -997,7 +975,7 @@ export default {
 
             const status = transaction.status === 'failed' ? 'failed' : 'pending';
             console.log('Payment status:', status);
-            
+
             return httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 status,
                 paymentStatus: status,
@@ -1020,7 +998,7 @@ export default {
     phonepeRefundCallback: async (req, res, next) => {
         try {
             console.log('PhonePe refund callback received:', req.body);
-            
+
             const signature = req.headers['x-verify'];
             const event = req.body;
 
@@ -1053,10 +1031,10 @@ export default {
         try {
             const { userSubscriptionId } = req.params;
             const userId = req.authenticatedUser._id;
-            
+
             console.log('Checking subscription status for userSubscriptionId:', userSubscriptionId, 'userId:', userId);
 
-            const userSubscription = await UserSubscription.findOne({ 
+            const userSubscription = await UserSubscription.findOne({
                 _id: userSubscriptionId,
                 userId
             }).populate('subscriptionId', 'planName category');

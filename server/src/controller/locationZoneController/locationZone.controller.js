@@ -70,7 +70,6 @@ export default {
             if (serviceType) filter.serviceType = serviceType;
             if (isActive !== undefined) filter.isActive = isActive === 'true';
 
-            // Pincode filter
             if (pincode) {
                 filter.pincodes = { $in: [pincode] };
             }
@@ -84,7 +83,6 @@ export default {
                 }
             }
 
-            // Text search across multiple fields
             if (search) {
                 filter.$or = [
                     { zoneName: new RegExp(search, 'i') },
@@ -97,11 +95,9 @@ export default {
             let zones;
             let total;
 
-            // Geographic search using coordinates
             if (lat && lng) {
                 const coordinates = { lat: parseFloat(lat), lng: parseFloat(lng) };
 
-                // Use MongoDB geospatial query if available, otherwise calculate distance
                 const allZones = await LocationZone.find(filter);
                 zones = allZones.filter(zone => {
                     if (zone.coordinates && zone.coordinates.center) {
@@ -116,10 +112,8 @@ export default {
 
                 total = zones.length;
 
-                // Apply pagination to filtered results
                 zones = zones.slice(skip, skip + parseInt(limit));
             } else {
-                // Regular query without geographic filtering
                 const sortObj = {};
                 sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
@@ -131,7 +125,6 @@ export default {
                 total = await LocationZone.countDocuments(filter);
             }
 
-            // Add distance information if coordinates provided
             if (lat && lng) {
                 zones = zones.map(zone => {
                     const zoneObj = zone.toObject ? zone.toObject() : zone;
@@ -145,13 +138,10 @@ export default {
                 });
             }
 
-            // Add zone-specific statistics for each zone
             const zonesWithStats = await Promise.all(zones.map(async (zone) => {
                 const zoneObj = zone.toObject ? zone.toObject() : zone;
 
-                // Get statistics for this specific zone
                 const zoneStats = await Promise.all([
-                    // Users in this zone (based on location pincode)
                     User.aggregate([
                         {
                             $match: {
@@ -182,7 +172,6 @@ export default {
                         }
                     ]),
 
-                    // Vendors in this zone
                     VendorProfile.aggregate([
                         {
                             $lookup: {
@@ -226,7 +215,6 @@ export default {
                     ])
                 ]);
 
-                // Add stats to zone object
                 zoneObj.stats = {
                     users: {
                         totalUsers: zoneStats[0][0]?.totalUsers || 0,
@@ -245,7 +233,6 @@ export default {
                 return zoneObj;
             }));
 
-            // Add global aggregated stats for all zones and users/vendors in the system
             const stats = await Promise.all([
                 // Total zones
                 LocationZone.countDocuments(),
@@ -281,7 +268,6 @@ export default {
                     }
                 ]),
 
-                // Global vendor statistics
                 VendorProfile.aggregate([
                     {
                         $lookup: {
@@ -381,9 +367,7 @@ export default {
                 return httpError(next, new Error('Location zone not found'), req, 404);
             }
 
-            // Get aggregated stats for this specific zone
             const stats = await Promise.all([
-                // Users in this zone (based on location pincode)
                 User.aggregate([
                     {
                         $match: {
@@ -404,7 +388,6 @@ export default {
                     }
                 ]),
 
-                // Vendors in this zone
                 VendorProfile.aggregate([
                     {
                         $lookup: {
@@ -545,7 +528,6 @@ export default {
 
             const availableZones = zones.filter(zone => zone.isServiceAvailable(vendorType));
 
-            // Add enhanced response with zone details
             const zoneDetails = availableZones.map(zone => ({
                 _id: zone._id,
                 zoneName: zone.zoneName,
