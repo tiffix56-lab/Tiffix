@@ -83,7 +83,7 @@ class UploadService {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
-        baseURL: process.env.EXPO_PUBLIC_API_BASE_URL,
+        baseURL: process.env.EXPO_PUBLIC_API_URL,
       });
 
       const imageUrl = response.data.data?.url || response.data.url || response.data.data;
