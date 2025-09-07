@@ -35,16 +35,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const { colorScheme } = useColorScheme();
   const mapRef = useRef<MapView>(null);
   
+  // Use Delhi as default center (more central to India) or user's initial location
+  const defaultLocation = initialLocation || {
+    latitude: 28.6139, // Delhi
+    longitude: 77.2090,
+  };
+
   const [region, setRegion] = useState<Region>({
-    latitude: initialLocation?.latitude || 27.1767, // Default to Agra
-    longitude: initialLocation?.longitude || 78.0081,
+    latitude: defaultLocation.latitude,
+    longitude: defaultLocation.longitude,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
   
   const [markerPosition, setMarkerPosition] = useState({
-    latitude: initialLocation?.latitude || 27.1767,
-    longitude: initialLocation?.longitude || 78.0081,
+    latitude: defaultLocation.latitude,
+    longitude: defaultLocation.longitude,
   });
   
   const [searchQuery, setSearchQuery] = useState('');

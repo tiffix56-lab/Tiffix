@@ -4,16 +4,24 @@ import { router } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { menuService } from '@/services/menu.service';
 import { MenuItem } from '@/types/menu.types';
+import { useAddress } from '@/context/AddressContext';
+import { Feather } from '@expo/vector-icons';
 
 const MealSubscriptions = () => {
   const { colorScheme } = useColorScheme();
+  const { selectedAddress, savedAddresses, isServiceableAddress } = useAddress();
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [filteredMenus, setFilteredMenus] = useState<MenuItem[]>([]);
 
   useEffect(() => {
     fetchTopMenus();
   }, []);
+
+  useEffect(() => {
+    filterMenusByAddress();
+  }, [menus, selectedAddress]);
 
   const fetchTopMenus = async () => {
     try {
@@ -22,11 +30,11 @@ const MealSubscriptions = () => {
         isAvailable: true,
         sortBy: 'rating.average',
         sortOrder: 'desc',
-        limit: 6
+        limit: 12 // Increase limit to account for filtering
       });
       
       if (response.success && response.data?.menus) {
-        setMenus(response.data.menus.slice(0, 6)); // Limit to 6 items for grid
+        setMenus(response.data.menus);
       } else {
         setError('Failed to load meals');
       }
@@ -36,6 +44,30 @@ const MealSubscriptions = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterMenusByAddress = () => {
+    if (!selectedAddress) {
+      // If no address selected, show first 6 meals with location prompt
+      setFilteredMenus(menus.slice(0, 6));
+      return;
+    }
+
+    // Check if selected address is serviceable
+    if (!isServiceableAddress(selectedAddress)) {
+      setFilteredMenus([]);
+      return;
+    }
+
+    // For now, show all menus since we don't have location-based filtering in API
+    // In a real app, you would filter based on delivery zones or coordinates
+    const availableMenus = menus.filter(menu => {
+      // Simple distance-based filtering (placeholder logic)
+      // In production, this would be handled by the backend
+      return menu.isAvailable;
+    });
+
+    setFilteredMenus(availableMenus.slice(0, 6));
   };
 
   if (loading) {
@@ -55,7 +87,61 @@ const MealSubscriptions = () => {
     );
   }
 
-  if (error || menus.length === 0) {
+  if (!selectedAddress && savedAddresses.length === 0) {
+    return (
+      <View className="pb-6">
+        <View className="mb-6 flex-row items-center justify-center">
+          <Text
+            className="text-2xl font-semibold text-black dark:text-white"
+            style={{ fontFamily: 'Poppins_600SemiBold' }}>
+            Meal Subscriptions
+          </Text>
+        </View>
+        <View className="mx-6 items-center justify-center rounded-xl border border-dashed border-orange-300 bg-orange-50 py-8 dark:border-orange-600 dark:bg-orange-900/20">
+          <Feather name="map-pin" size={32} color={colorScheme === 'dark' ? '#FB923C' : '#EA580C'} />
+          <Text
+            className="mt-2 text-center text-base font-medium text-orange-700 dark:text-orange-400"
+            style={{ fontFamily: 'Poppins_500Medium' }}>
+            Add your address to see available meals
+          </Text>
+          <Text
+            className="mt-1 text-center text-sm text-orange-600 dark:text-orange-500"
+            style={{ fontFamily: 'Poppins_400Regular' }}>
+            Tap the address at the top to get started
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (selectedAddress && !isServiceableAddress(selectedAddress)) {
+    return (
+      <View className="pb-6">
+        <View className="mb-6 flex-row items-center justify-center">
+          <Text
+            className="text-2xl font-semibold text-black dark:text-white"
+            style={{ fontFamily: 'Poppins_600SemiBold' }}>
+            Meal Subscriptions
+          </Text>
+        </View>
+        <View className="mx-6 items-center justify-center rounded-xl border border-dashed border-red-300 bg-red-50 py-8 dark:border-red-600 dark:bg-red-900/20">
+          <Feather name="alert-circle" size={32} color={colorScheme === 'dark' ? '#F87171' : '#DC2626'} />
+          <Text
+            className="mt-2 text-center text-base font-medium text-red-700 dark:text-red-400"
+            style={{ fontFamily: 'Poppins_500Medium' }}>
+            Delivery not available in your area
+          </Text>
+          <Text
+            className="mt-1 text-center text-sm text-red-600 dark:text-red-500"
+            style={{ fontFamily: 'Poppins_400Regular' }}>
+            We'll be expanding to {selectedAddress.city} soon!
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error || filteredMenus.length === 0) {
     return (
       <View className="pb-6">
         <View className="mb-6 flex-row items-center justify-center">
@@ -67,7 +153,7 @@ const MealSubscriptions = () => {
         </View>
         <View className="items-center justify-center py-8">
           <Text className="text-center text-base text-zinc-500 dark:text-zinc-400">
-            {error || 'No meals available at the moment'}
+            {error || (selectedAddress ? `No meals available in ${selectedAddress.city}` : 'No meals available at the moment')}
           </Text>
         </View>
       </View>
@@ -86,14 +172,20 @@ const MealSubscriptions = () => {
 
       <View className="px-6">
         <View className="flex-row flex-wrap justify-between">
-          {menus.map((menu, index) => (
+          {filteredMenus.map((menu, index) => (
             <View key={menu._id + index} className="mb-6 w-[30%] items-center">
               <TouchableOpacity 
                 className="items-center"
-                onPress={() => router.push({
-                  pathname: '/(home)/meal-details',
-                  params: { id: menu._id }
-                })}>
+                onPress={() => {
+                  if (!selectedAddress) {
+                    // Prompt to select address first
+                    return;
+                  }
+                  router.push({
+                    pathname: '/(home)/meal-details',
+                    params: { id: menu._id }
+                  });
+                }}>
                 <View className="relative">
                   <Image 
                     source={{ uri: menu.foodImage }} 

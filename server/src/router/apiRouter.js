@@ -18,6 +18,7 @@ import dailyMealController from '../controller/orderController/dailyMeal.control
 import orderController from '../controller/orderController/order.controller.js'
 import reviewController from '../controller/reviewController/review.controller.js'
 import adminController from '../controller/AdminController/admin.controller.js'
+import mapsController from '../controller/mapsController/maps.controller.js'
 import { uploadFiles } from '../middleware/multerHandler.js'
 import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
@@ -301,5 +302,13 @@ router.route('/admin/analytics/orders').get(authentication, authorization([EUser
 router.route('/admin/analytics/revenue').get(authentication, authorization([EUserRole.ADMIN]), adminController.getRevenueAnalytics)
 router.route('/admin/analytics/vendors').get(authentication, authorization([EUserRole.ADMIN]), adminController.getVendorAnalytics)
 router.route('/admin/analytics/zones').get(authentication, authorization([EUserRole.ADMIN]), adminController.getZoneAnalytics)
+
+// ############### MAPS & LOCATION SERVICES ROUTES ####################
+// Ola Maps API proxy routes - authenticated to prevent abuse
+router.route('/maps/autocomplete').post(authentication, mapsController.autocomplete)
+router.route('/maps/reverse-geocode').post(authentication, mapsController.reverseGeocode)
+router.route('/maps/place-details').post(authentication, mapsController.placeDetails)
+router.route('/maps/session-token').get(authentication, mapsController.generateSessionToken)
+router.route('/maps/test-connection').get(authentication, authorization([EUserRole.ADMIN]), mapsController.testConnection)
 
 export default router

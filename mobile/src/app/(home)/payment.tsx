@@ -105,14 +105,17 @@ const Payment = () => {
       const orderPayload: InitiatePurchaseRequest = {
         subscriptionId: orderData.subscriptionId,
         deliveryAddress: {
-          street: "789 Pine St",
-          city: "Mumbai",
-          state: "Maharashtra",
-          country: "India",
-          zipCode: "400002",
+          street: orderData.deliveryAddress.street || orderData.deliveryAddress.label || "",
+          city: orderData.deliveryAddress.city || "",
+          state: orderData.deliveryAddress.state || "",
+          country: orderData.deliveryAddress.country || "India",
+          zipCode: orderData.deliveryAddress.zipCode || "",
           coordinates: {
             type: "Point",
-            coordinates: [72.8777, 19.0760]
+            coordinates: [
+              orderData.deliveryAddress.coordinates?.longitude || 0,
+              orderData.deliveryAddress.coordinates?.latitude || 0
+            ]
           }
         },
         mealTimings: {

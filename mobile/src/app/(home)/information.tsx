@@ -20,16 +20,17 @@ import { Address } from '@/types/address.types';
 import { MenuItem } from '@/types/menu.types';
 import { Subscription } from '@/services/subscription.service';
 import { orderStore } from '@/utils/order-store';
+import { useAddress } from '@/context/AddressContext';
 
 const Information = () => {
   const { colorScheme } = useColorScheme();
   const { subscriptionId, menuId } = useLocalSearchParams();
+  const { savedAddresses, selectedAddress: contextAddress, isServiceableAddress } = useAddress();
   
   // Data states
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
-  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(contextAddress);
   
   const [selectedDate, setSelectedDate] = useState('');
   const [lunchTime, setLunchTime] = useState('12:00 PM');
@@ -217,11 +218,21 @@ const Information = () => {
                   {savedAddresses.map((address, index) => (
                     <TouchableOpacity
                       key={index}
-                      onPress={() => setSelectedAddress(address)}
+                      onPress={() => {
+                        if (isServiceableAddress(address)) {
+                          setSelectedAddress(address);
+                        } else {
+                          Alert.alert('Delivery Not Available', `Sorry, we don't deliver to ${address.city} yet. Please select a different address or check back soon!`);
+                        }
+                      }}
                       className={`mb-3 rounded-xl border p-4 ${
                         selectedAddress === address
                           ? 'border-black bg-black dark:border-white dark:bg-white'
-                          : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'
+                          : isServiceableAddress(address)
+                            ? 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'
+                            : 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/20'
+                      } ${
+                        !isServiceableAddress(address) ? 'opacity-60' : ''
                       }`}>
                       <View className="flex-row items-start justify-between">
                         <View className="flex-1">
@@ -249,10 +260,15 @@ const Information = () => {
                             className={`mt-1 text-sm ${
                               selectedAddress === address
                                 ? 'text-zinc-300 dark:text-zinc-700'
-                                : 'text-zinc-500 dark:text-zinc-400'
+                                : isServiceableAddress(address)
+                                  ? 'text-zinc-500 dark:text-zinc-400'
+                                  : 'text-red-600 dark:text-red-400'
                             }`}
                             style={{ fontFamily: 'Poppins_400Regular' }}>
                             {[address.street, address.city, address.state, address.zipCode].filter(Boolean).join(', ')}
+                            {!isServiceableAddress(address) && (
+                              <Text className="text-red-600 dark:text-red-400"> (Not serviceable)</Text>
+                            )}
                           </Text>
                         </View>
                         <View className={`h-5 w-5 rounded-full border-2 ${
@@ -532,6 +548,13 @@ const Information = () => {
                 } else {
                   Alert.alert('Missing Information', 'Please select a delivery date.');
                 }
+                return;
+              }
+
+              // Validate address serviceability
+              if (selectedAddress && !isServiceableAddress(selectedAddress)) {
+                console.log('❌ Address not serviceable:', selectedAddress.city);
+                Alert.alert('Delivery Not Available', `Sorry, we don't deliver to ${selectedAddress.city} yet. Please select a different address or check back soon!`);
                 return;
               }
 
