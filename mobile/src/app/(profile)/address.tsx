@@ -182,23 +182,29 @@ const Address = () => {
       // Get place details from Ola Maps
       const placeDetails = await getPlaceDetails(prediction.place_id);
       if (placeDetails) {
-        // Check if it's in India
-        if (placeDetails.country && placeDetails.country !== 'IN') {
+        // Check if it's in India (handle both ISO code 'IN' and full name 'India')
+        if (placeDetails.country && !['IN', 'India'].includes(placeDetails.country)) {
+          console.log('❌ Country not supported:', placeDetails.country);
           Alert.alert('Location Not Supported', 'Currently, we only deliver to addresses in India.');
           return;
         }
+        console.log('✅ Country validation passed:', placeDetails.country);
 
-        setNewAddress(prev => ({
-          ...prev,
-          street: placeDetails.street || placeDetails.fullAddress,
-          city: placeDetails.city,
-          state: placeDetails.state,
-          zipCode: placeDetails.zipCode,
-          coordinates: {
-            latitude: placeDetails.coordinates.latitude,
-            longitude: placeDetails.coordinates.longitude
-          }
-        }));
+        setNewAddress(prev => {
+          const updatedAddress = {
+            ...prev,
+            street: placeDetails.street || placeDetails.fullAddress,
+            city: placeDetails.city,
+            state: placeDetails.state,
+            zipCode: placeDetails.zipCode,
+            coordinates: {
+              latitude: placeDetails.coordinates.latitude,
+              longitude: placeDetails.coordinates.longitude
+            }
+          };
+          console.log('🏠 Setting address from place details:', updatedAddress);
+          return updatedAddress;
+        });
         setSelectedPlace(placeDetails);
       } else {
         Alert.alert('Error', 'Unable to get address details. Please try another location.');
@@ -227,10 +233,21 @@ const Address = () => {
       return;
     }
 
-    if (newAddress.zipCode && !/^[0-9]{6}$/.test(newAddress.zipCode)) {
-      Alert.alert('Error', 'Please select an address with a valid 6-digit Indian pincode');
-      return;
+    // Validate pincode if present
+    if (newAddress.zipCode) {
+      const cleanedZipCode = newAddress.zipCode.replace(/\s+/g, '').trim();
+      if (!/^[0-9]{6}$/.test(cleanedZipCode)) {
+        console.log('❌ Invalid pincode:', newAddress.zipCode, 'cleaned:', cleanedZipCode);
+        Alert.alert('Error', 'Please select an address with a valid 6-digit Indian pincode');
+        return;
+      }
+      // Update with cleaned zipcode
+      newAddress.zipCode = cleanedZipCode;
+    } else {
+      console.log('⚠️ No pincode provided, but continuing...');
     }
+    
+    console.log('✅ Address validation passed:', newAddress);
 
     try {
       setAdding(true);
@@ -241,7 +258,9 @@ const Address = () => {
           longitude: newAddress.coordinates.longitude
         }
       };
+      console.log('📤 Sending address payload:', addressPayload);
       const response = await addressService.addAddress(addressPayload);
+      console.log('📥 Backend response:', response);
       
       if (response.success) {
         Alert.alert('Success', 'Address added successfully');
@@ -258,6 +277,7 @@ const Address = () => {
         setSelectedPlace(null);
         fetchAddresses();
       } else {
+        console.log('❌ Backend error:', response.message);
         Alert.alert('Error', response.message || 'Failed to add address');
       }
     } catch (err) {

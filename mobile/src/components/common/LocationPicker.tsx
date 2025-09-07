@@ -224,13 +224,19 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
           {/* Search Results */}
           {searchResults.length > 0 && (
-            <View className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-64">
-              <ScrollView className="py-2">
+            <View className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50" style={{ maxHeight: 250 }}>
+              <ScrollView 
+                style={{ maxHeight: 250 }}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+              >
                 {searchResults.map((result, index) => (
                   <TouchableOpacity
                     key={result.place_id}
                     onPress={() => selectPlace(result)}
-                    className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                    className="px-4 py-3 border-b border-gray-100 dark:border-gray-700"
+                    style={{ minHeight: 60 }}>
                     <Text
                       className="text-black dark:text-white font-medium"
                       style={{ fontFamily: 'Poppins_500Medium' }}

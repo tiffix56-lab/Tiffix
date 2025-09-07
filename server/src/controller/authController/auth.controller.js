@@ -137,6 +137,15 @@ export default {
             const newUser = new userModel(userData);
             const savedUser = await newUser.save();
 
+            // Create user profile automatically upon registration
+            const userProfile = new userProfileModel({
+                userId: savedUser._id,
+                addresses: [],
+                preferences: {}
+            });
+            await userProfile.save();
+            console.log('✅ Created user profile for new user:', savedUser._id);
+
 
             let referralMessage = '';
             if (referralCode) {

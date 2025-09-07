@@ -149,11 +149,11 @@ const Profile = () => {
         
         // Update user profile with new image URL
         const updateResponse = await userService.updateUserProfile({
-          profilePicture: imageUrl
+          avatar: imageUrl
         });
 
         if (updateResponse.success) {
-          setUser(prev => prev ? { ...prev, profilePicture: imageUrl } : null);
+          setUser(prev => prev ? { ...prev, avatar: imageUrl } : null);
           
           Alert.alert('Success', 'Profile picture updated successfully');
         } else {
@@ -216,11 +216,11 @@ const Profile = () => {
         
         // Update user profile with new image URL
         const updateResponse = await userService.updateUserProfile({
-          profilePicture: imageUrl
+          avatar: imageUrl
         });
 
         if (updateResponse.success) {
-          setUser(prev => prev ? { ...prev, profilePicture: imageUrl } : null);
+          setUser(prev => prev ? { ...prev, avatar: imageUrl } : null);
           
           Alert.alert('Success', 'Profile picture updated successfully');
         } else {

@@ -94,7 +94,7 @@ class OlaMapsService {
         resultsCount: response.data?.results?.length || 0
       });
 
-      if (response.success && response.data?.status === 'OK' && response.data?.results?.length > 0) {
+      if (response.success && response.data?.status?.toLowerCase() === 'ok' && response.data?.results?.length > 0) {
         return this.parseOlaPlaceResult(response.data.results[0]);
       }
 
@@ -162,7 +162,7 @@ class OlaMapsService {
         predictionsCount: response.data?.predictions?.length || 0
       });
 
-      if (response.success && response.data?.status === 'OK' && response.data?.predictions) {
+      if (response.success && response.data?.status?.toLowerCase() === 'ok' && response.data?.predictions) {
         return response.data.predictions.map((prediction: any) => ({
           place_id: prediction.place_id,
           description: prediction.description,
@@ -200,7 +200,7 @@ class OlaMapsService {
         hasResult: !!response.data?.result
       });
 
-      if (response.success && response.data?.status === 'OK' && response.data?.result) {
+      if (response.success && response.data?.status?.toLowerCase() === 'ok' && response.data?.result) {
         return this.parseOlaPlaceResult(response.data.result);
       }
 
