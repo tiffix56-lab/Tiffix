@@ -236,7 +236,7 @@ export default {
                 userId,
                 subscriptionId,
                 amount: finalPriceWithGST,
-                finalAmount: finalPriceWithGST,
+                finalAmount: finalPrice, // Base amount after discount, before GST
                 transactionId: paymentOrder.id,
                 gatewayTransactionId: paymentOrder.id,
                 originalAmount: subscription.discountedPrice,

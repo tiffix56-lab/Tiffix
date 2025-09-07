@@ -74,11 +74,33 @@ class SubscriptionService {
     return await apiService.get<{ subscription: Subscription }>(`${API_ENDPOINTS.SUBSCRIPTION.GET_ALL}/${id}`);
   }
 
-  async getUserSubscriptions(): Promise<ApiResponse<{ subscriptions: any[] }>> {
+  async getUserSubscriptions(params?: { 
+    page?: number; 
+    limit?: number; 
+    status?: 'active' | 'paused' | 'cancelled' | 'expired';
+    category?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<ApiResponse<{ subscriptions: any[]; pagination?: any }>> {
     try {
-      const response = await apiService.get<{ subscriptions: any[] }>(
-        API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS
-      );
+      const queryParams = new URLSearchParams();
+      
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.category) queryParams.append('category', params.category);
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+      
+      const url = queryParams.toString() 
+        ? `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}?${queryParams.toString()}`
+        : API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS;
+        
+      console.log('🔗 Fetching user subscriptions from:', url);
+      
+      const response = await apiService.get<{ subscriptions: any[]; pagination?: any }>(url);
+      
+      console.log('📡 User subscriptions response:', response);
       
       if (!response.success && (response.message?.includes('not found') || response.message?.includes('No subscriptions'))) {
         return {
@@ -90,6 +112,7 @@ class SubscriptionService {
       
       return response;
     } catch (error) {
+      console.error('❌ Error fetching user subscriptions:', error);
       return {
         success: true,
         message: 'No subscriptions yet', 
@@ -98,8 +121,26 @@ class SubscriptionService {
     }
   }
 
+  async getActiveUserSubscriptions(): Promise<ApiResponse<{ subscriptions: any[] }>> {
+    return this.getUserSubscriptions({ status: 'active', limit: 50 });
+  }
+
   async getUserSubscriptionById(subscriptionId: string): Promise<ApiResponse<{ subscription: any }>> {
     return await apiService.get<{ subscription: any }>(`${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}`);
+  }
+
+  async cancelUserSubscription(subscriptionId: string, cancellationReason: string): Promise<ApiResponse<{ message: string }>> {
+    return await apiService.post<{ message: string }>(
+      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/cancel`,
+      { cancellationReason }
+    );
+  }
+
+  async requestVendorSwitch(subscriptionId: string, reason: string, preferredVendorId?: string): Promise<ApiResponse<{ message: string }>> {
+    return await apiService.post<{ message: string }>(
+      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/request-vendor-switch`,
+      { reason, preferredVendorId }
+    );
   }
 
   async cancelSubscription(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
