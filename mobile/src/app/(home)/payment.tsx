@@ -196,7 +196,27 @@ const Payment = () => {
           setLoading(false);
         }
       } else {
-        Alert.alert('Order Failed', response.message || 'Failed to initiate payment');
+        // Check if it's a delivery not available error
+        if (response.message?.includes('Delivery not available') || response.message?.includes('pincode')) {
+          Alert.alert(
+            'Delivery Not Available', 
+            'Sorry, we don\'t deliver to this address yet. Please select a different address or check back soon!',
+            [
+              {
+                text: 'Select Different Address',
+                onPress: () => {
+                  router.back(); // Go back to delivery information screen
+                }
+              },
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Order Failed', response.message || 'Failed to initiate payment');
+        }
         setLoading(false);
       }
     } catch (error) {

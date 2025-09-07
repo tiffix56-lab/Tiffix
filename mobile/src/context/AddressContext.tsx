@@ -53,15 +53,12 @@ export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) =>
     }
   };
 
-  // Simple serviceability check - can be enhanced later
+  // Serviceability check - should be done via API call
   const isServiceableAddress = (address: Address): boolean => {
-    // For now, consider all Indian addresses serviceable
-    // This can be enhanced with actual API calls to check serviceability
-    const serviceableStates = ['MH', 'Maharashtra', 'DL', 'Delhi', 'KA', 'Karnataka', 'TN', 'Tamil Nadu'];
-    return address.country === 'IN' || address.country === 'India' || 
-           serviceableStates.some(state => 
-             address.state.toLowerCase().includes(state.toLowerCase())
-           );
+    // For now, assume all addresses are potentially serviceable
+    // The actual serviceability check will be done by the backend
+    // when the order is placed, which will show proper error messages
+    return true;
   };
 
   useEffect(() => {

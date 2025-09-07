@@ -4,10 +4,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { subscriptionService, Subscription as SubscriptionType } from '@/services/subscription.service';
+import { useAddress } from '@/context/AddressContext';
 
 const Subscription = () => {
   const { colorScheme } = useColorScheme();
   const { menuId } = useLocalSearchParams();
+  const { selectedAddress } = useAddress();
   const [subscriptions, setSubscriptions] = useState<SubscriptionType[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -16,6 +18,13 @@ const Subscription = () => {
   useEffect(() => {
     fetchSubscriptions();
   }, []);
+
+  // Show warning if no address is selected
+  useEffect(() => {
+    if (!selectedAddress) {
+      setError('Please select a delivery address first to view available plans');
+    }
+  }, [selectedAddress]);
 
   const fetchSubscriptions = async () => {
     try {
