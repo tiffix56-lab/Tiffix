@@ -83,8 +83,7 @@ class OlaMapsService {
         longitude,
       };
 
-      const response = await apiService.request(
-        'POST',
+      const response = await apiService.post(
         API_ENDPOINTS.MAPS.REVERSE_GEOCODE,
         requestBody
       );
@@ -152,8 +151,7 @@ class OlaMapsService {
         radius: '50000', // 50km radius
       };
 
-      const response = await apiService.request(
-        'POST',
+      const response = await apiService.post(
         API_ENDPOINTS.MAPS.AUTOCOMPLETE,
         requestBody
       );
@@ -191,8 +189,7 @@ class OlaMapsService {
         ...(sessionToken && { sessionToken }),
       };
 
-      const response = await apiService.request(
-        'POST',
+      const response = await apiService.post(
         API_ENDPOINTS.MAPS.PLACE_DETAILS,
         requestBody
       );
@@ -266,8 +263,7 @@ class OlaMapsService {
    */
   async generateSessionToken(): Promise<string> {
     try {
-      const response = await apiService.request(
-        'GET',
+      const response = await apiService.get(
         API_ENDPOINTS.MAPS.SESSION_TOKEN
       );
 

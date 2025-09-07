@@ -50,6 +50,9 @@ class OlaMapsService {
                     'X-Request-Id': this.generateRequestId(),
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    'Origin': 'https://tiffix.in',
+                    'Referer': 'https://tiffix.in/',
+                    'User-Agent': 'Tiffix-Backend/1.0.0 (https://tiffix.in)'
                 },
             });
 
