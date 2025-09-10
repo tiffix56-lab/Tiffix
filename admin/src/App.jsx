@@ -21,6 +21,9 @@ import PromoCodes from "./pages/Admin/PromoCodes";
 import Referals from "./pages/Admin/Referals";
 import Order from "./pages/Admin/Order";
 import Reviews from "./pages/Admin/Reviews";
+import Profile from "./pages/Vendor/Profile";
+import Dashboard from "./pages/Admin/Dashboard";
+import Analytics from "./pages/Admin/Analytics";
 
 
 
@@ -37,7 +40,7 @@ function App() {
               <AdminLayout />
             </ProtectedRoute>
           }>
-            <Route path="/" element={<h1>Admin Dashboard</h1>} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/user-management" element={<UserManagement />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/location-zone" element={<LocationZone />} />
@@ -50,6 +53,7 @@ function App() {
             <Route path="/promo-codes" element={<PromoCodes />} />
             <Route path="/referrals" element={<Referals />} />
             <Route path="/reviews" element={<Reviews />} />
+            <Route path="/analytics" element={<Analytics />} />
           </Route>
 
           {/* Vendor Routes */}
@@ -58,11 +62,9 @@ function App() {
               <VendorLayout />
             </ProtectedRoute>
           }>
-            <Route path="/vendor" element={<h1>Vendor Dashboard</h1>} />
-            <Route path="/vendor/menu" element={<h1>My Menu</h1>} />
+            <Route path="/vendor" element={<Profile />} />
             <Route path="/vendor/orders" element={<Orders />} />
-            <Route path="/vendor/analytics" element={<h1>Analytics</h1>} />
-            <Route path="/vendor/profile" element={<h1>Profile</h1>} />
+            <Route path="/vendor/reviews" element={<Reviews />} />
             <Route path="/vendor/customers" element={<Customers />} />
           </Route>
         </Routes>

@@ -14,6 +14,7 @@ function AdminLayout() {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Analytics', href: '/analytics', icon: ClipboardList },
     { name: 'Daily Meals', href: '/daily-meals', icon: Calendar },
     { name: 'Orders', href: '/orders', icon: ShoppingCart },
     { name: 'Menu Management', href: '/menu', icon: ChefHat },

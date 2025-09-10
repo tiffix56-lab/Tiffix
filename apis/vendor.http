@@ -159,6 +159,164 @@ Content-Type: application/json
 
 ###
 
+# Get my vendor dashboard stats
+GET {{baseUrl}}/vendors/me/dashboard-stats
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Get my vendor analytics
+GET {{baseUrl}}/vendors/me/analytics
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Get my vendor earnings summary
+GET {{baseUrl}}/vendors/me/earnings
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Get my vendor earnings by date range
+GET {{baseUrl}}/vendors/me/earnings?startDate=2024-01-01&endDate=2024-01-31
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Update my business documents
+PUT {{baseUrl}}/vendors/me/documents
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "businessLicense": "BL123456789",
+    "foodSafetyLicense": "FSL987654321",
+    "taxId": "TAX456789123",
+    "bankAccount": {
+        "accountNumber": "1234567890",
+        "ifscCode": "HDFC0000123",
+        "accountHolderName": "Chef Name",
+        "bankName": "HDFC Bank"
+    }
+}
+
+###
+
+# Upload vendor profile image
+POST {{baseUrl}}/vendors/me/profile-image
+Authorization: Bearer {{vendorToken}}
+Content-Type: multipart/form-data
+
+# Note: Use form data with file upload
+# profileImage=@/path/to/image.jpg
+
+###
+
+# Get my vendor notifications
+GET {{baseUrl}}/vendors/me/notifications
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Mark notification as read
+PATCH {{baseUrl}}/vendors/me/notifications/{{notificationId}}/read
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Get my vendor subscription plans
+GET {{baseUrl}}/vendors/me/subscription-plans
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Update vendor subscription plan
+POST {{baseUrl}}/vendors/me/subscribe
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "planId": "basic",
+    "paymentMethod": "card"
+}
+
+###
+
+# Get my vendor reviews summary
+GET {{baseUrl}}/vendors/me/reviews-summary
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Change vendor password
+PUT {{baseUrl}}/vendors/me/change-password
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "currentPassword": "currentPass123!",
+    "newPassword": "newPass123!",
+    "confirmPassword": "newPass123!"
+}
+
+###
+
+# Update vendor preferences
+PUT {{baseUrl}}/vendors/me/preferences
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "notifications": {
+        "email": true,
+        "sms": true,
+        "push": true,
+        "orderAlerts": true,
+        "reviewAlerts": true,
+        "paymentAlerts": true
+    },
+    "privacy": {
+        "showPhoneNumber": false,
+        "showEmailAddress": false,
+        "allowDirectContact": true
+    },
+    "language": "en",
+    "currency": "INR",
+    "timezone": "Asia/Kolkata"
+}
+
+###
+
+# Get vendor order history
+GET {{baseUrl}}/vendors/me/order-history
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Get vendor order history with filters
+GET {{baseUrl}}/vendors/me/order-history?status=completed&startDate=2024-01-01&endDate=2024-01-31&page=1&limit=20
+Authorization: Bearer {{vendorToken}}
+
+###
+
+# Deactivate vendor account temporarily  
+PATCH {{baseUrl}}/vendors/me/deactivate
+Authorization: Bearer {{vendorToken}}
+Content-Type: application/json
+
+{
+    "reason": "Taking a break for personal reasons",
+    "reactivationDate": "2024-02-01"
+}
+
+###
+
+# Reactivate vendor account
+PATCH {{baseUrl}}/vendors/me/reactivate
+Authorization: Bearer {{vendorToken}}
+
+###
+
 ### ========================================
 ### ADMIN VENDOR ROUTES
 ### ========================================

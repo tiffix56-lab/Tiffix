@@ -1,239 +1,438 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, ShoppingCart, DollarSign, TrendingUp, 
-  Clock, ChefHat, MapPin, Star, Activity, Calendar,
-  Package, UserCheck, AlertCircle, BarChart3
-} from 'lucide-react';
-import Card from '../../components/ui/Card';
-import StatsCard from '../../components/Dashboard/StatsCard';
-import Badge from '../../components/ui/Badge';
-import Button from '../../components/ui/Button';
+import React, { useState, useEffect } from 'react'
+import {
+  Users, Package, DollarSign, TrendingUp, TrendingDown,
+  MapPin, Star, RefreshCw, BarChart3, Activity, 
+  ShoppingCart, Building2
+} from 'lucide-react'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area
+} from 'recharts'
+import toast from 'react-hot-toast'
+import Card from '../../components/ui/Card'
+import Button from '../../components/ui/Button'
+import {
+  getAdminDashboardStatsApi
+} from '../../service/api.service'
 
-const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalOrders: 0,
-    revenue: 0,
-    activeVendors: 0
-  });
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
-  // Mock data loading
+function Dashboard() {
+  const [dashboardStats, setDashboardStats] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchDashboardData = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
+
+      const response = await getAdminDashboardStatsApi()
+      setDashboardStats(response?.data || {})
+
+      if (isRefresh) {
+        toast.success('Dashboard data refreshed')
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+      toast.error('Failed to load dashboard data')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
   useEffect(() => {
-    setTimeout(() => {
-      setStats({
-        totalUsers: 1234,
-        totalOrders: 567,
-        revenue: 89450,
-        activeVendors: 45
-      });
-      setLoading(false);
-    }, 1500);
-  }, []);
+    fetchDashboardData()
+  }, [])
 
-  const recentOrders = [
-    { id: '#12345', customer: 'John Doe', amount: '$45.50', status: 'delivered', time: '2 min ago' },
-    { id: '#12344', customer: 'Jane Smith', amount: '$32.20', status: 'preparing', time: '5 min ago' },
-    { id: '#12343', customer: 'Mike Johnson', amount: '$67.80', status: 'pending', time: '8 min ago' },
-    { id: '#12342', customer: 'Sarah Wilson', amount: '$28.90', status: 'delivered', time: '12 min ago' },
-  ];
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount || 0)
+  }
 
-  const topVendors = [
-    { name: 'Spice Kitchen', orders: 234, rating: 4.8, revenue: '$12,450' },
-    { name: 'Mama\'s Place', orders: 187, rating: 4.7, revenue: '$9,680' },
-    { name: 'Street Food Co.', orders: 156, rating: 4.6, revenue: '$8,920' },
-    { name: 'Garden Fresh', orders: 143, rating: 4.9, revenue: '$7,540' },
-  ];
+  const formatNumber = (number) => {
+    return new Intl.NumberFormat('en-IN').format(number || 0)
+  }
+
+  const getGrowthIndicator = (growth) => {
+    const growthNum = parseFloat(growth) || 0
+    const isPositive = growthNum >= 0
+    
+    return (
+      <div className={`flex items-center gap-1 text-xs ${
+        isPositive ? 'text-green-400' : 'text-red-400'
+      }`}>
+        {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+        <span>{Math.abs(growthNum)}%</span>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto mb-4" />
+            <div className="text-lg text-gray-400">Loading dashboard...</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { overallStats, revenueData, orderStatusData, topProviders, zonePerformance, monthlyTrends, overview } = dashboardStats
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-            Dashboard
-          </h1>
-          <p className="text-gray-400">
-            Welcome back! Here's what's happening with Tiffix today.
+          <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+          <p className="text-gray-400 mt-1">
+            Period: {overview?.period || '30d'} | 
+            Last Updated: {overview?.lastUpdated || 'N/A'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" icon={Calendar}>
-            Last 30 days
-          </Button>
-          <Button variant="primary" size="sm" icon={BarChart3}>
-            View Reports
-          </Button>
-        </div>
+        <Button
+          onClick={() => fetchDashboardData(true)}
+          variant="secondary"
+          size="sm"
+          icon={RefreshCw}
+          loading={refreshing}
+        >
+          Refresh
+        </Button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatsCard
-          title="Total Users"
-          value={loading ? null : stats.totalUsers.toLocaleString()}
-          change="+12.3%"
-          changeType="increase"
-          icon={Users}
-          color="primary"
-          loading={loading}
-        />
-        <StatsCard
-          title="Total Orders"
-          value={loading ? null : stats.totalOrders.toLocaleString()}
-          change="+8.7%"
-          changeType="increase"
-          icon={ShoppingCart}
-          color="secondary"
-          loading={loading}
-        />
-        <StatsCard
-          title="Revenue"
-          value={loading ? null : `$${(stats.revenue / 1000).toFixed(1)}k`}
-          change="+15.2%"
-          changeType="increase"
-          icon={DollarSign}
-          color="success"
-          loading={loading}
-        />
-        <StatsCard
-          title="Active Vendors"
-          value={loading ? null : stats.activeVendors}
-          change="-2.1%"
-          changeType="decrease"
-          icon={ChefHat}
-          color="warning"
-          loading={loading}
-        />
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Total Revenue</p>
+              <p className="text-2xl font-bold text-white">{formatCurrency(overallStats?.totalRevenue?.value)}</p>
+              {getGrowthIndicator(overallStats?.totalRevenue?.growth)}
+            </div>
+            <DollarSign className="w-8 h-8 text-green-400" />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Total Orders</p>
+              <p className="text-2xl font-bold text-white">{formatNumber(overallStats?.totalOrders?.value)}</p>
+              {getGrowthIndicator(overallStats?.totalOrders?.growth)}
+            </div>
+            <Package className="w-8 h-8 text-blue-400" />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Active Users</p>
+              <p className="text-2xl font-bold text-white">{formatNumber(overallStats?.activeUsers?.value)}</p>
+              {getGrowthIndicator(overallStats?.activeUsers?.growth)}
+            </div>
+            <Users className="w-8 h-8 text-purple-400" />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Avg Rating</p>
+              <p className="text-2xl font-bold text-white">{overallStats?.avgRating?.value || '0.0'}</p>
+              {getGrowthIndicator(overallStats?.avgRating?.growth)}
+            </div>
+            <Star className="w-8 h-8 text-yellow-400" />
+          </div>
+        </Card>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
-        {/* Recent Orders */}
-        <div className="xl:col-span-2">
-          <Card>
-            <Card.Header>
-              <div className="flex items-center justify-between">
-                <Card.Title>Recent Orders</Card.Title>
-                <Badge variant="primary" size="sm">{recentOrders.length} new</Badge>
+      {/* Revenue & Order Trends */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Monthly Revenue Trend */}
+        <Card className="p-6">
+          <Card.Header>
+            <div className="flex items-center justify-between">
+              <Card.Title>Monthly Revenue Trend</Card.Title>
+              <BarChart3 className="w-5 h-5 text-gray-400" />
+            </div>
+          </Card.Header>
+          <Card.Content>
+            {monthlyTrends?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={monthlyTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" tickFormatter={(value) => `₹${(value / 1000)}K`} />
+                  <Tooltip 
+                    formatter={(value) => [formatCurrency(value), 'Revenue']}
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#10b981" 
+                    fill="#10b981"
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-16 text-gray-400">No revenue data available</div>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Monthly Orders Trend */}
+        <Card className="p-6">
+          <Card.Header>
+            <div className="flex items-center justify-between">
+              <Card.Title>Monthly Orders Trend</Card.Title>
+              <Activity className="w-5 h-5 text-gray-400" />
+            </div>
+          </Card.Header>
+          <Card.Content>
+            {monthlyTrends?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={monthlyTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip 
+                    formatter={(value) => [formatNumber(value), 'Orders']}
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="orders" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-16 text-gray-400">No order data available</div>
+            )}
+          </Card.Content>
+        </Card>
+      </div>
+
+      {/* Order Status Distribution & Zone Performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Order Status Distribution */}
+        <Card className="p-6">
+          <Card.Header>
+            <div className="flex items-center justify-between">
+              <Card.Title>Order Status Distribution</Card.Title>
+              <ShoppingCart className="w-5 h-5 text-gray-400" />
+            </div>
+          </Card.Header>
+          <Card.Content>
+            {orderStatusData?.length > 0 ? (
+              <div className="flex flex-col lg:flex-row items-center gap-6">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={orderStatusData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {orderStatusData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color || COLORS[index % COLORS.length]} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => [formatNumber(value), 'Orders']}
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2">
+                  {orderStatusData.map((status, index) => (
+                    <div key={status.name} className="flex items-center gap-3">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: status.color || COLORS[index % COLORS.length] }}
+                      ></div>
+                      <span className="text-gray-300 text-sm">{status.name}</span>
+                      <span className="text-white font-medium">{formatNumber(status.value)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </Card.Header>
-            <Card.Content>
+            ) : (
+              <div className="text-center py-16 text-gray-400">No order status data available</div>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Zone Performance */}
+        <Card className="p-6">
+          <Card.Header>
+            <div className="flex items-center justify-between">
+              <Card.Title>Zone Performance</Card.Title>
+              <MapPin className="w-5 h-5 text-gray-400" />
+            </div>
+          </Card.Header>
+          <Card.Content>
+            {zonePerformance?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={zonePerformance.slice(0, 5)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="zone" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      name === 'orders' ? formatNumber(value) : formatCurrency(value),
+                      name === 'orders' ? 'Orders' : 'Revenue'
+                    ]}
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  />
+                  <Bar dataKey="orders" fill="#3b82f6" name="orders" />
+                  <Bar dataKey="revenue" fill="#10b981" name="revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-16 text-gray-400">No zone data available</div>
+            )}
+          </Card.Content>
+        </Card>
+      </div>
+
+      {/* Top Providers & Revenue Data */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Providers */}
+        <Card className="p-6">
+          <Card.Header>
+            <div className="flex items-center justify-between">
+              <Card.Title>Top Providers</Card.Title>
+              <Building2 className="w-5 h-5 text-gray-400" />
+            </div>
+          </Card.Header>
+          <Card.Content>
+            {topProviders?.length > 0 ? (
               <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div 
-                    key={order.id}
-                    className="flex items-center justify-between p-4 rounded-xl bg-gray-700/20 hover:bg-gray-700/30 transition-colors duration-200"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-                        <span className="text-white text-sm font-semibold">
-                          {order.customer.split(' ').map(n => n[0]).join('')}
-                        </span>
+                {topProviders.map((provider, index) => (
+                  <div key={provider._id} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                        index === 0 ? 'bg-yellow-500' : 
+                        index === 1 ? 'bg-gray-400' : 
+                        index === 2 ? 'bg-orange-600' : 'bg-gray-600'
+                      }`}>
+                        {index + 1}
                       </div>
                       <div>
-                        <p className="font-medium text-white">{order.customer}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <span>{order.id}</span>
-                          <span>•</span>
-                          <span>{order.time}</span>
+                        <p className="text-white font-medium">{provider.name}</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-400">
+                          <span>{formatNumber(provider.orders)} orders</span>
+                          <span>Rating: {provider.rating?.toFixed(1) || '0.0'}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-white">{order.amount}</span>
-                      <Badge 
-                        variant={
-                          order.status === 'delivered' ? 'success' :
-                          order.status === 'preparing' ? 'warning' : 'default'
-                        }
-                        size="sm"
-                        dot
-                      >
-                        {order.status}
-                      </Badge>
+                    <div className="text-green-400 font-medium">
+                      {formatCurrency(provider.revenue)}
                     </div>
                   </div>
                 ))}
               </div>
-            </Card.Content>
-            <Card.Footer>
-              <Button variant="outline" fullWidth>
-                View All Orders
-              </Button>
-            </Card.Footer>
-          </Card>
-        </div>
+            ) : (
+              <div className="text-center py-16 text-gray-400">No provider data available</div>
+            )}
+          </Card.Content>
+        </Card>
 
-        {/* Top Vendors */}
-        <div>
-          <Card>
-            <Card.Header>
-              <Card.Title>Top Vendors</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              <div className="space-y-4">
-                {topVendors.map((vendor, index) => (
-                  <div key={vendor.name} className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-secondary-500 to-secondary-600 flex items-center justify-center text-white text-sm font-bold">
-                      #{index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate">{vendor.name}</p>
-                      <div className="flex items-center gap-3 text-sm text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                          <span>{vendor.rating}</span>
-                        </div>
-                        <span>•</span>
-                        <span>{vendor.orders} orders</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-white">{vendor.revenue}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card.Content>
-            <Card.Footer>
-              <Button variant="outline" fullWidth>
-                View All Vendors
-              </Button>
-            </Card.Footer>
-          </Card>
-        </div>
+        {/* Revenue Data Details */}
+        <Card className="p-6">
+          <Card.Header>
+            <div className="flex items-center justify-between">
+              <Card.Title>Revenue Details</Card.Title>
+              <DollarSign className="w-5 h-5 text-gray-400" />
+            </div>
+          </Card.Header>
+          <Card.Content>
+            {revenueData?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" tickFormatter={(value) => `₹${(value / 1000)}K`} />
+                  <Tooltip 
+                    formatter={(value, name) => [
+                      name === 'revenue' ? formatCurrency(value) : 
+                      name === 'orders' ? formatNumber(value) :
+                      formatNumber(value),
+                      name === 'revenue' ? 'Revenue' :
+                      name === 'orders' ? 'Orders' : 'Users'
+                    ]}
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
+                  />
+                  <Bar dataKey="revenue" fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-16 text-gray-400">No detailed revenue data available</div>
+            )}
+          </Card.Content>
+        </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
+      {/* Summary Stats */}
+      <Card className="p-6">
         <Card.Header>
-          <Card.Title>Quick Actions</Card.Title>
+          <Card.Title>Summary Statistics</Card.Title>
         </Card.Header>
         <Card.Content>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-            {[
-              { icon: Users, label: 'Manage Users', color: 'primary' },
-              { icon: ChefHat, label: 'Add Menu Item', color: 'secondary' },
-              { icon: MapPin, label: 'Location Zones', color: 'success' },
-              { icon: UserCheck, label: 'Vendor Assignment', color: 'warning' },
-              { icon: Package, label: 'Orders', color: 'danger' },
-              { icon: Activity, label: 'Analytics', color: 'primary' }
-            ].map((action) => (
-              <Button
-                key={action.label}
-                variant="outline"
-                className="flex flex-col items-center gap-2 h-20 text-xs"
-              >
-                <action.icon className="w-5 h-5" />
-                {action.label}
-              </Button>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{formatCurrency(overallStats?.totalRevenue?.value || 0)}</div>
+              <div className="text-sm text-gray-400">Total Revenue</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-400">{formatNumber(overallStats?.totalOrders?.value || 0)}</div>
+              <div className="text-sm text-gray-400">Total Orders</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-400">{formatNumber(overallStats?.activeUsers?.value || 0)}</div>
+              <div className="text-sm text-gray-400">Active Users</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-400">{overallStats?.avgRating?.value || '0.0'}</div>
+              <div className="text-sm text-gray-400">Average Rating</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-400">{formatNumber(topProviders?.length || 0)}</div>
+              <div className="text-sm text-gray-400">Active Providers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-cyan-400">{formatNumber(zonePerformance?.length || 0)}</div>
+              <div className="text-sm text-gray-400">Active Zones</div>
+            </div>
           </div>
         </Card.Content>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard

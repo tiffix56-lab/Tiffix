@@ -828,7 +828,7 @@ async function getHourlyOrderPattern() {
                             { case: { $eq: ['$_id', 22] }, then: '10PM' },
                             { case: { $eq: ['$_id', 23] }, then: '11PM' }
                         ],
-                        default: `${$_id}:00`
+                        default: { $concat: [{ $toString: '$_id' }, ':00'] }
                     }
                 },
                 orders: 1

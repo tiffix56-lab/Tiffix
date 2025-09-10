@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Home, Package, BarChart3, Settings, Menu, X, LogOut, Users } from "lucide-react";
+import { Home, Package, BarChart3, Settings, Menu, X, LogOut, Users, Star } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 
@@ -9,12 +9,13 @@ function VendorLayout() {
   const { user, logout } = useAuth();
 
   const navigation = [
-    { name: 'Dashboard', href: '/vendor', icon: Home },
-    { name: 'My Menu', href: '/vendor/menu', icon: Package },
+    { name: 'Profile', href: '/vendor', icon: Home },
+    // { name: 'My Menu', href: '/vendor/menu', icon: Package },
     { name: 'Orders', href: '/vendor/orders', icon: BarChart3 },
-    { name: 'Analytics', href: '/vendor/analytics', icon: BarChart3 },
-    { name: 'Profile', href: '/vendor/profile', icon: Settings },
+    // { name: 'Analytics', href: '/vendor/analytics', icon: BarChart3 },
+    // { name: 'Profile', href: '/vendor/profile', icon: Settings },
     { name: 'Customers', href: '/vendor/customers', icon: Users },
+    { name: 'Reviews', href: '/vendor/reviews', icon: Star },
   ];
 
   const isActive = (path) => {

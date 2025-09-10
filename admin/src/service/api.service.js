@@ -564,6 +564,116 @@ export const getVendorReviewsApi = async (params) => {
     return response.data;
 }
 
+// VENDOR PROFILE APIS
+
+export const getVendorMeApi = async () => {
+    const response = await servicesAxiosInstance.get('/vendors/me');
+    return response.data;
+}
+
+export const updateVendorMeProfileApi = async (body) => {
+    const response = await servicesAxiosInstance.put('/vendors/me/profile', body);
+    return response.data;
+}
+
+export const updateVendorMeAddressApi = async (body) => {
+    const response = await servicesAxiosInstance.put('/vendors/me/address', body);
+    return response.data;
+}
+
+export const getVendorDashboardStatsApi = async () => {
+    const response = await servicesAxiosInstance.get('/vendors/me/dashboard-stats');
+    return response.data;
+}
+
+export const getVendorAnalyticsApi = async () => {
+    const response = await servicesAxiosInstance.get('/vendors/me/analytics');
+    return response.data;
+}
+
+export const getVendorEarningsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/vendors/me/earnings', {
+        params
+    });
+    return response.data;
+}
+
+export const updateVendorDocumentsApi = async (body) => {
+    const response = await servicesAxiosInstance.put('/vendors/me/documents', body);
+    return response.data;
+}
+
+export const uploadVendorProfileImageApi = async (formData) => {
+    const response = await servicesAxiosInstance.post('/vendors/me/profile-image', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+    return response.data;
+}
+
+export const getVendorNotificationsApi = async () => {
+    const response = await servicesAxiosInstance.get('/vendors/me/notifications');
+    return response.data;
+}
+
+export const markNotificationReadApi = async (notificationId) => {
+    const response = await servicesAxiosInstance.patch(`/vendors/me/notifications/${notificationId}/read`);
+    return response.data;
+}
+
+export const getVendorSubscriptionPlansApi = async () => {
+    const response = await servicesAxiosInstance.get('/vendors/me/subscription-plans');
+    return response.data;
+}
+
+export const subscribeVendorPlanApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/vendors/me/subscribe', body);
+    return response.data;
+}
+
+export const getVendorReviewsSummaryApi = async () => {
+    const response = await servicesAxiosInstance.get('/vendors/me/reviews-summary');
+    return response.data;
+}
+
+export const changeVendorPasswordApi = async (body) => {
+    const response = await servicesAxiosInstance.put('/vendors/me/change-password', body);
+    return response.data;
+}
+
+export const updateVendorPreferencesApi = async (body) => {
+    const response = await servicesAxiosInstance.put('/vendors/me/preferences', body);
+    return response.data;
+}
+
+export const getVendorOrderHistoryApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/vendors/me/order-history', {
+        params
+    });
+    return response.data;
+}
+
+export const deactivateVendorAccountApi = async (body) => {
+    const response = await servicesAxiosInstance.patch('/vendors/me/deactivate', body);
+    return response.data;
+}
+
+export const reactivateVendorAccountApi = async () => {
+    const response = await servicesAxiosInstance.patch('/vendors/me/reactivate');
+    return response.data;
+}
+
+export const toggleVendorAvailabilityApi = async (vendorId) => {
+    const response = await servicesAxiosInstance.patch(`/vendors/${vendorId}/toggle-availability`);
+    return response.data;
+}
+
+export const updateVendorCapacityApi = async (vendorId, body) => {
+    const response = await servicesAxiosInstance.patch(`/vendors/${vendorId}/capacity`, body);
+    return response.data;
+}
+
 export const getPublicSubscriptionReviewsApi = async (subscriptionId, params) => {
     const response = await servicesAxiosInstance.get(`/public/subscriptions/${subscriptionId}/reviews`, {
         params
@@ -573,6 +683,49 @@ export const getPublicSubscriptionReviewsApi = async (subscriptionId, params) =>
 
 export const getPublicVendorReviewsApi = async (vendorId, params) => {
     const response = await servicesAxiosInstance.get(`/public/vendors/${vendorId}/reviews`, {
+        params
+    });
+    return response.data;
+}
+
+
+// ADMIN ANALYTICS APIS
+
+export const getAdminDashboardStatsApi = async () => {
+    const response = await servicesAxiosInstance.get('/admin/dashboard/stats');
+    return response.data;
+}
+
+export const getAdminUserAnalyticsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/analytics/users', {
+        params
+    });
+    return response.data;
+}
+
+export const getAdminOrderAnalyticsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/analytics/orders', {
+        params
+    });
+    return response.data;
+}
+
+export const getAdminRevenueAnalyticsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/analytics/revenue', {
+        params
+    });
+    return response.data;
+}
+
+export const getAdminVendorAnalyticsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/analytics/vendors', {
+        params
+    });
+    return response.data;
+}
+
+export const getAdminZoneAnalyticsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/analytics/zones', {
         params
     });
     return response.data;
