@@ -27,32 +27,61 @@ const PaymentVerification = () => {
     const handleDeepLink = (url: string) => {
       console.log('Deep link received:', url);
       
-      // Parse URL to extract orderId
+      // Parse URL to extract orderId and payment status
       try {
-        const parsedUrl = new URL(url);
-        const urlOrderId = parsedUrl.searchParams.get('orderId');
+        // Handle different URL formats
+        let parsedUrl: URL;
+        let urlOrderId: string | null = null;
+        let isPaymentSuccess = false;
+        let isPaymentFailed = false;
+        
+        // Try to parse as standard URL
+        try {
+          parsedUrl = new URL(url);
+          urlOrderId = parsedUrl.searchParams.get('orderId');
+          isPaymentSuccess = url.includes('payment-success') || parsedUrl.host === 'payment-success';
+          isPaymentFailed = url.includes('payment-failed') || parsedUrl.host === 'payment-failed';
+        } catch (urlError) {
+          // Handle custom scheme URLs like tiffix://payment-success?orderId=123
+          if (url.startsWith('tiffix://')) {
+            const urlParts = url.replace('tiffix://', '').split('?');
+            const path = urlParts[0];
+            const queryString = urlParts[1];
+            
+            isPaymentSuccess = path === 'payment-success';
+            isPaymentFailed = path === 'payment-failed';
+            
+            if (queryString) {
+              const searchParams = new URLSearchParams(queryString);
+              urlOrderId = searchParams.get('orderId');
+            }
+          }
+        }
         
         console.log('Parsed deep link URL:', {
           url,
-          host: parsedUrl.host,
-          pathname: parsedUrl.pathname,
           orderId: urlOrderId,
-          currentOrderId: orderId
+          currentOrderId: orderId,
+          isPaymentSuccess,
+          isPaymentFailed
         });
         
         // Handle PhonePe payment deep links
-        if (url.includes('payment-success') || parsedUrl.host === 'payment-success') {
+        if (isPaymentSuccess) {
           console.log('Payment SUCCESS deep link detected');
           
-          // Verify this is for the current payment
+          // Verify this is for the current payment if orderId is available
           if (urlOrderId && urlOrderId === orderId) {
             console.log('Order ID matches, checking payment status...');
             checkPaymentStatus();
+          } else if (!urlOrderId) {
+            console.log('No order ID in URL, checking status for current order...');
+            checkPaymentStatus();
           } else {
-            console.log('Order ID mismatch or missing, still checking status...');
+            console.log('Order ID mismatch, but still checking status...');
             checkPaymentStatus();
           }
-        } else if (url.includes('payment-failed') || parsedUrl.host === 'payment-failed') {
+        } else if (isPaymentFailed) {
           console.log('Payment FAILED deep link detected');
           Alert.alert(
             'Payment Failed',
@@ -64,6 +93,10 @@ const PaymentVerification = () => {
               }
             ]
           );
+        } else {
+          // Unknown deep link format, check payment status anyway
+          console.log('Unknown deep link format, checking payment status...');
+          checkPaymentStatus();
         }
       } catch (error) {
         console.error('Error parsing deep link URL:', error);

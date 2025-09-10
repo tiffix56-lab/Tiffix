@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
@@ -125,6 +125,52 @@ const Profile = () => {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        Alert.alert('Limited functionality', 'Image picker is limited in web browser');
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (result.canceled) return;
+
+      setUploadingPhoto(true);
+      const selectedImage = result.assets[0];
+
+      try {
+        const imageUrl = await uploadService.uploadImageAsset(selectedImage);
+        
+        // Update user profile with new image URL
+        const updateResponse = await userService.updateUserProfile({
+          avatar: imageUrl
+        });
+
+        if (updateResponse.success) {
+          setUser(prev => prev ? { ...prev, avatar: imageUrl } : null);
+          
+          Alert.alert('Success', 'Profile picture updated successfully');
+        } else {
+          throw new Error(updateResponse.message || 'Failed to update profile');
+        }
+      } catch (error) {
+        console.error('Image upload error:', error);
+        Alert.alert('Upload Failed', error.message || 'Could not upload the image');
+      }
+    } catch (error) {
+      console.error('Image picker error:', error);
+      Alert.alert('Error', 'Failed to open image picker');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handlePhotoPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
@@ -139,7 +185,7 @@ const Profile = () => {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Camera', onPress: () => openCamera() },
-        { text: 'Gallery', onPress: () => openGallery() },
+        { text: 'Gallery', onPress: () => pickImage() },
       ]
     );
   };
@@ -152,86 +198,41 @@ const Profile = () => {
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      uploadPhoto(result.assets[0]);
-    }
-  };
-
-  const openGallery = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      uploadPhoto(result.assets[0]);
-    }
-  };
-
-  const uploadPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
     try {
-      setUploadingPhoto(true);
-      
-      console.log('📱 Starting photo upload from profile page...', {
-        uri: asset.uri,
-        fileName: asset.fileName,
-        mimeType: asset.mimeType,
-        fileSize: asset.fileSize
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
       });
-      
-      // Create FormData for file upload with proper React Native format
-      const formData = new FormData();
-      
-      // For React Native, we need to create the file object with specific structure
-      const fileObject = {
-        uri: asset.uri,
-        type: asset.mimeType || 'image/jpeg',
-        name: asset.fileName || `profile_${Date.now()}.jpg`,
-      };
-      
-      console.log('📦 File object for upload:', fileObject);
-      
-      formData.append('file', fileObject as any);
-      formData.append('category', 'profile');
 
-      console.log('🚀 Calling upload service...');
-      const uploadResponse = await uploadService.uploadProfilePhoto(formData as any);
-      
-      console.log('📤 Upload response:', uploadResponse);
-      
-      if (uploadResponse.success && uploadResponse.data) {
-        console.log('✅ Upload successful, updating user profile...');
+      if (result.canceled) return;
+
+      setUploadingPhoto(true);
+      const selectedImage = result.assets[0];
+
+      try {
+        const imageUrl = await uploadService.uploadImageAsset(selectedImage);
         
-        // Update user profile with new avatar URL
+        // Update user profile with new image URL
         const updateResponse = await userService.updateUserProfile({
-          avatar: uploadResponse.data.url,
+          avatar: imageUrl
         });
-        
-        console.log('👤 Profile update response:', updateResponse);
-        
+
         if (updateResponse.success) {
-          Alert.alert('Success', 'Profile photo updated successfully');
-          fetchUserData(); // Refresh user data
+          setUser(prev => prev ? { ...prev, avatar: imageUrl } : null);
+          
+          Alert.alert('Success', 'Profile picture updated successfully');
         } else {
-          console.error('❌ Profile update failed:', updateResponse.message);
-          Alert.alert('Error', updateResponse.message || 'Failed to update profile photo');
+          throw new Error(updateResponse.message || 'Failed to update profile');
         }
-      } else {
-        console.error('❌ Upload failed:', uploadResponse.message);
-        Alert.alert('Error', uploadResponse.message || 'Failed to upload photo');
+      } catch (error) {
+        console.error('Camera upload error:', error);
+        Alert.alert('Upload Failed', error.message || 'Could not upload the image');
       }
     } catch (error) {
-      console.error('❌ Photo upload error:', error);
-      Alert.alert('Error', 'Failed to upload photo. Please try again.');
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera');
     } finally {
       setUploadingPhoto(false);
     }

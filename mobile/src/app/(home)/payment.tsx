@@ -105,14 +105,17 @@ const Payment = () => {
       const orderPayload: InitiatePurchaseRequest = {
         subscriptionId: orderData.subscriptionId,
         deliveryAddress: {
-          street: "789 Pine St",
-          city: "Mumbai",
-          state: "Maharashtra",
-          country: "India",
-          zipCode: "400002",
+          street: orderData.deliveryAddress.street || orderData.deliveryAddress.label || "",
+          city: orderData.deliveryAddress.city || "",
+          state: orderData.deliveryAddress.state || "",
+          country: orderData.deliveryAddress.country || "India",
+          zipCode: orderData.deliveryAddress.zipCode || "",
           coordinates: {
             type: "Point",
-            coordinates: [72.8777, 19.0760]
+            coordinates: [
+              orderData.deliveryAddress.coordinates?.longitude || 0,
+              orderData.deliveryAddress.coordinates?.latitude || 0
+            ]
           }
         },
         mealTimings: {
@@ -193,7 +196,27 @@ const Payment = () => {
           setLoading(false);
         }
       } else {
-        Alert.alert('Order Failed', response.message || 'Failed to initiate payment');
+        // Check if it's a delivery not available error
+        if (response.message?.includes('Delivery not available') || response.message?.includes('pincode')) {
+          Alert.alert(
+            'Delivery Not Available', 
+            'Sorry, we don\'t deliver to this address yet. Please select a different address or check back soon!',
+            [
+              {
+                text: 'Select Different Address',
+                onPress: () => {
+                  router.back(); // Go back to delivery information screen
+                }
+              },
+              {
+                text: 'Cancel',
+                style: 'cancel'
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Order Failed', response.message || 'Failed to initiate payment');
+        }
         setLoading(false);
       }
     } catch (error) {

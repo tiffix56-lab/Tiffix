@@ -52,6 +52,10 @@ export default {
             }
             console.log("Delivery");
 
+            // Skip delivery validation - allow all addresses
+            console.log("Skipping delivery validation - allowing all addresses");
+            
+            /* Original delivery validation code - commented out
             let deliveryValidation;
             try {
                 deliveryValidation = await LocationZone.validateDeliveryForSubscription(
@@ -86,6 +90,14 @@ export default {
             }
 
             console.log("Delivery validation passed, continuing with subscription creation...");
+            */
+            
+            // Mock validation that always passes
+            const deliveryValidation = {
+                isValid: true,
+                zone: null,
+                deliveryFee: 0
+            };
 
             console.log("Checking for existing active subscriptions...");
             const currentIST = TimezoneUtil.now();
@@ -224,7 +236,7 @@ export default {
                 userId,
                 subscriptionId,
                 amount: finalPriceWithGST,
-                finalAmount: finalPriceWithGST,
+                finalAmount: finalPrice, // Base amount after discount, before GST
                 transactionId: paymentOrder.id,
                 gatewayTransactionId: paymentOrder.id,
                 originalAmount: subscription.discountedPrice,

@@ -57,6 +57,13 @@ export const API_ENDPOINTS = {
   UPLOAD: {
     FILE: '/upload-file',
   },
+  MAPS: {
+    AUTOCOMPLETE: '/maps/autocomplete',
+    REVERSE_GEOCODE: '/maps/reverse-geocode',
+    PLACE_DETAILS: '/maps/place-details',
+    SESSION_TOKEN: '/maps/session-token',
+    TEST_CONNECTION: '/maps/test-connection',
+  },
 } as const;
 
 export const HTTP_STATUS = {

@@ -35,16 +35,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const { colorScheme } = useColorScheme();
   const mapRef = useRef<MapView>(null);
   
+  // Use Delhi as default center (more central to India) or user's initial location
+  const defaultLocation = initialLocation || {
+    latitude: 28.6139, // Delhi
+    longitude: 77.2090,
+  };
+
   const [region, setRegion] = useState<Region>({
-    latitude: initialLocation?.latitude || 27.1767, // Default to Agra
-    longitude: initialLocation?.longitude || 78.0081,
+    latitude: defaultLocation.latitude,
+    longitude: defaultLocation.longitude,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
   
   const [markerPosition, setMarkerPosition] = useState({
-    latitude: initialLocation?.latitude || 27.1767,
-    longitude: initialLocation?.longitude || 78.0081,
+    latitude: defaultLocation.latitude,
+    longitude: defaultLocation.longitude,
   });
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -218,13 +224,19 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
           {/* Search Results */}
           {searchResults.length > 0 && (
-            <View className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-64">
-              <ScrollView className="py-2">
+            <View className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50" style={{ maxHeight: 250 }}>
+              <ScrollView 
+                style={{ maxHeight: 250 }}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+              >
                 {searchResults.map((result, index) => (
                   <TouchableOpacity
                     key={result.place_id}
                     onPress={() => selectPlace(result)}
-                    className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                    className="px-4 py-3 border-b border-gray-100 dark:border-gray-700"
+                    style={{ minHeight: 60 }}>
                     <Text
                       className="text-black dark:text-white font-medium"
                       style={{ fontFamily: 'Poppins_500Medium' }}

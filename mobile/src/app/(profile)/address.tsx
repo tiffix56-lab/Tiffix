@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { addressService } from '@/services/address.service';
 import { Address as AddressType } from '@/types/address.types';
-import axios from 'axios';
+import { mapsService, AutocompleteResult, ParsedAddress } from '@/services/maps.service';
 import * as Location from 'expo-location';
 
 const Address = () => {
@@ -27,11 +27,11 @@ const Address = () => {
   });
   const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [addressSearchQuery, setAddressSearchQuery] = useState('');
-  const [addressSearchResults, setAddressSearchResults] = useState<any[]>([]);
+  const [addressSearchResults, setAddressSearchResults] = useState<AutocompleteResult[]>([]);
   const [isAddressSearchLoading, setIsAddressSearchLoading] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+  const [selectedPlace, setSelectedPlace] = useState<ParsedAddress | null>(null);
+  const [sessionToken] = useState(() => mapsService.generateSessionToken());
 
-  const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
 
@@ -73,127 +73,38 @@ const Address = () => {
   };
 
   const searchAddressPlaces = async (query: string): Promise<void> => {
-    if (!GOOGLE_MAPS_API_KEY || query.length < 3) {
+    if (query.length < 2) {
       setAddressSearchResults([]);
       return;
     }
 
     setIsAddressSearchLoading(true);
     try {
-      const autocompleteResponse = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
-        {
-          params: {
-            input: query,
-            key: GOOGLE_MAPS_API_KEY,
-            components: 'country:in',
-            language: 'en',
-          }
-        }
-      );
-
-      const textSearchResponse = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json`,
-        {
-          params: {
-            query: query + ' India',
-            key: GOOGLE_MAPS_API_KEY,
-            language: 'en',
-          }
-        }
-      );
-
-      let combinedResults = [];
-
-      if (autocompleteResponse.data.status === 'OK') {
-        const autocompleteFormatted = autocompleteResponse.data.predictions.map((prediction: any) => ({
-          ...prediction,
-          source: 'autocomplete'
-        }));
-        combinedResults.push(...autocompleteFormatted);
-      }
-
-      if (textSearchResponse.data.status === 'OK') {
-        const textSearchFormatted = textSearchResponse.data.results.map((place: any) => ({
-          place_id: place.place_id,
-          structured_formatting: {
-            main_text: place.name,
-            secondary_text: place.formatted_address
-          },
-          description: place.formatted_address,
-          source: 'textsearch',
-          geometry: place.geometry
-        }));
-        combinedResults.push(...textSearchFormatted);
-      }
-
-      const uniqueResults = combinedResults.filter((result, index, self) =>
-        index === self.findIndex(r => r.place_id === result.place_id)
-      );
-
-      setAddressSearchResults(uniqueResults.slice(0, 10));
+      console.log('🔍 Searching places with Ola Maps:', query);
+      const results = await mapsService.searchPlaces(query, sessionToken);
+      console.log('📍 Search results:', results);
+      setAddressSearchResults(results.slice(0, 10));
     } catch (error) {
-      console.error('Error searching places:', error);
+      console.error('Error searching places with Ola Maps:', error);
+      setAddressSearchResults([]);
     } finally {
       setIsAddressSearchLoading(false);
     }
   };
 
-  const getPlaceDetails = async (placeId: string): Promise<any> => {
-    if (!GOOGLE_MAPS_API_KEY) return null;
-
+  const getPlaceDetails = async (placeId: string): Promise<ParsedAddress | null> => {
     try {
-      const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/details/json`,
-        {
-          params: {
-            place_id: placeId,
-            fields: 'geometry,formatted_address,name,address_components',
-            key: GOOGLE_MAPS_API_KEY,
-          }
-        }
-      );
-
-      if (response.data.status === 'OK') {
-        return response.data.result;
-      }
+      console.log('📍 Getting place details with Ola Maps:', placeId);
+      const result = await mapsService.getPlaceDetails(placeId, sessionToken);
+      console.log('🏠 Place details result:', result);
+      return result;
     } catch (error) {
-      console.error('Error getting place details:', error);
+      console.error('Error getting place details from Ola Maps:', error);
+      return null;
     }
-    return null;
   };
 
-  const parseAddressComponents = (addressComponents: any[]) => {
-    let street = '', city = '', state = '', zipCode = '', country = '';
-    
-    addressComponents.forEach((component: any) => {
-      if (component.types.includes('street_number') || component.types.includes('route')) {
-        street += component.long_name + ' ';
-      }
-      if (component.types.includes('locality') || component.types.includes('sublocality')) {
-        city = component.long_name;
-      }
-      if (component.types.includes('administrative_area_level_1')) {
-        state = component.short_name;
-      }
-      if (component.types.includes('postal_code')) {
-        zipCode = component.long_name;
-      }
-      if (component.types.includes('country')) {
-        country = component.short_name;
-      }
-    });
-
-    return {
-      street: street.trim(),
-      city,
-      state,
-      zipCode,
-      country
-    };
-  };
-
-  const handleAddressSelect = async (prediction?: any): Promise<void> => {
+  const handleAddressSelect = async (prediction?: AutocompleteResult): Promise<void> => {
     if (!prediction) {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -211,67 +122,93 @@ const Address = () => {
           longitude: location.coords.longitude,
         });
 
-        if (addresses.length > 0) {
-          const addr = addresses[0];
+        // Try to reverse geocode the location
+        const address = await mapsService.reverseGeocode(location.coords.latitude, location.coords.longitude);
+        
+        if (address) {
           setNewAddress(prev => ({
             ...prev,
-            street: `${addr.streetNumber || ''} ${addr.street || ''}`.trim() || 'Current Location',
-            city: addr.city || 'Current Area',
-            state: addr.region || 'India',
-            zipCode: addr.postalCode || '',
+            street: address.street || 'Current Location',
+            city: address.city || 'Current Area',
+            state: address.state || 'India',
+            zipCode: address.zipCode || '',
             coordinates: {
               latitude: location.coords.latitude,
               longitude: location.coords.longitude
             }
           }));
-          setSelectedPlace({ description: 'Current Location' });
+          setSelectedPlace(address);
+        } else {
+          // Fallback to Expo reverse geocoding
+          const addresses = await Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+
+          if (addresses.length > 0) {
+            const addr = addresses[0];
+            const fallbackAddress: ParsedAddress = {
+              street: `${addr.streetNumber || ''} ${addr.street || ''}`.trim() || 'Current Location',
+              city: addr.city || 'Current Area',
+              state: addr.region || 'India',
+              zipCode: addr.postalCode || '',
+              country: addr.country || 'IN',
+              fullAddress: [addr.streetNumber, addr.street, addr.city, addr.region, addr.postalCode].filter(Boolean).join(', '),
+              coordinates: {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+              }
+            };
+            
+            setNewAddress(prev => ({
+              ...prev,
+              street: fallbackAddress.street,
+              city: fallbackAddress.city,
+              state: fallbackAddress.state,
+              zipCode: fallbackAddress.zipCode,
+              coordinates: {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+              }
+            }));
+            setSelectedPlace(fallbackAddress);
+          }
         }
       } catch (error) {
+        console.error('Error getting current location:', error);
         Alert.alert('Error', 'Unable to get current location');
       }
     } else {
-      if (prediction.geometry && prediction.geometry.location) {
-        const { lat, lng } = prediction.geometry.location;
-        const addressComponents = prediction.address_components || [];
-        const parsed = parseAddressComponents(addressComponents);
-        
-        if (parsed.country !== 'IN') {
+      // Get place details from Ola Maps
+      const placeDetails = await getPlaceDetails(prediction.place_id);
+      if (placeDetails) {
+        // Check if it's in India (handle both ISO code 'IN' and full name 'India')
+        if (placeDetails.country && !['IN', 'India'].includes(placeDetails.country)) {
+          console.log('❌ Country not supported:', placeDetails.country);
           Alert.alert('Location Not Supported', 'Currently, we only deliver to addresses in India.');
           return;
         }
+        console.log('✅ Country validation passed:', placeDetails.country);
 
-        setNewAddress(prev => ({
-          ...prev,
-          street: parsed.street || prediction.description,
-          city: parsed.city,
-          state: parsed.state,
-          zipCode: parsed.zipCode,
-          coordinates: { latitude: lat, longitude: lng }
-        }));
-        setSelectedPlace(prediction);
-      } else {
-        const placeDetails = await getPlaceDetails(prediction.place_id);
-        if (placeDetails) {
-          const parsed = parseAddressComponents(placeDetails.address_components || []);
-          
-          if (parsed.country !== 'IN') {
-            Alert.alert('Location Not Supported', 'Currently, we only deliver to addresses in India.');
-            return;
-          }
-
-          setNewAddress(prev => ({
+        setNewAddress(prev => {
+          const updatedAddress = {
             ...prev,
-            street: parsed.street || placeDetails.formatted_address,
-            city: parsed.city,
-            state: parsed.state,
-            zipCode: parsed.zipCode,
+            street: placeDetails.street || placeDetails.fullAddress,
+            city: placeDetails.city,
+            state: placeDetails.state,
+            zipCode: placeDetails.zipCode,
             coordinates: {
-              latitude: placeDetails.geometry.location.lat,
-              longitude: placeDetails.geometry.location.lng
+              latitude: placeDetails.coordinates.latitude,
+              longitude: placeDetails.coordinates.longitude
             }
-          }));
-          setSelectedPlace(prediction);
-        }
+          };
+          console.log('🏠 Setting address from place details:', updatedAddress);
+          return updatedAddress;
+        });
+        setSelectedPlace(placeDetails);
+      } else {
+        Alert.alert('Error', 'Unable to get address details. Please try another location.');
+        return;
       }
     }
 
@@ -296,10 +233,21 @@ const Address = () => {
       return;
     }
 
-    if (newAddress.zipCode && !/^[0-9]{6}$/.test(newAddress.zipCode)) {
-      Alert.alert('Error', 'Please select an address with a valid 6-digit Indian pincode');
-      return;
+    // Validate pincode if present
+    if (newAddress.zipCode) {
+      const cleanedZipCode = newAddress.zipCode.replace(/\s+/g, '').trim();
+      if (!/^[0-9]{6}$/.test(cleanedZipCode)) {
+        console.log('❌ Invalid pincode:', newAddress.zipCode, 'cleaned:', cleanedZipCode);
+        Alert.alert('Error', 'Please select an address with a valid 6-digit Indian pincode');
+        return;
+      }
+      // Update with cleaned zipcode
+      newAddress.zipCode = cleanedZipCode;
+    } else {
+      console.log('⚠️ No pincode provided, but continuing...');
     }
+    
+    console.log('✅ Address validation passed:', newAddress);
 
     try {
       setAdding(true);
@@ -310,7 +258,9 @@ const Address = () => {
           longitude: newAddress.coordinates.longitude
         }
       };
+      console.log('📤 Sending address payload:', addressPayload);
       const response = await addressService.addAddress(addressPayload);
+      console.log('📥 Backend response:', response);
       
       if (response.success) {
         Alert.alert('Success', 'Address added successfully');
@@ -327,6 +277,7 @@ const Address = () => {
         setSelectedPlace(null);
         fetchAddresses();
       } else {
+        console.log('❌ Backend error:', response.message);
         Alert.alert('Error', response.message || 'Failed to add address');
       }
     } catch (err) {
@@ -454,7 +405,7 @@ const Address = () => {
                             : 'text-zinc-500 dark:text-zinc-400'
                         }`}
                         style={{ fontFamily: 'Poppins_400Regular' }}>
-                        {selectedPlace ? selectedPlace.description : 'Search for your address'}
+                        {selectedPlace ? selectedPlace.fullAddress || selectedPlace.street : 'Search for your address'}
                       </Text>
                       <Feather name="chevron-down" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
                     </View>
@@ -601,36 +552,60 @@ const Address = () => {
             {/* Address List */}
             {!addresses || addresses.length === 0 ? (
               <View className="flex-1 items-center justify-center py-20">
-                <Feather name="map-pin" size={48} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
-                <Text className="mt-4 text-center text-lg font-medium text-zinc-600 dark:text-zinc-300">
-                  No addresses found
+                <View className="rounded-full bg-gray-100 p-6 dark:bg-gray-800">
+                  <Feather name="map-pin" size={32} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
+                </View>
+                <Text 
+                  className="mt-6 text-center text-xl font-semibold text-black dark:text-white"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  No addresses yet
                 </Text>
-                <Text className="mt-2 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                  Add your first address to get started
+                <Text 
+                  className="mt-2 text-center text-base text-zinc-500 dark:text-zinc-400 px-8"
+                  style={{ fontFamily: 'Poppins_400Regular' }}>
+                  Add your delivery addresses to make ordering faster and easier
                 </Text>
-                <TouchableOpacity 
-                  onPress={() => setShowAddForm(true)}
-                  className="mt-4 rounded-xl bg-black px-6 py-3 dark:bg-white"
-                >
-                  <Text className="text-white font-medium dark:text-black">Add Address</Text>
-                </TouchableOpacity>
+                {!showAddForm && (
+                  <TouchableOpacity 
+                    onPress={() => setShowAddForm(true)}
+                    className="mt-6 rounded-xl bg-black px-8 py-4 dark:bg-white"
+                  >
+                    <View className="flex-row items-center">
+                      <Feather name="plus" size={20} color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
+                      <Text 
+                        className="ml-2 text-base font-semibold text-white dark:text-black"
+                        style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                        Add Your First Address
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
-              <View className="space-y-4">
+              <View className="space-y-3">
                 {Array.isArray(addresses) && addresses.map((address, index) => (
-                  <View key={index} className="rounded-lg border border-zinc-100 p-4 dark:border-zinc-800">
+                  <View key={index} className="rounded-xl bg-gray-50 p-4 dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1">
-                        <View className="flex-row items-center">
+                        <View className="flex-row items-center mb-2">
+                          <View className="mr-3">
+                            <Feather 
+                              name={address.label.toLowerCase().includes('home') ? 'home' : 
+                                    address.label.toLowerCase().includes('office') || address.label.toLowerCase().includes('work') ? 'briefcase' : 
+                                    'map-pin'} 
+                              size={18} 
+                              color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} 
+                            />
+                          </View>
                           <Text
-                            className="text-base font-semibold text-black dark:text-white"
+                            className="text-lg font-semibold text-black dark:text-white"
                             style={{ fontFamily: 'Poppins_600SemiBold' }}>
                             {address.label}
                           </Text>
                           {address.isDefault && (
-                            <View className="ml-2 rounded-full bg-green-500 px-2 py-1">
+                            <View className="ml-2 rounded-full bg-green-100 dark:bg-green-900 px-3 py-1">
                               <Text
-                                className="text-xs font-medium text-white"
+                                className="text-xs font-medium text-green-700 dark:text-green-300"
                                 style={{ fontFamily: 'Poppins_500Medium' }}>
                                 Default
                               </Text>
@@ -638,7 +613,7 @@ const Address = () => {
                           )}
                         </View>
                         <Text
-                          className="mt-1 text-sm text-gray-600 dark:text-gray-300"
+                          className="text-sm text-gray-600 dark:text-gray-300 leading-5"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
                           {address && [address.street, address.city, address.state, address.zipCode].filter(Boolean).join(', ')}
                         </Text>
@@ -646,7 +621,7 @@ const Address = () => {
                       <TouchableOpacity
                         onPress={() => handleDeleteAddress(index)}
                         disabled={deleting === index}
-                        className="ml-4 rounded-full bg-red-50 p-2 dark:bg-red-900">
+                        className="ml-3 rounded-full bg-red-50 p-2 dark:bg-red-900/30">
                         {deleting === index ? (
                           <ActivityIndicator size="small" color="#EF4444" />
                         ) : (
@@ -656,22 +631,24 @@ const Address = () => {
                     </View>
                   </View>
                 ))}
+
+                {/* Add another address button for existing addresses */}
+                {!showAddForm && (
+                  <TouchableOpacity
+                    onPress={() => setShowAddForm(true)}
+                    className="mt-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 py-6">
+                    <View className="flex-row items-center justify-center">
+                      <Feather name="plus" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                      <Text
+                        className="ml-2 text-base font-medium text-gray-600 dark:text-gray-400"
+                        style={{ fontFamily: 'Poppins_500Medium' }}>
+                        Add Another Address
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
-
-            {/* Add Address Button */}
-            <View className="px-6 py-4">
-              <TouchableOpacity
-                onPress={() => setShowAddForm(true)}
-                className="flex-row items-center justify-center rounded-xl bg-black py-4 dark:bg-white">
-                <Feather name="plus" size={20} color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
-                <Text
-                  className="ml-2 text-lg font-semibold text-white dark:text-black"
-                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                  Add New Address
-                </Text>
-              </TouchableOpacity>
-            </View>
 
             {/* Bottom Spacing */}
             <View className="h-20" />

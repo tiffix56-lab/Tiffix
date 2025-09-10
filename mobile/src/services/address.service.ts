@@ -36,7 +36,8 @@ class AddressService {
       const response = await apiService.get<{ addresses: Address[]; totalAddresses: number }>(API_ENDPOINTS.USER.ADDRESSES);
       
       // If profile not found, return empty addresses instead of error
-      if (!response.success && response.message?.includes('not found')) {
+      if (!response.success && (response.message?.includes('not found') || response.message?.includes('User profile not found'))) {
+        console.log('📝 User profile not found, returning empty addresses');
         return {
           success: true,
           message: 'No addresses found',

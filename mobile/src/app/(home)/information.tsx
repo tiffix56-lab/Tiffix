@@ -20,16 +20,16 @@ import { Address } from '@/types/address.types';
 import { MenuItem } from '@/types/menu.types';
 import { Subscription } from '@/services/subscription.service';
 import { orderStore } from '@/utils/order-store';
+import { useAddress } from '@/context/AddressContext';
 
 const Information = () => {
   const { colorScheme } = useColorScheme();
   const { subscriptionId, menuId } = useLocalSearchParams();
+  const { savedAddresses, selectedAddress, setSelectedAddress, refreshAddresses } = useAddress();
   
   // Data states
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
-  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   
   const [selectedDate, setSelectedDate] = useState('');
   const [lunchTime, setLunchTime] = useState('12:00 PM');
@@ -57,8 +57,8 @@ const Information = () => {
     try {
       setLoading(true);
       
-      // Fetch addresses first
-      const addressResponse = await addressService.getAllAddresses();
+      // Refresh addresses from context (this will update savedAddresses and selectedAddress)
+      await refreshAddresses();
       
       // Initialize other responses as null
       let subscriptionResponse: any = null;
@@ -71,30 +71,6 @@ const Information = () => {
       
       if (menuId) {
         menuResponse = await menuService.getMenuById(menuId as string);
-      }
-      
-      // Handle addresses
-      if (addressResponse.success && addressResponse.data) {
-        const addresses = addressResponse.data.addresses || [];
-        console.log('Raw addresses from API:', addresses);
-        
-        // Ensure addresses have proper coordinate format (they should already be transformed by service)
-        const validAddresses = addresses.filter(addr => {
-          const hasValidCoords = addr && addr.coordinates && 
-            (('latitude' in addr.coordinates && addr.coordinates.latitude !== undefined) ||
-             ('coordinates' in addr.coordinates && Array.isArray(addr.coordinates.coordinates)));
-          const hasValidFields = addr.label && addr.street && addr.city && addr.state && addr.zipCode;
-          return hasValidCoords && hasValidFields;
-        });
-        
-        console.log('Valid addresses after filtering:', validAddresses);
-        setSavedAddresses(validAddresses);
-        
-        const defaultAddress = validAddresses.find(addr => addr.isDefault);
-        if (defaultAddress) {
-          setSelectedAddress(defaultAddress);
-          console.log('Set default address:', defaultAddress);
-        }
       }
       
       // Handle subscription
@@ -217,7 +193,10 @@ const Information = () => {
                   {savedAddresses.map((address, index) => (
                     <TouchableOpacity
                       key={index}
-                      onPress={() => setSelectedAddress(address)}
+                      onPress={() => {
+                        setSelectedAddress(address);
+                        console.log('Selected address updated in context:', address);
+                      }}
                       className={`mb-3 rounded-xl border p-4 ${
                         selectedAddress === address
                           ? 'border-black bg-black dark:border-white dark:bg-white'
@@ -509,19 +488,8 @@ const Information = () => {
               console.log('📋 Subscription ID:', subscriptionId);
               console.log('🍔 Menu ID:', menuId);
               
-              // Use selected saved address or hardcoded fallback for verification
-              const deliveryAddress = selectedAddress || {
-                label: "Test Address - Mumbai",
-                street: "123 Test Street, Bandra West",
-                city: "Mumbai", 
-                state: "Maharashtra",
-                zipCode: "400050",
-                coordinates: {
-                  latitude: 19.0760,
-                  longitude: 72.8777
-                },
-                isDefault: false
-              };
+              // Use selected address from context
+              const deliveryAddress = selectedAddress;
 
               console.log('📍 Final delivery address:', deliveryAddress);
 
@@ -534,6 +502,7 @@ const Information = () => {
                 }
                 return;
               }
+
 
               // Validate address has all required fields
               if (!deliveryAddress.label || !deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.state || !deliveryAddress.zipCode) {
@@ -577,13 +546,7 @@ const Information = () => {
                 const deliveryInfo = {
                   subscriptionId: subscriptionId as string,
                   menuId: menuId as string,
-                  deliveryAddress: {
-                    ...deliveryAddress,
-                    coordinates: {
-                      latitude: 19.0760,
-                      longitude: 72.8777
-                    }
-                  },
+                  deliveryAddress: deliveryAddress,
                   deliveryDate: selectedDate,
                   lunchTime: lunchEnabled ? lunchTime : '',
                   dinnerTime: dinnerEnabled ? dinnerTime : '',

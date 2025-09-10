@@ -14,9 +14,17 @@ export default {
 
 
 
-            const userProfile = await UserProfile.findByUserId(userId).populate("userId");
+            let userProfile = await UserProfile.findByUserId(userId).populate("userId");
             if (!userProfile) {
-                return httpError(next, new Error('User profile not found'), req, 404);
+                console.log('👤 User profile not found, creating new profile for user:', userId);
+                userProfile = new UserProfile({ 
+                    userId,
+                    addresses: [],
+                    preferences: {}
+                });
+                await userProfile.save();
+                userProfile = await UserProfile.findById(userProfile._id).populate("userId");
+                console.log('✅ Created new user profile');
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { userProfile });
@@ -108,9 +116,16 @@ export default {
                 return httpError(next, bodyError, req, 422);
             }
 
-            const userProfile = await UserProfile.findOne({ userId });
+            let userProfile = await UserProfile.findOne({ userId });
             if (!userProfile) {
-                return httpError(next, new Error('User profile not found'), req, 404);
+                console.log('👤 User profile not found, creating new profile for user:', userId);
+                userProfile = new UserProfile({ 
+                    userId,
+                    addresses: [],
+                    preferences: {}
+                });
+                await userProfile.save();
+                console.log('✅ Created new user profile');
             }
 
             await userProfile.addAddress(bodyValue);
