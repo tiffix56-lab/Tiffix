@@ -52,10 +52,8 @@ const config = {
         },
         from: process.env.EMAIL_FROM || 'noreply@tiffix.com',
         templates: {
-            welcomeSubject: 'Welcome to Tiffix Tiffin Management System',
             verificationSubject: 'Verify your email address',
             passwordResetSubject: 'Reset your password',
-            referralRewardSubject: 'You earned referral credits!'
         }
     },
     razorpay: {
@@ -73,6 +71,12 @@ const config = {
         apiKey: process.env.OLA_MAPS_API_KEY || '',
         baseUrl: 'https://api.olamaps.io',
         apiVersion: 'v1'
+    },
+    aisensy: {
+        apiKey: process.env.AI_SENSY_API_KEY || "",
+        baseUrl: process.env.AI_SENSY_API_URL || "https://backend.aisensy.com",
+        campaignName: process.env.AI_SENSY_CAMPAIGN_NAME || "OTP_VERIFICATION_TEMPLATE",
+        apiEndpoint: "/campaign/t1/api/v2"
     }
 }
 

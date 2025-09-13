@@ -3,15 +3,15 @@
 @baseURL = http://localhost:4000/v1
 // For user
 # @email = user@gmail.com
-# @email = user2@gmail.com
+@email = user22232@gmail.com
 // For vendor
 # @email = vendor@gmail.com
 # @email = spice.restaurant@example.com
 // for Admin
-@email = admin@gmail.com
+# @email = admin@gmail.com
 @password = 12345678
 @name = Test User
-@phoneNumber = 91987654321
+@phoneNumber = 918308657425
 @accessToke = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIzMzI2OWUxZTUwZWJlNmY0ZDZkYTkiLCJlbWFpbCI6InVzZXIyQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoidXNlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU2NTc0MzI5LCJleHAiOjE3NTY2NjA3Mjl9.dpLcQX_SuS_9hkcn_zLzYHAacQFahZKJoeNYf6TXPHw
 
 ## Self

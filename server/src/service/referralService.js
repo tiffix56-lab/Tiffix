@@ -1,6 +1,5 @@
 import User from '../models/user.model.js';
 import UserProfile from '../models/userProfile.model.js';
-import emailService from './emailService.js';
 import logger from '../util/logger.js';
 import quicker from '../util/quicker.js';
 import config from '../config/config.js';
@@ -61,34 +60,10 @@ class ReferralService {
             user.referral.referralUsedAt = new Date();
             await user.save();
 
-            // Send notification emails
-            try {
-                await emailService.sendReferralRewardEmail(
-                    referrer.emailAddress,
-                    referrer.name,
-                    referrerCredits,
-                    user.name
-                );
-            } catch (emailError) {
-                logger.error('Failed to send referral reward email', {
-                    referrerId: referrer._id,
-                    error: emailError.message
-                });
-            }
+            // Send notification emails if want [TODO] 
 
-            try {
-                await emailService.sendWelcomeReferralEmail(
-                    user.emailAddress,
-                    user.name,
-                    newUserCredits,
-                    referrer.name
-                );
-            } catch (emailError) {
-                logger.error('Failed to send welcome referral email', {
-                    userId: user._id,
-                    error: emailError.message
-                });
-            }
+            // Semd Welcome Email [TODO]
+
 
             logger.info('Referral reward processed successfully', {
                 userId,

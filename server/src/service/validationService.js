@@ -924,8 +924,7 @@ export const ValidateReviewQuery = Joi.object({
 
 export const validateJoiSchema = (schema, value) => {
     const result = schema.validate(value, { abortEarly: false });
-    console.log(result, "Resut");
-    
+
     return {
         value: result.value,
         error: result.error,

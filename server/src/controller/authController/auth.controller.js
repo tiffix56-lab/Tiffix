@@ -7,7 +7,7 @@ import { EApplicationEnvironment, EAuthProvider, EUserRole } from '../../constan
 import userModel from '../../models/user.model.js';
 import userProfileModel from '../../models/userProfile.model.js';
 import quicker from '../../util/quicker.js';
-import emailService from '../../service/emailService.js';
+import whatsappService from '../../service/whatsappService.js';
 import referralService from '../../service/referralService.js';
 import TimezoneUtil from '../../util/timezone.js';
 
@@ -137,7 +137,7 @@ export default {
             const newUser = new userModel(userData);
             const savedUser = await newUser.save();
 
-            // Create user profile automatically upon registration
+
             const userProfile = new userProfileModel({
                 userId: savedUser._id,
                 addresses: [],
@@ -160,13 +160,13 @@ export default {
             }
 
             try {
-                await emailService.sendVerificationEmail(emailAddress, userData.name, otp);
-            } catch (emailError) {
-                console.warn('Verification email failed:', emailError.message);
+                await whatsappService.sendVerificationMessage(userData.phoneNumber.internationalNumber, userData.name, otp);
+            } catch (whatsappError) {
+                console.warn('Verification WhatsApp failed:', whatsappError.message);
             }
 
             httpResponse(req, res, 201, responseMessage.SUCCESS, {
-                message: `Registration successful! Please check your email for verification code.${referralMessage}`,
+                message: `Registration successful! Please check your WhatsApp for verification code.${referralMessage}`,
                 user: {
                     id: savedUser._id,
                     email: savedUser.emailAddress,
@@ -258,10 +258,16 @@ export default {
             await user.save();
 
             try {
-                const newUserProfile = new userProfileModel({
-                    userId: user._id
-                });
-                await newUserProfile.save();
+                let existingProfile = await userProfileModel.findOne({ userId: user._id });
+                if (!existingProfile) {
+                    const newUserProfile = new userProfileModel({
+                        userId: user._id
+                    });
+                    await newUserProfile.save();
+                    console.log('✅ Created user profile during verification:', user._id);
+                } else {
+                    console.log('✅ User profile already exists for user:', user._id);
+                }
             } catch (profileError) {
                 console.warn('User profile creation failed:', profileError.message);
             }
@@ -276,12 +282,6 @@ export default {
                 } catch (referralError) {
                     console.warn('Referral reward processing failed:', referralError.message);
                 }
-            }
-
-            try {
-                await emailService.sendWelcomeEmail(user.emailAddress, user.name, user.role);
-            } catch (emailError) {
-                console.warn('Welcome email failed:', emailError.message);
             }
 
             const accessToken = quicker.generateToken(
@@ -346,13 +346,13 @@ export default {
             await user.save();
 
             try {
-                await emailService.sendVerificationEmail(emailAddress, user.name, newOTP);
-            } catch (emailError) {
-                return httpError(next, new Error('Failed to send verification email'), req, 500);
+                await whatsappService.sendVerificationMessage(user.phoneNumber.internationalNumber, user.name, newOTP);
+            } catch (whatsappError) {
+                return httpError(next, new Error('Failed to send verification WhatsApp'), req, 500);
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: 'New verification code sent to your email'
+                message: 'New verification code sent to your WhatsApp'
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
@@ -387,13 +387,13 @@ export default {
             await user.save();
 
             try {
-                await emailService.sendPasswordResetEmail(user.emailAddress, user.name, resetOTP);
-            } catch (emailError) {
-                console.warn('Password reset email failed:', emailError.message);
+                await whatsappService.sendPasswordResetMessage(user.phoneNumber.internationalNumber, user.name, resetOTP);
+            } catch (whatsappError) {
+                console.warn('Password reset WhatsApp failed:', whatsappError.message);
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: 'Password reset code sent to your email'
+                message: 'Password reset code sent to your WhatsApp'
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
