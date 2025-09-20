@@ -57,13 +57,13 @@ const transactionSchema = new mongoose.Schema(
         },
         paymentMethod: {
             type: String,
-            enum: ['phonepe', 'razorpay', 'upi', 'card', 'netbanking', 'wallet'],
+            enum: ['razorpay', 'upi', 'card', 'netbanking', 'wallet'],
             required: false,
-            default: 'phonepe'
+            default: 'razorpay'
         },
         paymentGateway: {
             type: String,
-            default: 'phonepe'
+            default: 'razorpay'
         },
         gatewayTransactionId: {
             type: String,
@@ -77,16 +77,16 @@ const transactionSchema = new mongoose.Schema(
             type: String,
             default: null
         },
-        // PhonePe specific fields
-        phonepeTransactionId: {
+        // Razorpay specific fields
+        razorpayOrderId: {
             type: String,
             default: null
         },
-        phonepeMerchantId: {
+        razorpayPaymentId: {
             type: String,
             default: null
         },
-        phonepeChecksum: {
+        razorpaySignature: {
             type: String,
             default: null
         },

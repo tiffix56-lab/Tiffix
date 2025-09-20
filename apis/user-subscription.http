@@ -3,13 +3,13 @@
 # Base URL
 @baseURL = http://localhost:4000/v1
 @accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIzMzI2OWUxZTUwZWJlNmY0ZDZkYTkiLCJlbWFpbCI6InVzZXIyQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoidXNlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU2NzUwNzQ4LCJleHAiOjE3NTY4MzcxNDh9.RDaispXIISeoZzAakuZJfyo5ISr4_pE1ZuoYp83du00
-
-
+@adminToken = ""
+@userSubscriptionId=""
 
 ### ============== SUBSCRIPTION PURCHASE & MANAGEMENT APIs ==============
 
-### Initiate Subscription Purchase (Requires Authentication) - PhonePe Integration
-# Response will include phonepeKey and paymentUrl for frontend integration
+### Initiate Subscription Purchase (Requires Authentication) - Razorpay Integration
+# Response will include razorpayKeyId and razorpayOrderId for frontend integration
 POST {{baseURL}}/subscription-purchase/initiate
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
@@ -41,15 +41,15 @@ Authorization: Bearer {{accessToken}}
   "startDate": "2025-09-02T00:00:00.000Z"
 }
 
-### Verify Payment (Requires Authentication) - PhonePe Integration
+### Verify Payment (Requires Authentication) - Razorpay Integration
 POST {{baseURL}}/subscription-purchase/verify-payment
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "phonepe_transaction_id": "TXN_1756751258968_so0nf",
-  "phonepe_merchant_id": "PGTESTPAYUAT",
-  "phonepe_checksum": "test_signature_for_development",
+  "razorpay_order_id": "order_PQ7zxJgkzpQ1eF",
+  "razorpay_payment_id": "pay_PQ7zxJgkzpQ1eF",
+  "razorpay_signature": "9ef4dffbfd84f1318f6739dcbdf764f68a8dc5e8c61d8d1c2e5f5b0e1d2c6d5a",
   "userSubscriptionId": "68b5e59b5b07d1ce6123bbdd"
 }
 
@@ -113,36 +113,36 @@ Authorization: Bearer {{adminToken}}
   "adminNotes": "Paused due to payment issues"
 }
 
-### ============== PHONEPE WEBHOOK ENDPOINTS (FOR TESTING) ==============
+### ============== RAZORPAY WEBHOOK ENDPOINTS (FOR TESTING) ==============
 
-### PhonePe Payment Callback (Webhook - No Authentication Required)
-POST {{baseURL}}/payments/phonepe/callback
+### Razorpay Payment Webhook (No Authentication Required)
+POST {{baseURL}}/payments/razorpay/webhook
 Content-Type: application/json
-X-Verify: sha256_hash_signature
+X-Razorpay-Signature: t=1234567890,v1=sha256_hash_signature
 
 {
-  "merchantId": "MERCHANT123",
-  "transactionId": "TXN_1693564800000_ABC123",
-  "merchantTransactionId": "TXN_1693564800000_ABC123",
-  "amount": 200000,
-  "state": "COMPLETED",
-  "responseCode": "SUCCESS",
-  "paymentInstrument": {
-    "type": "PAY_PAGE"
-  }
-}
-
-### PhonePe Refund Callback (Webhook - No Authentication Required)
-POST {{baseURL}}/payments/phonepe/refund-callback
-Content-Type: application/json
-X-Verify: sha256_hash_signature
-
-{
-  "merchantId": "MERCHANT123",
-  "transactionId": "REFUND_1693564800000_XYZ789",
-  "originalTransactionId": "TXN_1693564800000_ABC123",
-  "amount": 200000,
-  "state": "COMPLETED",
-  "responseCode": "SUCCESS"
+  "entity": "event",
+  "account_id": "acc_BFQ7uQEaa30PNt",
+  "event": "payment.captured",
+  "contains": ["payment"],
+  "payload": {
+    "payment": {
+      "entity": {
+        "id": "pay_29QQoUBi66xm2f",
+        "entity": "payment",
+        "amount": 20000,
+        "currency": "INR",
+        "status": "captured",
+        "order_id": "order_PQ7zxJgkzpQ1eF",
+        "method": "card",
+        "amount_refunded": 0,
+        "refund_status": null,
+        "captured": true,
+        "description": "Subscription Purchase",
+        "created_at": 1693564800
+      }
+    }
+  },
+  "created_at": 1693564805
 }
 

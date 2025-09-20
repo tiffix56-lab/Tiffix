@@ -244,8 +244,8 @@ export default {
                 promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
                 type: 'subscription_purchase',
-                paymentGateway: 'phonepe',
-                paymentMethod: 'phonepe',
+                paymentGateway: 'razorpay',
+                paymentMethod: 'razorpay',
                 gatewayOrderId: paymentOrder.id,
                 gstAmount: gstAmount,
                 baseAmount: finalPrice
@@ -284,8 +284,8 @@ export default {
                 gstAmount: gstAmount,
                 currency: 'INR',
                 userSubscriptionId: userSubscription._id,
-                phonepeKey: process.env.PHONEPAY_CLIENT_ID,
-                paymentUrl: paymentOrder.payment_url,
+                razorpayKeyId: paymentOrder.razorpay_key_id,
+                razorpayOrderId: paymentOrder.razorpay_order_id,
                 subscription: {
                     planName: subscription.planName,
                     duration: subscription.duration,
@@ -323,28 +323,27 @@ export default {
             }
 
             const {
-                phonepe_transaction_id,
-                phonepe_merchant_id,
-                phonepe_checksum,
+                razorpay_order_id,
+                razorpay_payment_id,
+                razorpay_signature,
                 userSubscriptionId
             } = req.body;
 
             const userId = req.authenticatedUser._id;
 
             console.log("Looking for transaction with:", {
-                gatewayOrderId: phonepe_transaction_id,
+                gatewayOrderId: razorpay_order_id,
                 userId: userId
             });
 
             const transaction = await Transaction.findOne({
-                gatewayOrderId: phonepe_transaction_id,
-                userId,
-
+                gatewayOrderId: razorpay_order_id,
+                userId
             });
 
             if (!transaction) {
                 console.error("Transaction not found:", {
-                    gatewayOrderId: phonepe_transaction_id,
+                    gatewayOrderId: razorpay_order_id,
                     userId: userId
                 });
                 return httpError(next, new Error('Transaction not found for this order'), req, 404);
@@ -369,15 +368,15 @@ export default {
 
             console.log("Verifying payment with payment service...");
             const isPaymentValid = await paymentService.verifyPayment({
-                phonepe_transaction_id,
-                phonepe_merchant_id,
-                phonepe_checksum
+                razorpay_order_id,
+                razorpay_payment_id,
+                razorpay_signature
             });
 
             if (!isPaymentValid) {
                 console.error("Payment verification failed:", {
-                    phonepe_transaction_id,
-                    phonepe_merchant_id,
+                    razorpay_order_id,
+                    razorpay_payment_id,
                     userSubscriptionId
                 });
 
@@ -395,10 +394,10 @@ export default {
 
             const completionTime = TimezoneUtil.now();
             transaction.status = EPaymentStatus.SUCCESS;
-            transaction.paymentId = phonepe_transaction_id;
-            transaction.phonepeTransactionId = phonepe_transaction_id;
-            transaction.phonepeMerchantId = phonepe_merchant_id;
-            transaction.phonepeChecksum = phonepe_checksum;
+            transaction.paymentId = razorpay_payment_id;
+            transaction.razorpayOrderId = razorpay_order_id;
+            transaction.razorpayPaymentId = razorpay_payment_id;
+            transaction.razorpaySignature = razorpay_signature;
             transaction.completedAt = completionTime;
             await transaction.save();
 
@@ -456,7 +455,7 @@ export default {
                 message: error.message,
                 stack: error.stack,
                 userId: req.authenticatedUser?._id,
-                orderId: req.body?.phonepe_transaction_id
+                orderId: req.body?.razorpay_order_id
             });
 
             const errorMessage = error.message || 'Internal server error while verifying payment';
@@ -783,163 +782,34 @@ export default {
         }
     },
 
-    // PhonePe callback handler for payment completion
-    phonepeCallback: async (req, res, next) => {
+    // Razorpay webhook handler (for future use if webhooks are enabled)
+    razorpayWebhook: async (req, res, next) => {
         try {
-            console.log('=== PHONEPE WEBHOOK RECEIVED ===');
+            console.log('=== RAZORPAY WEBHOOK RECEIVED ===');
             console.log('Headers:', JSON.stringify(req.headers, null, 2));
             console.log('Body:', JSON.stringify(req.body, null, 2));
-            console.log('Query params:', JSON.stringify(req.query, null, 2));
-            console.log('URL path:', req.path);
 
-            const signature = req.headers['x-verify'];
-            const event = req.body;
+            // Note: In manual verification mode, webhooks are not processed
+            // Payment verification is handled through frontend callback
+            console.log('Manual verification mode - webhook acknowledged but not processed');
 
-            console.log('Webhook signature:', signature);
-            console.log('Event keys:', Object.keys(event));
-
-            if (req.method === 'GET') {
-                console.log('GET callback received - extracting orderId from query');
-                const { orderId } = req.query;
-
-                if (orderId) {
-                    const transaction = await Transaction.findOne({
-                        $or: [
-                            { gatewayOrderId: orderId },
-                            { transactionId: orderId }
-                        ]
-                    });
-
-                    if (transaction) {
-                        console.log('Transaction found via GET callback:', transaction._id);
-                        await paymentService.processSuccessfulPayment(
-                            transaction.transactionId,
-                            { phonepe_transaction_id: orderId }
-                        );
-                    } else {
-                        console.log('Transaction not found for GET callback orderId:', orderId);
-                    }
-                }
-            } else {
-                console.log('POST webhook received');
-                await paymentService.handleWebhook(event, signature);
-            }
-
-            // Respond to PhonePe with success
             res.status(200).json({
                 success: true,
-                message: 'Callback processed successfully'
+                message: 'Webhook acknowledged (manual verification mode)'
             });
 
         } catch (error) {
-            console.error('=== PHONEPE CALLBACK ERROR ===');
+            console.error('=== RAZORPAY WEBHOOK ERROR ===');
             console.error('Error message:', error.message);
             console.error('Error stack:', error.stack);
-            console.error('Request body:', JSON.stringify(req.body, null, 2));
-            console.error('Request headers:', JSON.stringify(req.headers, null, 2));
 
-            // Always respond with 200 to PhonePe to avoid retry storms
             res.status(200).json({
                 success: false,
-                error: 'Callback processing failed'
+                error: 'Webhook processing failed'
             });
         }
     },
 
-    // PhonePe redirect handler for user redirects after payment
-    phonepeRedirect: async (req, res, next) => {
-        try {
-            console.log('=== PHONEPE REDIRECT RECEIVED ===');
-            console.log('Query params:', JSON.stringify(req.query, null, 2));
-
-            const { orderId } = req.query;
-            let paymentSuccess = false;
-            let userSubscriptionId = null;
-
-            if (orderId) {
-                const transaction = await Transaction.findOne({
-                    $or: [
-                        { gatewayOrderId: orderId },
-                        { transactionId: orderId }
-                    ]
-                });
-
-                if (transaction) {
-                    console.log('Transaction found via redirect:', transaction._id);
-                    userSubscriptionId = transaction.userSubscriptionId;
-
-                    // Check if payment was already processed
-                    if (transaction.status === 'success') {
-                        console.log('Transaction already processed successfully');
-                        paymentSuccess = true;
-                    } else if (transaction.status === 'pending') {
-                        console.log('Processing pending transaction...');
-                        // Process the payment
-                        try {
-                            const result = await paymentService.processSuccessfulPayment(
-                                transaction.transactionId,
-                                { phonepe_transaction_id: orderId }
-                            );
-                            paymentSuccess = result && result.success !== false;
-                            console.log('Payment processing completed:', paymentSuccess);
-                        } catch (processError) {
-                            console.error('Payment processing error:', processError);
-                            paymentSuccess = false;
-                        }
-                    } else {
-                        console.log('Transaction status is:', transaction.status);
-                        paymentSuccess = false;
-                    }
-
-                    // Double-check by verifying the UserSubscription status
-                    if (userSubscriptionId) {
-                        const userSubscription = await UserSubscription.findById(userSubscriptionId);
-                        if (userSubscription && userSubscription.status === 'active') {
-                            console.log('UserSubscription is active, payment verified');
-                            paymentSuccess = true;
-                        } else {
-                            console.log('UserSubscription status:', userSubscription?.status);
-                        }
-                    }
-                } else {
-                    console.log('Transaction not found for redirect orderId:', orderId);
-                }
-            }
-
-            // Redirect to mobile app
-            const deepLinkUrl = paymentSuccess
-                ? `tiffix://payment-success?orderId=${orderId}&userSubscriptionId=${userSubscriptionId || ''}`
-                : `tiffix://payment-failed?orderId=${orderId}`;
-
-            console.log('Redirecting to mobile app via deep link:', deepLinkUrl);
-
-            // Redirect directly to the app
-            res.redirect(302, deepLinkUrl);
-
-        } catch (error) {
-            console.error('=== PHONEPE REDIRECT ERROR ===');
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-            console.error('Request query:', JSON.stringify(req.query, null, 2));
-
-            // Redirect to app with error
-            const deepLinkUrl = `tiffix://payment-failed?orderId=${req.query.orderId || ''}`;
-            res.status(200).send(`
-                <!DOCTYPE html>
-                <html>
-                <head><title>Payment Error</title></head>
-                <body>
-                    <script>window.location.href = '${deepLinkUrl}';</script>
-                    <div style="text-align:center; padding:50px; font-family:Arial,sans-serif;">
-                        <h2>Something went wrong</h2>
-                        <p>Please return to the Tiffix app.</p>
-                        <a href="${deepLinkUrl}">Open Tiffix App</a>
-                    </div>
-                </body>
-                </html>
-            `);
-        }
-    },
 
     checkPaymentStatus: async (req, res, next) => {
         try {
@@ -1007,36 +877,6 @@ export default {
         }
     },
 
-    phonepeRefundCallback: async (req, res, next) => {
-        try {
-            console.log('PhonePe refund callback received:', req.body);
-
-            const signature = req.headers['x-verify'];
-            const event = req.body;
-
-            // Handle refund webhook
-            // You can add specific refund handling logic here if needed
-            console.log('Refund callback processed:', event);
-
-            res.status(200).json({
-                success: true,
-                message: 'Refund callback processed successfully'
-            });
-
-        } catch (error) {
-            console.error('PhonePe refund callback error:', {
-                message: error.message,
-                stack: error.stack,
-                body: req.body
-            });
-
-            // Always respond with 200 to PhonePe to avoid retry storms
-            res.status(200).json({
-                success: false,
-                error: 'Refund callback processing failed'
-            });
-        }
-    },
 
     // Get subscription status by userSubscriptionId
     getSubscriptionStatus: async (req, res, next) => {

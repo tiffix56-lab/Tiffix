@@ -1,28 +1,22 @@
 import crypto from 'crypto'
+import Razorpay from 'razorpay'
 import config from '../config/config.js'
 import Transaction from '../models/transaction.model.js'
 import UserSubscription from '../models/userSubscription.model.js'
 import UserProfile from '../models/userProfile.model.js'
 import TimezoneUtil from '../util/timezone.js'
-import { Env, StandardCheckoutClient, StandardCheckoutPayRequest } from "pg-sdk-node";
+import dotenv from "dotenv-flow"
 
-
+dotenv.config({})
 
 class PaymentService {
     constructor() {
-        console.log(config.phonepay.keyId, config.phonepay.keySecret);
+        this.razorpay = new Razorpay({
+            key_id: config.razorpay.keyId || process.env.RAZORPAY_KEY_ID,
+            key_secret: config.razorpay.keySecret || process.env.RAZORPAY_KEY_SECRET,
+        });
 
-        this.phonepeClient = StandardCheckoutClient.getInstance(
-            config.phonepay.keyId || process.env.PHONEPAY_CLIENT_ID,
-            config.phonepay.keySecret || process.env.PHONEPAY_CLIENT_SECRET,
-            1,
-            Env.SANDBOX
-        );
-
-        // PhonePe merchant configuration
-        this.merchantId = config.phonepay.merchantId || process.env.PHONEPAY_MERCHANT_ID;
-        this.saltIndex = config.phonepay.saltIndex || process.env.PHONEPAY_SALT_INDEX || 1;
-        this.saltKey = config.phonepay.keySecret || process.env.PHONEPAY_CLIENT_SECRET;
+        this.webhookSecret = config.razorpay.webhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET;
     }
 
     async createOrder(orderData) {
@@ -34,34 +28,28 @@ class PaymentService {
                 notes = {}
             } = orderData
 
-            // Generate unique merchant order ID
-            const orderId = `TXN_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+            const orderReceipt = receipt || `TXN_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-            // Build PhonePe payment request using the proper builder pattern
-            const request = StandardCheckoutPayRequest.builder()
-                .merchantOrderId(orderId)
-                .amount(amount * 100) // Convert to paise
-                .redirectUrl(`${config.server.url}/v1/payments/phonepe/redirect?orderId=${orderId}`)
-                .build();
-
-            console.log('PhonePe REQUEST:', this.phonepeClient);
-            console.log('Payment request:', request);
-
-            // Create payment with PhonePe
-            const response = await this.phonepeClient.pay(request);
-            console.log('PhonePe response:', response);
+            const razorpayOrder = await this.razorpay.orders.create({
+                amount: Math.round(amount * 100),
+                currency: currency,
+                receipt: orderReceipt,
+                notes: notes,
+                payment_capture: 1
+            });
 
             return {
-                id: orderId,
+                id: razorpayOrder.id,
                 amount: amount,
                 currency: currency,
-                receipt: receipt,
+                receipt: orderReceipt,
                 notes: notes,
-                phonepe_response: response,
-                payment_url: response.redirectUrl
+                razorpay_order_id: razorpayOrder.id,
+                razorpay_key_id: config.razorpay.keyId,
+                created_at: razorpayOrder.created_at
             };
         } catch (error) {
-            console.error('PhonePe order creation error:', error)
+            console.error('Razorpay order creation error:', error)
             throw new Error(`Payment order creation failed: ${error.message}`)
         }
     }
@@ -69,31 +57,18 @@ class PaymentService {
     async verifyPayment(paymentData) {
         try {
             const {
-                phonepe_transaction_id,
-                phonepe_merchant_id,
-                phonepe_checksum
+                razorpay_order_id,
+                razorpay_payment_id,
+                razorpay_signature
             } = paymentData
 
-            // Allow test payments in development mode
-            if (process.env.NODE_ENV !== 'production' && phonepe_checksum === 'test_signature_for_development') {
-                console.log('Development mode: Accepting test payment verification');
-                return true;
-            }
+            const stringToHash = razorpay_order_id + '|' + razorpay_payment_id;
+            const expectedSignature = crypto
+                .createHmac('sha256', config.razorpay.keySecret)
+                .update(stringToHash)
+                .digest('hex');
 
-            // Check payment status using PhonePe SDK
-            const statusResponse = await this.phonepeClient.checkStatus(
-                phonepe_transaction_id,
-                this.merchantId
-            );
-
-            // Verify the checksum
-            const stringToHash = `/pg/v1/status/${this.merchantId}/${phonepe_transaction_id}` + this.saltKey;
-            const expectedChecksum = crypto.createHash('sha256').update(stringToHash).digest('hex') + '###' + this.saltIndex;
-
-            const isChecksumValid = expectedChecksum === phonepe_checksum;
-            const isPaymentSuccess = statusResponse?.data?.state === 'COMPLETED';
-
-            return isChecksumValid && isPaymentSuccess;
+            return expectedSignature === razorpay_signature;
         } catch (error) {
             console.error('Payment verification error:', error)
             return false
@@ -102,66 +77,42 @@ class PaymentService {
 
     async processSuccessfulPayment(transactionId, paymentData) {
         try {
-            console.log('=== PROCESSING SUCCESSFUL PAYMENT ===');
-            console.log('Transaction ID:', transactionId);
-            console.log('Payment Data:', paymentData);
-
             const transaction = await Transaction.findOne({ transactionId })
                 .populate('subscriptionId')
                 .populate('userId');
 
             if (!transaction) {
-                console.error('Transaction not found for transactionId:', transactionId);
                 throw new Error('Transaction not found');
             }
 
-            console.log('Transaction found:', {
-                id: transaction._id,
-                status: transaction.status,
-                userSubscriptionId: transaction.userSubscriptionId
-            });
-
             if (transaction.status === 'success') {
-                console.log('Transaction already processed successfully');
                 return {
                     success: true,
                     message: 'Transaction already processed'
                 };
             }
 
-            // Update transaction status
             transaction.status = 'success';
-            transaction.paymentId = paymentData.phonepe_transaction_id;
-            transaction.phonepeTransactionId = paymentData.phonepe_transaction_id;
-            transaction.completedAt = new Date();
+            transaction.gatewayPaymentId = paymentData.razorpay_payment_id;
+            transaction.razorpayOrderId = paymentData.razorpay_order_id;
+            transaction.razorpayPaymentId = paymentData.razorpay_payment_id;
+            transaction.razorpaySignature = paymentData.razorpay_signature;
+            transaction.completedAt = TimezoneUtil.now();
             await transaction.save();
 
-            console.log('Transaction updated to success');
-
-            // Find and activate the user subscription
             const userSubscription = await UserSubscription.findById(transaction.userSubscriptionId);
             if (!userSubscription) {
-                console.error('UserSubscription not found for ID:', transaction.userSubscriptionId);
                 throw new Error('User subscription not found');
             }
 
-            console.log('UserSubscription found:', {
-                id: userSubscription._id,
-                status: userSubscription.status
-            });
-
-            // Activate subscription if not already active
             if (userSubscription.status !== 'active') {
                 userSubscription.status = 'active';
-                userSubscription.paymentCompletedAt = new Date();
+                userSubscription.paymentCompletedAt = TimezoneUtil.now();
                 await userSubscription.save();
-                console.log('UserSubscription activated');
             }
 
-            // Update subscription purchase count
             if (transaction.subscriptionId) {
                 await transaction.subscriptionId.incrementPurchases();
-                console.log('Subscription purchase count updated');
             }
 
             return {
@@ -170,9 +121,7 @@ class PaymentService {
                 userSubscription,
             };
         } catch (error) {
-            console.error('=== PAYMENT PROCESSING ERROR ===');
-            console.error('Error:', error.message);
-            console.error('Stack:', error.stack);
+            console.error('Payment processing error:', error)
             throw error;
         }
     }
@@ -200,7 +149,6 @@ class PaymentService {
             await userSubscription.save()
             await userSubscription.activate()
 
-            // Add to user profile's active subscriptions
             await UserProfile.findOneAndUpdate(
                 { userId: transaction.userId._id },
                 { $addToSet: { activeSubscriptions: userSubscription._id } }
@@ -224,18 +172,11 @@ class PaymentService {
             case 'yearly':
                 return TimezoneUtil.addMonths(12, startDate)
             case 'custom':
-                if (durationDays) {
-                    return TimezoneUtil.addDays(durationDays, startDate)
-                } else {
-                    return TimezoneUtil.addDays(30, startDate) // Default to 30 days
-                }
+                return TimezoneUtil.addDays(durationDays || 30, startDate)
             default:
-                // Use durationDays if provided, otherwise default to 30 days
                 return TimezoneUtil.addDays(durationDays || 30, startDate)
         }
     }
-
-
 
     async handleFailedPayment(transactionId, reason) {
         try {
@@ -272,19 +213,19 @@ class PaymentService {
                 reason = 'Customer request'
             } = refundData
 
-            // PhonePe refund request
-            const refundRequest = {
-                merchantId: this.merchantId,
-                merchantTransactionId: `REFUND_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-                originalTransactionId: transaction.gatewayPaymentId,
-                amount: Math.round(amount * 100), // Convert to paise
-                callbackUrl: `${config.server.url}/v1/payments/phonepe/refund-callback`
-            };
-
-            const refund = await this.phonepeClient.refund(refundRequest);
+            const razorpayRefund = await this.razorpay.payments.refund(
+                transaction.razorpayPaymentId,
+                {
+                    amount: Math.round(amount * 100),
+                    notes: {
+                        reason: reason,
+                        refund_type: 'manual'
+                    }
+                }
+            );
 
             await transaction.markAsRefunded({
-                refundId: refundRequest.merchantTransactionId,
+                refundId: razorpayRefund.id,
                 refundAmount: amount,
                 refundDate: TimezoneUtil.now(),
                 refundReason: reason,
@@ -293,7 +234,7 @@ class PaymentService {
 
             return {
                 success: true,
-                refund,
+                refund: razorpayRefund,
                 transaction
             }
         } catch (error) {
@@ -304,7 +245,7 @@ class PaymentService {
 
     async getPaymentDetails(paymentId) {
         try {
-            const payment = await this.phonepeClient.checkStatus(paymentId, this.merchantId)
+            const payment = await this.razorpay.payments.fetch(paymentId)
             return {
                 success: true,
                 payment
@@ -320,35 +261,7 @@ class PaymentService {
 
     async handleWebhook(event, signature) {
         try {
-            const isValid = this.verifyWebhookSignature(event, signature)
-            if (!isValid) {
-                throw new Error('Invalid webhook signature')
-            }
-
-            // PhonePe webhook structure
-            const { merchantId, transactionId, amount, state, responseCode } = event
-
-            switch (state) {
-                case 'COMPLETED':
-                    await this.handlePaymentCaptured({
-                        id: transactionId,
-                        order_id: event.merchantTransactionId,
-                        amount: amount,
-                        state: state
-                    })
-                    break
-                case 'FAILED':
-                    await this.handlePaymentFailed({
-                        id: transactionId,
-                        order_id: event.merchantTransactionId,
-                        error_description: 'Payment failed'
-                    })
-                    break
-                default:
-                    console.log(`Unhandled webhook state: ${state}`)
-            }
-
-            return { success: true }
+            return { success: true, message: 'Manual verification mode - webhook ignored' }
         } catch (error) {
             console.error('Webhook handling error:', error)
             throw error
@@ -357,10 +270,10 @@ class PaymentService {
 
     verifyWebhookSignature(body, signature) {
         try {
-            // PhonePe webhook signature verification
-            const webhookPayload = JSON.stringify(body);
-            const stringToHash = webhookPayload + this.saltKey;
-            const expectedSignature = crypto.createHash('sha256').update(stringToHash).digest('hex') + '###' + this.saltIndex;
+            const expectedSignature = crypto
+                .createHmac('sha256', this.webhookSecret)
+                .update(JSON.stringify(body))
+                .digest('hex');
 
             return expectedSignature === signature
         } catch (error) {
@@ -371,52 +284,28 @@ class PaymentService {
 
     async handlePaymentCaptured(payment) {
         try {
-            console.log('=== HANDLING PAYMENT CAPTURED ===');
-            console.log('Payment data:', JSON.stringify(payment, null, 2));
-
-            // Try multiple ways to find the transaction
             let transaction = await Transaction.findOne({
-                gatewayOrderId: payment.order_id
+                razorpayOrderId: payment.order_id
             });
 
             if (!transaction) {
-                console.log('Transaction not found by gatewayOrderId, trying transactionId');
+                transaction = await Transaction.findOne({
+                    gatewayOrderId: payment.order_id
+                });
+            }
+
+            if (!transaction) {
                 transaction = await Transaction.findOne({
                     transactionId: payment.order_id
                 });
             }
 
-            if (!transaction) {
-                console.log('Transaction not found by transactionId, trying merchantTransactionId');
-                transaction = await Transaction.findOne({
-                    $or: [
-                        { gatewayOrderId: payment.merchantTransactionId },
-                        { transactionId: payment.merchantTransactionId }
-                    ]
-                });
-            }
-
-            console.log('Transaction lookup result:', {
-                found: !!transaction,
-                transactionId: transaction?._id,
-                currentStatus: transaction?.status,
-                lookupKey: payment.order_id
-            });
-
             if (transaction && transaction.status !== 'success') {
-                console.log('Processing successful payment for transaction:', transaction._id);
                 await this.processSuccessfulPayment(transaction.transactionId, {
-                    phonepe_transaction_id: payment.id || payment.transactionId
+                    razorpay_order_id: payment.order_id,
+                    razorpay_payment_id: payment.id,
+                    razorpay_signature: 'webhook_verified'
                 });
-                console.log('Payment processing completed successfully');
-            } else if (!transaction) {
-                console.error('CRITICAL: Transaction not found for payment:', {
-                    orderId: payment.order_id,
-                    merchantTransactionId: payment.merchantTransactionId,
-                    transactionId: payment.id
-                });
-            } else {
-                console.log('Transaction already processed or status is success');
             }
         } catch (error) {
             console.error('Error handling payment captured webhook:', error)
@@ -426,7 +315,7 @@ class PaymentService {
     async handlePaymentFailed(payment) {
         try {
             const transaction = await Transaction.findOne({
-                gatewayOrderId: payment.order_id
+                razorpayOrderId: payment.order_id
             })
 
             if (transaction && transaction.status === 'pending') {
@@ -440,13 +329,13 @@ class PaymentService {
     async handleRefundProcessed(refund) {
         try {
             const transaction = await Transaction.findOne({
-                gatewayPaymentId: refund.payment_id
+                razorpayPaymentId: refund.payment_id
             })
 
             if (transaction) {
                 await transaction.markAsRefunded({
                     refundId: refund.id,
-                    refundAmount: refund.amount / 100, // Convert from paise
+                    refundAmount: refund.amount / 100,
                     refundDate: TimezoneUtil.toIST(new Date(refund.created_at * 1000)),
                     refundReason: 'Processed via webhook',
                     refundStatus: 'processed'

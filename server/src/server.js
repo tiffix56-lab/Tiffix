@@ -22,9 +22,9 @@ const server = app.listen(config.server.port);
 
         await cronService.init()
 
-        logger.info("PHONE_PAY_INIT", {
+        logger.info("RAZORPAY_INIT", {
             meta: {
-                env: paymentService.phonepeClient.env
+                keyId: paymentService.razorpay.key_id ? `${paymentService.razorpay.key_id.substring(0, 8)}...` : 'Not set'
             }
         })
 
