@@ -65,8 +65,7 @@ const Onboarding = () => {
               ? require('@/assets/logo-dark.png')
               : require('@/assets/logo.png')
           }
-          className="h-20 w-32"
-          resizeMode="contain"
+          style={{ height: 80, width: 160, resizeMode: 'contain' }}
         />
         <View className="flex-row items-center space-x-3">
           <ThemeToggle />

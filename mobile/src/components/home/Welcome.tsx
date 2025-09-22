@@ -79,7 +79,7 @@ const Welcome = () => {
         <View className="relative">
           <Image
             source={{ uri: getUserAvatar() }}
-            className="h-12 w-12 rounded-full"
+            style={{ height: 48, width: 48, borderRadius: 24 }}
           />
           <View className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-green-500 dark:border-black" />
         </View>

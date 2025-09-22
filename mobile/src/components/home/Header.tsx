@@ -108,7 +108,7 @@ const Header = () => {
               {savedAddresses.length > 0 ? (
                 <View>
                   <Text
-                    className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    className="mb-4 text-sm font-medium text-zinc-700 dark:text-zinc-300"
                     style={{ fontFamily: 'Poppins_500Medium' }}>
                     Saved Addresses
                   </Text>
@@ -119,7 +119,7 @@ const Header = () => {
                         setSelectedAddress(address);
                         setShowAddressModal(false);
                       }}
-                      className={`mb-3 rounded-xl border p-4 ${
+                      className={`mb-4 rounded-xl border p-4 ${
                         selectedAddress?.label === address.label
                           ? 'border-black bg-black dark:border-white dark:bg-white'
                           : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'

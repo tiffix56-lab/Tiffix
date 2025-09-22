@@ -49,10 +49,10 @@ export const FormInput: React.FC<FormInputProps> = ({
   const actualSecureEntry = isPassword ? !showPassword : false;
 
   const getInputContainerStyles = () => {
-    const baseStyles = 'flex-row items-center rounded-md border px-4 bg-zinc-50 dark:bg-black';
+    const baseStyles = 'flex-row items-center rounded-xl border px-4 bg-zinc-50 dark:bg-black';
     const focusStyles = isFocused 
       ? 'border-black dark:border-white' 
-      : 'border-zinc-100 dark:border-zinc-400';
+      : 'border-zinc-200 dark:border-zinc-600';
     const errorStyles = error 
       ? 'border-red-500 dark:border-red-400' 
       : '';
@@ -67,7 +67,7 @@ export const FormInput: React.FC<FormInputProps> = ({
 
   return (
     <View className={className}>
-      <Text className="mb-3 text-base font-medium text-black dark:text-white">
+      <Text className="mb-3 text-base font-medium text-black dark:text-white" style={{ fontFamily: 'Poppins_500Medium' }}>
         {label}
       </Text>
       
@@ -84,6 +84,7 @@ export const FormInput: React.FC<FormInputProps> = ({
           render={({ field: { onChange, value, onBlur } }) => (
             <TextInput
               className="flex-1 py-4 text-base text-black dark:text-white"
+              style={{ fontFamily: 'Poppins_400Regular' }}
               placeholder={placeholder || label}
               placeholderTextColor={iconColor}
               value={value}
@@ -128,7 +129,7 @@ export const FormInput: React.FC<FormInputProps> = ({
       </View>
       
       {error && (
-        <Text className="mt-2 text-sm text-red-500 dark:text-red-400">
+        <Text className="mt-2 text-sm text-red-500 dark:text-red-400" style={{ fontFamily: 'Poppins_400Regular' }}>
           {error.message}
         </Text>
       )}

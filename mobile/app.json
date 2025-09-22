@@ -26,16 +26,20 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tiffix.mobile",
+      "bundleIdentifier": "",
       "config": {
         "googleMapsApiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
       },
-      "associatedDomains": ["applinks:tiffix.in"],
+      "associatedDomains": [
+        "applinks:tiffix.in"
+      ],
       "infoPlist": {
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "tiffix.mobile.deeplink",
-            "CFBundleURLSchemes": ["tiffix"]
+            "CFBundleURLSchemes": [
+              "tiffix"
+            ]
           }
         ]
       }
@@ -45,7 +49,7 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tiffix.mobile",
+      "package": "com.katareayush2005.tiffixmobile",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
@@ -56,15 +60,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "89ca5d7a-4912-4459-809a-2a1f9e3d763f"
+        "projectId": "60300204-dda6-44b1-93e3-dfa41cbaf2ca"
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/89ca5d7a-4912-4459-809a-2a1f9e3d763f"
+      "url": ""
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "katareayush"
+    "owner": ""
   }
 }

@@ -18,20 +18,19 @@ const Categories = () => {
         </Text>
       </View>
 
-      <View className="flex-row gap-4 space-x-4 px-6">
+      <View className="flex-row space-x-4 px-6">
         {/* Vendor Food Card */}
         <TouchableOpacity className="flex-1" onPress={() => router.push('/vendor-food')}>
-          <View className="relative h-64 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700">
+          <View className="relative h-64 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
             <Image
               source={require('@/assets/category-1.png')}
-              className="h-full w-full"
-              resizeMode="cover"
+              style={{ height: '100%', width: '100%', resizeMode: 'cover' }}
             />
-            <View className="absolute inset-0 rounded-md bg-black/20" />
+            <View className="absolute inset-0 rounded-xl bg-black/20" />
 
             {/* Discount Badge - Top Right */}
             <View className="absolute right-3 top-3">
-              <View className="rounded-md bg-orange-500 px-2 py-1">
+              <View className="rounded-lg bg-orange-500 px-2 py-1">
                 <Text
                   className="text-xs font-semibold text-white"
                   style={{ fontFamily: 'Poppins_600SemiBold' }}>
@@ -48,7 +47,7 @@ const Categories = () => {
                     ? ['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.95)']
                     : ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.98)']
                 }
-                className="rounded-b-md px-3 py-3">
+                className="rounded-b-xl px-3 py-3">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1">
                     <Text
@@ -72,17 +71,16 @@ const Categories = () => {
 
         {/* Home Chef's Card */}
         <TouchableOpacity className="flex-1" onPress={() => router.push('/home-chef')}>
-          <View className="relative h-64 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-700">
+          <View className="relative h-64 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
             <Image
               source={require('@/assets/category-2.png')}
-              className="h-full w-full"
-              resizeMode="cover"
+              style={{ height: '100%', width: '100%', resizeMode: 'cover' }}
             />
-            <View className="absolute inset-0 rounded-md bg-black/20" />
+            <View className="absolute inset-0 rounded-xl bg-black/20" />
 
             {/* Discount Badge - Top Right */}
             <View className="absolute right-3 top-3">
-              <View className="rounded-md bg-orange-500 px-2 py-1">
+              <View className="rounded-lg bg-orange-500 px-2 py-1">
                 <Text
                   className="text-xs font-semibold text-white"
                   style={{ fontFamily: 'Poppins_600SemiBold' }}>
@@ -99,7 +97,7 @@ const Categories = () => {
                     ? ['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.95)']
                     : ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.98)']
                 }
-                className="rounded-b-md px-3 py-3">
+                className="rounded-b-xl px-3 py-3">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1">
                     <Text
