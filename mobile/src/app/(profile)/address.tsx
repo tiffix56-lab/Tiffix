@@ -561,14 +561,14 @@ const Address = () => {
                   No addresses yet
                 </Text>
                 <Text 
-                  className="mt-2 text-center text-base text-zinc-500 dark:text-zinc-400 px-8"
+                  className="mt-3 text-center text-base text-zinc-500 dark:text-zinc-400 px-8"
                   style={{ fontFamily: 'Poppins_400Regular' }}>
                   Add your delivery addresses to make ordering faster and easier
                 </Text>
                 {!showAddForm && (
                   <TouchableOpacity 
                     onPress={() => setShowAddForm(true)}
-                    className="mt-6 rounded-xl bg-black px-8 py-4 dark:bg-white"
+                    className="mt-8 rounded-xl bg-black px-8 py-4 dark:bg-white"
                   >
                     <View className="flex-row items-center">
                       <Feather name="plus" size={20} color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
@@ -582,12 +582,12 @@ const Address = () => {
                 )}
               </View>
             ) : (
-              <View className="space-y-3">
+              <View className="space-y-5">
                 {Array.isArray(addresses) && addresses.map((address, index) => (
-                  <View key={index} className="rounded-xl bg-gray-50 p-4 dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                  <View key={index} className="rounded-xl bg-gray-50 p-5 dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1">
-                        <View className="flex-row items-center mb-2">
+                        <View className="flex-row items-center mb-3">
                           <View className="mr-3">
                             <Feather 
                               name={address.label.toLowerCase().includes('home') ? 'home' : 
@@ -613,7 +613,7 @@ const Address = () => {
                           )}
                         </View>
                         <Text
-                          className="text-sm text-gray-600 dark:text-gray-300 leading-5"
+                          className="text-sm text-gray-600 dark:text-gray-300 leading-6 pr-2"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
                           {address && [address.street, address.city, address.state, address.zipCode].filter(Boolean).join(', ')}
                         </Text>
@@ -621,7 +621,7 @@ const Address = () => {
                       <TouchableOpacity
                         onPress={() => handleDeleteAddress(index)}
                         disabled={deleting === index}
-                        className="ml-3 rounded-full bg-red-50 p-2 dark:bg-red-900/30">
+                        className="ml-4 rounded-full bg-red-50 p-2.5 dark:bg-red-900/30">
                         {deleting === index ? (
                           <ActivityIndicator size="small" color="#EF4444" />
                         ) : (
@@ -636,7 +636,7 @@ const Address = () => {
                 {!showAddForm && (
                   <TouchableOpacity
                     onPress={() => setShowAddForm(true)}
-                    className="mt-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 py-6">
+                    className="mt-6 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 py-8">
                     <View className="flex-row items-center justify-center">
                       <Feather name="plus" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
                       <Text

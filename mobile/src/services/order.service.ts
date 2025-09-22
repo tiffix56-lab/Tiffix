@@ -1,141 +1,64 @@
-import { apiService } from './api.service';
+import { ApiResponse } from './api.service';
 import { API_ENDPOINTS } from '../constants/api';
-import { InitiatePurchaseRequest, PurchaseResponse } from '../types/order.types';
-import { ApiResponse } from '../types/auth.types';
-
-export interface PhonePeOrderResponse {
-  orderId: string;
-  amount: number;
-  currency: string;
-  phonepeKey: string;
-  paymentUrl: string;
-  userSubscriptionId: string;
-  subscription?: any;
-}
-
-export interface PaymentVerificationRequest {
-  userSubscriptionId: string;
-  phonepe_transaction_id: string;
-  phonepe_merchant_id: string;
-  phonepe_checksum: string;
-}
+import api from '../lib/axios';
+import { 
+  RazorpayPurchaseResponse, 
+  RazorpayVerificationRequest, 
+  RazorpayVerificationResponse,
+  PaymentStatusResponse 
+} from '../types/order.types';
+import { SubscriptionPurchaseData } from '../context/PaymentContext';
 
 class OrderService {
-  async initiatePurchase(orderData: InitiatePurchaseRequest): Promise<ApiResponse<PhonePeOrderResponse>> {
-    console.log('Initiating purchase with data:', JSON.stringify(orderData, null, 2));
-    console.log('🔗 API Endpoint being called:', API_ENDPOINTS.SUBSCRIPTION.PURCHASE);
-    console.log('🌐 Full URL will be: baseURL + ', API_ENDPOINTS.SUBSCRIPTION.PURCHASE);
+  async initiateRazorpayPurchase(orderData: SubscriptionPurchaseData): Promise<ApiResponse<RazorpayPurchaseResponse['data']>> {
+    console.log('🚀 Initiating Razorpay purchase with data:', JSON.stringify(orderData, null, 2));
+    console.log('🔗 API Endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/initiate`);
     
-    const response = await apiService.post<PhonePeOrderResponse>(
+    const response = await api.post<RazorpayPurchaseResponse['data']>(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/initiate`,
       orderData
     );
     
-    console.log('📡 Raw API response:', response);
+    console.log('📡 Razorpay purchase response:', response);
     return response;
   }
 
-  async verifyPayment(data: PaymentVerificationRequest): Promise<ApiResponse<{ 
-    success: boolean; 
-    userSubscriptionId: string;
-    userSubscription?: any;
-  }>> {
-    console.log('Verifying payment with data:', JSON.stringify(data, null, 2));
-    console.log('🔗 Verification endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/verify-payment`);
-    
-    const response = await apiService.post<{ 
-      success: boolean; 
-      userSubscriptionId: string;
-      userSubscription?: any;
-    }>(
+  async verifyRazorpayPayment(data: RazorpayVerificationRequest): Promise<ApiResponse<RazorpayVerificationResponse['data']>> {
+    console.log('🔍 Verifying Razorpay payment:', {
+      razorpay_order_id: data.razorpay_order_id,
+      razorpay_payment_id: data.razorpay_payment_id,
+      userSubscriptionId: data.userSubscriptionId
+    });
+
+    const response = await api.post<RazorpayVerificationResponse['data']>(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/verify-payment`,
       data
     );
     
-    console.log('🔐 Payment verification response:', response);
+    console.log('✅ Payment verification response:', response);
     return response;
   }
 
-  async checkSubscriptionStatus(userSubscriptionId: string): Promise<ApiResponse<{ 
-    subscription: any;
-    status: string;
-  }>> {
-    console.log('Checking subscription status for:', userSubscriptionId);
-    console.log('🔗 Status check endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/subscription-status/${userSubscriptionId}`);
+  async checkPaymentStatus(orderId: string): Promise<ApiResponse<PaymentStatusResponse['data']>> {
+    console.log('📊 Checking payment status for orderId:', orderId);
+
+    const response = await api.get<PaymentStatusResponse['data']>(
+      `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/check-payment-status/${orderId}`
+    );
     
-    const response = await apiService.get<{ 
-      subscription: any;
-      status: string;
-    }>(
+    console.log('📈 Payment status response:', response);
+    return response;
+  }
+
+  async getSubscriptionStatus(userSubscriptionId: string): Promise<ApiResponse<any>> {
+    console.log('🔍 Getting subscription status for userSubscriptionId:', userSubscriptionId);
+
+    const response = await api.get(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/subscription-status/${userSubscriptionId}`
     );
     
     console.log('📊 Subscription status response:', response);
     return response;
-  }
-
-  async checkPaymentStatus(orderId: string): Promise<ApiResponse<{
-    status: string;
-    paymentStatus: string;
-    subscription?: any;
-    message?: string;
-  }>> {
-    console.log('Checking payment status for orderId:', orderId);
-    console.log('🔗 Payment status endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/check-payment-status/${orderId}`);
-    
-    const response = await apiService.get<{
-      status: string;
-      paymentStatus: string;
-      subscription?: any;
-      message?: string;
-    }>(
-      `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/check-payment-status/${orderId}`
-    );
-    
-    console.log('💳 Payment status response:', response);
-    return response;
-  }
-
-  async getMyOrders(): Promise<ApiResponse<{ orders: any[] }>> {
-    try {
-      const response = await apiService.get<{ orders: any[] }>(
-        API_ENDPOINTS.ORDERS.MY_ORDERS
-      );
-      
-      if (!response.success && response.message?.includes('not found')) {
-        return {
-          success: true,
-          message: 'No orders found',
-          data: { orders: [] }
-        };
-      }
-      
-      return response;
-    } catch (error) {
-      return {
-        success: true,
-        message: 'No orders found', 
-        data: { orders: [] }
-      };
-    }
-  }
-
-  async getOrderById(orderId: string): Promise<ApiResponse<{ order: any }>> {
-    return await apiService.get<{ order: any }>(`${API_ENDPOINTS.ORDERS.GET_BY_ID}/${orderId}`);
-  }
-
-  async skipOrder(orderId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
-    return await apiService.post<{ message: string }>(
-      `${API_ENDPOINTS.ORDERS.SKIP}/${orderId}/skip`,
-      { reason }
-    );
-  }
-
-  async cancelOrder(orderId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
-    return await apiService.post<{ message: string }>(
-      `${API_ENDPOINTS.ORDERS.CANCEL}/${orderId}/cancel`,
-      { reason }
-    );
   }
 }
 

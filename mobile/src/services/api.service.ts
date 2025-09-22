@@ -3,6 +3,9 @@ import api from '../lib/axios';
 import { ApiResponse } from '../types/auth.types';
 import { ErrorHandler } from '../utils/error.handler';
 
+// Re-export ApiResponse for other services
+export type { ApiResponse };
+
 const errorHandler = new ErrorHandler();
 
 class ApiService {
