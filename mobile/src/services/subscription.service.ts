@@ -82,6 +82,8 @@ class SubscriptionService {
     startDate?: string;
     endDate?: string;
   }): Promise<ApiResponse<{ subscriptions: any[]; pagination?: any }>> {
+    console.log('🚀 [SUBSCRIPTION_SERVICE] Starting getUserSubscriptions with params:', params);
+    
     try {
       const queryParams = new URLSearchParams();
       
@@ -96,26 +98,90 @@ class SubscriptionService {
         ? `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}?${queryParams.toString()}`
         : API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS;
         
-      console.log('🔗 Fetching user subscriptions from:', url);
+      console.log('🔗 [SUBSCRIPTION_SERVICE] API URL constructed:', url);
+      console.log('📋 [SUBSCRIPTION_SERVICE] API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS:', API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS);
       
       const response = await apiService.get<{ subscriptions: any[]; pagination?: any }>(url);
       
-      console.log('📡 User subscriptions response:', response);
+      console.log('📡 [SUBSCRIPTION_SERVICE] Raw API response received:');
+      console.log('- Success:', response.success);
+      console.log('- Message:', response.message);
+      console.log('- Data:', response.data);
+      console.log('- Error:', response.error);
       
-      if (!response.success && (response.message?.includes('not found') || response.message?.includes('No subscriptions'))) {
-        return {
-          success: true,
-          message: 'No subscriptions yet',
-          data: { subscriptions: [] }
-        };
+      if (response.success && response.data) {
+        console.log('✅ [SUBSCRIPTION_SERVICE] Successfully received subscription data');
+        console.log('- Subscriptions count:', response.data.subscriptions?.length || 0);
+        console.log('- First subscription (if exists):', response.data.subscriptions?.[0]);
+        
+        // Validate data structure
+        if (!Array.isArray(response.data.subscriptions)) {
+          console.log('⚠️ [SUBSCRIPTION_SERVICE] Invalid data structure - subscriptions is not an array');
+          return {
+            success: true,
+            message: 'No subscriptions yet - invalid data structure',
+            data: { subscriptions: [] }
+          };
+        }
+        
+        return response;
       }
       
-      return response;
-    } catch (error) {
-      console.error('❌ Error fetching user subscriptions:', error);
+      if (!response.success) {
+        console.log('⚠️ [SUBSCRIPTION_SERVICE] API returned error:', response.message);
+        
+        // Handle specific error cases
+        if (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'SESSION_EXPIRED') {
+          console.log('🔐 [SUBSCRIPTION_SERVICE] Authentication error detected');
+          return {
+            success: false,
+            message: 'Authentication failed. Please login again.',
+            error: { code: 'AUTH_ERROR' },
+            data: { subscriptions: [] }
+          };
+        }
+        
+        if (response.message?.includes('not found') || response.message?.includes('No subscriptions')) {
+          console.log('🔄 [SUBSCRIPTION_SERVICE] Converting "not found" to empty success response');
+          return {
+            success: true,
+            message: 'No subscriptions yet',
+            data: { subscriptions: [] }
+          };
+        }
+        
+        if (response.error?.code === 'NETWORK_ERROR') {
+          console.log('🌐 [SUBSCRIPTION_SERVICE] Network error detected');
+          return {
+            success: false,
+            message: 'Network error. Please check your internet connection.',
+            error: { code: 'NETWORK_ERROR' },
+            data: { subscriptions: [] }
+          };
+        }
+        
+        console.log('❌ [SUBSCRIPTION_SERVICE] Returning error response as-is');
+        return response;
+      }
+      
+      console.log('⚠️ [SUBSCRIPTION_SERVICE] Unexpected response structure, returning empty subscriptions');
       return {
         success: true,
-        message: 'No subscriptions yet', 
+        message: 'No subscriptions yet - unexpected response',
+        data: { subscriptions: [] }
+      };
+      
+    } catch (error) {
+      console.error('❌ [SUBSCRIPTION_SERVICE] Exception in getUserSubscriptions:', error);
+      console.error('❌ [SUBSCRIPTION_SERVICE] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        name: error instanceof Error ? error.name : 'Unknown error type'
+      });
+      
+      return {
+        success: true,
+        message: 'No subscriptions yet - caught exception', 
         data: { subscriptions: [] }
       };
     }
@@ -144,10 +210,15 @@ class SubscriptionService {
   }
 
   async cancelSubscription(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
-    return await apiService.post<{ message: string }>(
+    console.log('🚀 [SUBSCRIPTION_SERVICE] Starting cancelSubscription:', { subscriptionId, reason });
+    
+    const response = await apiService.post<{ message: string }>(
       `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/cancel`,
       { reason }
     );
+    
+    console.log('📡 [SUBSCRIPTION_SERVICE] Cancel subscription response:', response);
+    return response;
   }
 
   async requestVendorSwitch(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {

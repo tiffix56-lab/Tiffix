@@ -108,26 +108,74 @@ const Subscription = () => {
   }, []);
 
   const fetchData = async () => {
+    console.log('🚀 [SUBSCRIPTION_TAB] Starting fetchData...');
+    
     try {
       setLoading(true);
-      // Fetch both subscriptions and orders
-      const [subscriptionsResponse, ordersResponse] = await Promise.all([
-        subscriptionService.getUserSubscriptions({ limit: 50 }),
-        orderService.getMyOrders()
-      ]);
+      console.log('📊 [SUBSCRIPTION_TAB] Loading state set to true');
       
-      if (subscriptionsResponse.success && subscriptionsResponse.data) {
-        const subs = subscriptionsResponse.data.subscriptions || [];
-        setSubscriptions(subs);
+      // Fetch subscriptions only (like profile page)
+      console.log('📡 [SUBSCRIPTION_TAB] Fetching subscriptions...');
+      const response = await subscriptionService.getUserSubscriptions();
+      console.log('📡 [SUBSCRIPTION_TAB] Subscription service response received:', response);
+      
+      if (response.success && response.data) {
+        const subscriptions = response.data.subscriptions || [];
+        console.log('✅ [SUBSCRIPTION_TAB] Successfully received subscriptions:', {
+          count: subscriptions.length,
+          subscriptions: subscriptions
+        });
+        setSubscriptions(subscriptions);
+        
+        // Now fetch orders if subscriptions were loaded successfully
+        if (subscriptions.length > 0) {
+          console.log('📡 [SUBSCRIPTION_TAB] Fetching orders...');
+          try {
+            const ordersResponse = await orderService.getUserOrders();
+            console.log('📡 [SUBSCRIPTION_TAB] Orders response:', ordersResponse);
+            
+            if (ordersResponse.success && ordersResponse.data) {
+              const ordersList = ordersResponse.data.orders || [];
+              console.log('✅ [SUBSCRIPTION_TAB] Setting orders:', {
+                count: ordersList.length,
+                orders: ordersList
+              });
+              setOrders(ordersList);
+            } else {
+              console.log('❌ [SUBSCRIPTION_TAB] Orders fetch failed:', ordersResponse.message);
+              setOrders([]);
+            }
+          } catch (orderError) {
+            console.error('❌ [SUBSCRIPTION_TAB] Orders fetch error:', orderError);
+            setOrders([]);
+          }
+        }
+      } else {
+        console.log('❌ [SUBSCRIPTION_TAB] Failed to get subscriptions:', {
+          success: response.success,
+          data: response.data,
+          message: response.message,
+          error: response.error
+        });
+        
+        // Handle specific error cases (same as profile page)
+        if (response.error?.code === 'AUTH_ERROR') {
+          console.log('🔐 [SUBSCRIPTION_TAB] Authentication error - user needs to login');
+        } else if (response.error?.code === 'NETWORK_ERROR') {
+          console.log('🌐 [SUBSCRIPTION_TAB] Network error - show network error message');
+        }
+        
+        setOrders([]); // Clear orders if subscriptions failed
       }
       
-      if (ordersResponse.success && ordersResponse.data) {
-        const ordersList = ordersResponse.data.orders || [];
-        setOrders(ordersList);
-      }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('❌ [SUBSCRIPTION_TAB] Exception in fetchData:', error);
+      console.error('❌ [SUBSCRIPTION_TAB] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
     } finally {
+      console.log('📊 [SUBSCRIPTION_TAB] Setting loading to false and refreshing to false');
       setLoading(false);
       setRefreshing(false);
     }
@@ -233,24 +281,60 @@ const Subscription = () => {
     Alert.alert('Switch Vendor', 'This will allow you to switch between vendor food and home chef');
   };
 
-  const upcomingSubscriptions = subscriptions.filter(sub => sub.status === 'active');
-  const pastSubscriptions = subscriptions.filter(sub => ['cancelled', 'expired', 'paused'].includes(sub.status));
+  console.log('🔍 [SUBSCRIPTION_TAB] Starting data filtering...');
+  console.log('🔍 [SUBSCRIPTION_TAB] Raw subscriptions data:', subscriptions);
+  console.log('🔍 [SUBSCRIPTION_TAB] Raw orders data:', orders);
+  console.log('🔍 [SUBSCRIPTION_TAB] Selected subscription ID:', selectedSubscriptionId);
+
+  // Use same filtering logic as profile page
+  const getCurrentSubscriptions = () => {
+    return subscriptions.filter(sub => {
+      // Use analytics data if available, otherwise fallback to status
+      if (sub.analytics?.isActive !== undefined) {
+        return sub.analytics.isActive && !sub.analytics.isExpired;
+      }
+      return sub.status === 'active' || sub.status === 'pending';
+    });
+  };
+
+  const getPastSubscriptions = () => {
+    return subscriptions.filter(sub => {
+      // Use analytics data if available, otherwise fallback to status
+      if (sub.analytics?.isExpired !== undefined) {
+        return sub.analytics.isExpired || sub.status === 'completed' || sub.status === 'cancelled';
+      }
+      return sub.status === 'completed' || sub.status === 'cancelled' || sub.status === 'expired';
+    });
+  };
+
+  const upcomingSubscriptions = getCurrentSubscriptions();
+  const pastSubscriptions = getPastSubscriptions();
+  
+  console.log('🔍 [SUBSCRIPTION_TAB] Filtered subscriptions:', {
+    upcoming: upcomingSubscriptions.length,
+    past: pastSubscriptions.length,
+    upcomingItems: upcomingSubscriptions,
+    pastItems: pastSubscriptions
+  });
   
   // Filter orders by selected subscription
   const subscriptionOrders = selectedSubscriptionId 
     ? orders.filter(order => {
-        console.log(`🔍 Filtering order ${order._id}: subscriptionId=${order.subscriptionId}, selectedId=${selectedSubscriptionId}, match=${order.subscriptionId === selectedSubscriptionId}`);
+        console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}: subscriptionId=${order.subscriptionId}, selectedId=${selectedSubscriptionId}, match=${order.subscriptionId === selectedSubscriptionId}`);
         return order.subscriptionId === selectedSubscriptionId;
       })
     : orders;
     
-  console.log('🔍 Total orders:', orders.length);
-  console.log('🔍 Selected subscription ID:', selectedSubscriptionId);
-  console.log('🔍 Filtered subscription orders:', subscriptionOrders.length);
+  console.log('🔍 [SUBSCRIPTION_TAB] Order filtering results:', {
+    totalOrders: orders.length,
+    selectedSubscriptionId: selectedSubscriptionId,
+    filteredOrders: subscriptionOrders.length,
+    filteredOrdersList: subscriptionOrders
+  });
     
   const upcomingOrders = subscriptionOrders.filter(order => {
     const isUpcoming = ['pending', 'confirmed', 'prepared', 'out_for_delivery'].includes(order.status);
-    console.log(`🔍 Order ${order._id} status: ${order.status}, isUpcoming: ${isUpcoming}`);
+    console.log(`🔍 [SUBSCRIPTION_TAB] Order ${order._id} status: ${order.status}, isUpcoming: ${isUpcoming}`);
     return isUpcoming;
   });
   
@@ -258,8 +342,12 @@ const Subscription = () => {
     ['delivered'].includes(order.status)
   );
   
-  console.log('🔍 Upcoming orders count:', upcomingOrders.length);
-  console.log('🔍 Delivered orders count:', deliveredOrders.length);
+  console.log('🔍 [SUBSCRIPTION_TAB] Final order counts:', {
+    upcoming: upcomingOrders.length,
+    delivered: deliveredOrders.length,
+    upcomingOrdersList: upcomingOrders,
+    deliveredOrdersList: deliveredOrders
+  });
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -673,8 +761,27 @@ const Subscription = () => {
                   />
                 ))
               ) : (
-                <View className="py-20 items-center">
-                  <Text className="text-gray-600 dark:text-gray-300">No active subscriptions</Text>
+                <View className="py-20 items-center px-6">
+                  <Feather name="calendar" size={48} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
+                  <Text 
+                    className="mt-4 text-center text-lg font-medium text-gray-600 dark:text-gray-300"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    No Active Subscriptions
+                  </Text>
+                  <Text 
+                    className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400"
+                    style={{ fontFamily: 'Poppins_400Regular' }}>
+                    Start your meal journey by choosing a subscription plan
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/(home)/home-chef')}
+                    className="mt-6 rounded-lg bg-black px-6 py-3 dark:bg-white">
+                    <Text
+                      className="text-sm font-medium text-white dark:text-black"
+                      style={{ fontFamily: 'Poppins_500Medium' }}>
+                      Browse Plans
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
@@ -722,8 +829,18 @@ const Subscription = () => {
                   />
                 ))
               ) : (
-                <View className="py-20 items-center">
-                  <Text className="text-gray-600 dark:text-gray-300">No past subscriptions</Text>
+                <View className="py-20 items-center px-6">
+                  <Feather name="clock" size={48} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
+                  <Text 
+                    className="mt-4 text-center text-lg font-medium text-gray-600 dark:text-gray-300"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    No Past Subscriptions
+                  </Text>
+                  <Text 
+                    className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400"
+                    style={{ fontFamily: 'Poppins_400Regular' }}>
+                    Your completed subscription history will appear here
+                  </Text>
                 </View>
               )}
             </View>

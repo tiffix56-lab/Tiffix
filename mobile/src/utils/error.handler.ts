@@ -19,7 +19,7 @@ class ErrorHandler {
         case HTTP_STATUS.BAD_REQUEST:
           return {
             success: false,
-            message: data?.message || 'Invalid request',
+            message: this.extractErrorMessage(data) || 'The request contains invalid information. Please check your input and try again.',
             error: { code: 'BAD_REQUEST', details: data },
           };
           
@@ -33,42 +33,42 @@ class ErrorHandler {
         case HTTP_STATUS.FORBIDDEN:
           return {
             success: false,
-            message: data?.message || 'Access denied',
+            message: this.extractErrorMessage(data) || 'You don\'t have permission to access this resource.',
             error: { code: 'FORBIDDEN' },
           };
           
         case HTTP_STATUS.NOT_FOUND:
           return {
             success: false,
-            message: data?.message || 'Resource not found',
+            message: this.extractErrorMessage(data) || 'The requested resource was not found.',
             error: { code: 'NOT_FOUND' },
           };
           
         case HTTP_STATUS.CONFLICT:
           return {
             success: false,
-            message: data?.message || ERROR_MESSAGES.EMAIL_EXISTS,
+            message: this.extractErrorMessage(data) || ERROR_MESSAGES.EMAIL_EXISTS,
             error: { code: 'CONFLICT', details: data },
           };
           
         case HTTP_STATUS.UNPROCESSABLE_ENTITY:
           return {
             success: false,
-            message: this.extractValidationError(data) || 'Validation error',
+            message: this.extractValidationError(data) || 'Please check your input data and try again.',
             error: { code: 'VALIDATION_ERROR', details: data },
           };
           
         case HTTP_STATUS.INTERNAL_SERVER_ERROR:
           return {
             success: false,
-            message: ERROR_MESSAGES.GENERIC_ERROR,
+            message: this.extractErrorMessage(data) || 'Our servers are experiencing issues. Please try again later.',
             error: { code: 'SERVER_ERROR' },
           };
           
         default:
           return {
             success: false,
-            message: data?.message || ERROR_MESSAGES.GENERIC_ERROR,
+            message: this.extractErrorMessage(data) || 'Something went wrong. Please try again.',
             error: { code: 'UNKNOWN_ERROR', details: data },
           };
       }
@@ -89,17 +89,64 @@ class ErrorHandler {
     };
   }
 
-  private extractValidationError(data: any): string | null {
-    if (data?.errors && Array.isArray(data.errors)) {
-      return data.errors[0]?.message || null;
+  private extractErrorMessage(data: any): string | null {
+    // Try to extract meaningful error messages from various response formats
+    if (!data) return null;
+
+    // Direct message from server
+    if (data.message && typeof data.message === 'string') {
+      return data.message;
     }
-    
-    if (data?.error && typeof data.error === 'string') {
+
+    // Error field as string
+    if (data.error && typeof data.error === 'string') {
       return data.error;
     }
-    
-    if (data?.message) {
-      return data.message;
+
+    // Error object with message
+    if (data.error && typeof data.error === 'object' && data.error.message) {
+      return data.error.message;
+    }
+
+    // Validation errors array
+    if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+      const firstError = data.errors[0];
+      if (typeof firstError === 'string') return firstError;
+      if (firstError.message) return firstError.message;
+      if (firstError.msg) return firstError.msg;
+    }
+
+    // Details field
+    if (data.details && typeof data.details === 'string') {
+      return data.details;
+    }
+
+    // Common API error formats
+    if (data.data && data.data.message) {
+      return data.data.message;
+    }
+
+    return null;
+  }
+
+  private extractValidationError(data: any): string | null {
+    // First try the general extraction method
+    const generalError = this.extractErrorMessage(data);
+    if (generalError) return generalError;
+
+    // Additional validation-specific formats
+    if (data?.errors && Array.isArray(data.errors)) {
+      const validationErrors = data.errors.map((error: any) => {
+        if (typeof error === 'string') return error;
+        if (error.message) return error.message;
+        if (error.msg) return error.msg;
+        if (error.field && error.message) return `${error.field}: ${error.message}`;
+        return null;
+      }).filter(Boolean);
+
+      if (validationErrors.length > 0) {
+        return validationErrors.join(', ');
+      }
     }
     
     return null;

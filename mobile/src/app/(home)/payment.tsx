@@ -214,16 +214,16 @@ const Payment = () => {
 
   const handlePaymentSuccess = async (paymentData: any) => {
     try {
-      if (!orderData) return;
+      if (!orderData || !razorpayOptions) return;
       
-      await verifySubscriptionPayment(paymentData, orderData.userSubscriptionId!);
+      await verifySubscriptionPayment(paymentData, razorpayOptions.userSubscriptionId);
       
       // Navigate to order confirmation
       router.push({
         pathname: '/(home)/order-confirmed',
         params: {
-          orderId: orderData.orderId,
-          userSubscriptionId: orderData.userSubscriptionId
+          orderId: razorpayOptions.orderId,
+          userSubscriptionId: razorpayOptions.userSubscriptionId
         }
       });
     } catch (error) {
@@ -342,7 +342,7 @@ const Payment = () => {
                 <Text
                   className="text-base font-medium text-black dark:text-white"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
-                  PhonePe
+                  Razorpay
                 </Text>
                 <Text
                   className="text-sm text-zinc-500 dark:text-zinc-400"
@@ -418,7 +418,7 @@ const Payment = () => {
             <Text
               className="text-center text-lg font-semibold text-white"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Pay {formatCurrency(finalTotal)}
+              Continue Payment - {formatCurrency(finalTotal)}
             </Text>
           )}
         </TouchableOpacity>

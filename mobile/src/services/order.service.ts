@@ -60,6 +60,118 @@ class OrderService {
     console.log('📊 Subscription status response:', response);
     return response;
   }
+
+  // Get user orders (based on order.http)
+  async getUserOrders(params?: {
+    page?: number;
+    limit?: number;
+    status?: string; // 'upcoming', 'delivered', etc.
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    days?: number; // Get orders for next N days
+  }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+    console.log('🚀 [ORDER_SERVICE] Getting user orders with params:', params);
+
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.startDate) queryParams.append('startDate', params.startDate);
+      if (params?.endDate) queryParams.append('endDate', params.endDate);
+      if (params?.days) queryParams.append('days', params.days.toString());
+      
+      const url = queryParams.toString() 
+        ? `${API_ENDPOINTS.ORDERS.MY_ORDERS}?${queryParams.toString()}`
+        : API_ENDPOINTS.ORDERS.MY_ORDERS;
+        
+      console.log('🔗 [ORDER_SERVICE] API URL constructed:', url);
+      
+      const response = await api.get<{ orders: any[]; pagination?: any }>(url);
+      
+      console.log('📡 [ORDER_SERVICE] Orders response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ [ORDER_SERVICE] Error getting user orders:', error);
+      throw error;
+    }
+  }
+
+  // Get order by ID
+  async getOrderById(orderId: string): Promise<ApiResponse<{ order: any }>> {
+    console.log('🔍 [ORDER_SERVICE] Getting order by ID:', orderId);
+
+    try {
+      const response = await api.get<{ order: any }>(`${API_ENDPOINTS.ORDERS.GET_BY_ID}/${orderId}`);
+      
+      console.log('📡 [ORDER_SERVICE] Order response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ [ORDER_SERVICE] Error getting order:', error);
+      throw error;
+    }
+  }
+
+  // Skip order (based on order.http)
+  async skipOrder(orderId: string, skipReason?: string): Promise<ApiResponse<{ message: string }>> {
+    console.log('⏭️ [ORDER_SERVICE] Skipping order:', orderId, 'skipReason:', skipReason);
+
+    try {
+      const response = await api.post<{ message: string }>(
+        `${API_ENDPOINTS.ORDERS.SKIP}/${orderId}/skip`,
+        { skipReason }
+      );
+      
+      console.log('📡 [ORDER_SERVICE] Skip order response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ [ORDER_SERVICE] Error skipping order:', error);
+      throw error;
+    }
+  }
+
+  // Cancel order (based on order.http)
+  async cancelOrder(orderId: string, cancelReason?: string): Promise<ApiResponse<{ message: string }>> {
+    console.log('❌ [ORDER_SERVICE] Cancelling order:', orderId, 'cancelReason:', cancelReason);
+
+    try {
+      const response = await api.post<{ message: string }>(
+        `${API_ENDPOINTS.ORDERS.CANCEL}/${orderId}/cancel`,
+        { cancelReason }
+      );
+      
+      console.log('📡 [ORDER_SERVICE] Cancel order response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ [ORDER_SERVICE] Error cancelling order:', error);
+      throw error;
+    }
+  }
+
+  // Convenience methods for common use cases
+
+  // Get upcoming orders (common filter)
+  async getUpcomingOrders(params?: { page?: number; limit?: number }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+    return this.getUserOrders({ ...params, status: 'upcoming' });
+  }
+
+  // Get delivered orders (common filter)
+  async getDeliveredOrders(params?: { page?: number; limit?: number }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+    return this.getUserOrders({ ...params, status: 'delivered' });
+  }
+
+  // Get next 7 days orders (common filter)
+  async getNext7DaysOrders(): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+    return this.getUserOrders({ days: 7 });
+  }
+
+  // Search orders by text
+  async searchOrders(searchText: string, params?: { page?: number; limit?: number }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+    return this.getUserOrders({ ...params, search: searchText });
+  }
 }
 
 export const orderService = new OrderService();

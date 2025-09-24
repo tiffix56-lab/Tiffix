@@ -79,13 +79,13 @@ export const HTTP_STATUS = {
 } as const;
 
 export const ERROR_MESSAGES = {
-  NETWORK_ERROR: 'Please check your internet connection',
-  SESSION_EXPIRED: 'Your session has expired. Please login again',
-  INVALID_CREDENTIALS: 'Invalid email or password',
-  EMAIL_EXISTS: 'An account with this email already exists',
-  PHONE_EXISTS: 'This phone number is already registered',
-  INVALID_OTP: 'Invalid verification code',
-  OTP_EXPIRED: 'Verification code has expired',
-  ACCOUNT_NOT_VERIFIED: 'Please verify your account first',
-  GENERIC_ERROR: 'Something went wrong. Please try again',
+  NETWORK_ERROR: 'Please check your internet connection and try again',
+  SESSION_EXPIRED: 'Your session has expired. Please login again to continue',
+  INVALID_CREDENTIALS: 'The email or password you entered is incorrect. Please check and try again',
+  EMAIL_EXISTS: 'An account with this email already exists. Try signing in instead',
+  PHONE_EXISTS: 'This phone number is already registered. Try signing in instead',
+  INVALID_OTP: 'The verification code you entered is incorrect. Please check and try again',
+  OTP_EXPIRED: 'The verification code has expired. Please request a new one',
+  ACCOUNT_NOT_VERIFIED: 'Please verify your account by checking your email or phone',
+  GENERIC_ERROR: 'Something unexpected happened. Please try again in a moment',
 } as const;

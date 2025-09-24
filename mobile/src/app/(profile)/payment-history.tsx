@@ -37,6 +37,11 @@ const PaymentHistory = () => {
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
+  const calculateTotalWithGST = (baseAmount: number) => {
+    const gst = Math.round(baseAmount * 0.18); // 18% GST
+    return baseAmount + gst;
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-IN', {
@@ -194,13 +199,18 @@ const PaymentHistory = () => {
                               <Text
                                 className="text-lg font-semibold text-black dark:text-white"
                                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                                {formatCurrency(transaction.finalAmount)}
+                                {formatCurrency(calculateTotalWithGST(transaction.finalAmount))}
+                              </Text>
+                              <Text
+                                className="text-xs text-zinc-500 dark:text-zinc-400"
+                                style={{ fontFamily: 'Poppins_400Regular' }}>
+                                (incl. GST)
                               </Text>
                               {transaction.discountApplied > 0 && (
                                 <Text
                                   className="text-sm text-green-600 dark:text-green-400"
                                   style={{ fontFamily: 'Poppins_400Regular' }}>
-                                  -{formatCurrency(transaction.discountApplied)}
+                                  -{formatCurrency(transaction.discountApplied)} discount
                                 </Text>
                               )}
                             </View>

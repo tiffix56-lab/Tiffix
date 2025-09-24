@@ -30,7 +30,7 @@ const Address = () => {
   const [addressSearchResults, setAddressSearchResults] = useState<AutocompleteResult[]>([]);
   const [isAddressSearchLoading, setIsAddressSearchLoading] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<ParsedAddress | null>(null);
-  const [sessionToken] = useState(() => mapsService.generateSessionToken());
+  const [sessionToken, setSessionToken] = useState<string>('');
 
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
@@ -38,6 +38,19 @@ const Address = () => {
   useEffect(() => {
     console.log('🔄 useEffect triggered - calling fetchAddresses');
     fetchAddresses();
+  }, []);
+
+  useEffect(() => {
+    const initializeSessionToken = async () => {
+      try {
+        const token = await mapsService.generateSessionToken();
+        setSessionToken(token);
+      } catch (error) {
+        console.error('Failed to generate session token:', error);
+      }
+    };
+    
+    initializeSessionToken();
   }, []);
 
   const fetchAddresses = async () => {
@@ -81,7 +94,7 @@ const Address = () => {
     setIsAddressSearchLoading(true);
     try {
       console.log('🔍 Searching places with Ola Maps:', query);
-      const results = await mapsService.searchPlaces(query, sessionToken);
+      const results = await mapsService.searchPlaces(query, sessionToken || undefined);
       console.log('📍 Search results:', results);
       setAddressSearchResults(results.slice(0, 10));
     } catch (error) {
@@ -95,7 +108,7 @@ const Address = () => {
   const getPlaceDetails = async (placeId: string): Promise<ParsedAddress | null> => {
     try {
       console.log('📍 Getting place details with Ola Maps:', placeId);
-      const result = await mapsService.getPlaceDetails(placeId, sessionToken);
+      const result = await mapsService.getPlaceDetails(placeId, sessionToken || undefined);
       console.log('🏠 Place details result:', result);
       return result;
     } catch (error) {
@@ -582,9 +595,9 @@ const Address = () => {
                 )}
               </View>
             ) : (
-              <View className="space-y-5">
+              <View>
                 {Array.isArray(addresses) && addresses.map((address, index) => (
-                  <View key={index} className="rounded-xl bg-gray-50 p-5 dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                  <View key={index} className={`rounded-xl bg-gray-50 p-5 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 ${index > 0 ? 'mt-5' : ''}`}>
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1">
                         <View className="flex-row items-center mb-3">
