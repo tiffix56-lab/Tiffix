@@ -106,6 +106,13 @@ class AddressService {
     );
   }
 
+  async setDefaultAddress(addressIndex: number): Promise<ApiResponse<{ message: string }>> {
+    return await apiService.put<{ message: string }>(
+      `${API_ENDPOINTS.USER.ADDRESSES}/${addressIndex}/default`,
+      {}
+    );
+  }
+
   async getUserProfile(): Promise<ApiResponse<{ userProfile: UserProfile }>> {
     return await apiService.get<{ userProfile: UserProfile }>(API_ENDPOINTS.USER.PROFILE);
   }

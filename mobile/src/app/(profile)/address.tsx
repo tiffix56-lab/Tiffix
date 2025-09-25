@@ -120,53 +120,131 @@ const Address = () => {
   const handleAddressSelect = async (prediction?: AutocompleteResult): Promise<void> => {
     if (!prediction) {
       try {
+        console.log('📍 [ADDRESS] Starting current location fetch...');
+        
+        // Request location permissions
         const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('📍 [ADDRESS] Permission status:', status);
+        
         if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Location permission is required to get current location');
+          console.log('❌ [ADDRESS] Permission denied');
+          Alert.alert(
+            'Permission Required', 
+            'Location permission is required to get your current location. Please enable location access in your device settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Location.enableNetworkProviderAsync() }
+            ]
+          );
           return;
         }
 
+        // Check if location services are enabled
+        const hasLocationServices = await Location.hasServicesEnabledAsync();
+        if (!hasLocationServices) {
+          console.log('❌ [ADDRESS] Location services disabled');
+          Alert.alert(
+            'Location Services Disabled', 
+            'Please enable location services in your device settings to use current location.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Enable', onPress: () => Location.enableNetworkProviderAsync() }
+            ]
+          );
+          return;
+        }
+
+        console.log('📍 [ADDRESS] Getting current position...');
         const location = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
+          timeout: 15000, // 15 seconds timeout
+          maximumAge: 10000 // Accept location up to 10 seconds old
         });
 
+        console.log('📍 [ADDRESS] Current location obtained:', {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          accuracy: location.coords.accuracy
+        });
+
+        // Use Expo reverse geocoding as primary method (more reliable)
+        console.log('🗺️ [ADDRESS] Using Expo reverse geocoding as primary method...');
         const addresses = await Location.reverseGeocodeAsync({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         });
 
-        // Try to reverse geocode the location
-        const address = await mapsService.reverseGeocode(location.coords.latitude, location.coords.longitude);
-        
-        if (address) {
+        if (addresses.length > 0) {
+          const addr = addresses[0];
+          console.log('✅ [ADDRESS] Expo reverse geocoding successful:', addr);
+          
+          const expoAddress: ParsedAddress = {
+            street: `${addr.streetNumber || ''} ${addr.street || ''}`.trim() || 'Current Location',
+            city: addr.city || addr.district || addr.subregion || 'Current Area',
+            state: addr.region || addr.administrativeArea || 'India',
+            zipCode: addr.postalCode || '',
+            country: addr.country || 'IN',
+            fullAddress: [addr.streetNumber, addr.street, addr.city, addr.region, addr.postalCode].filter(Boolean).join(', '),
+            coordinates: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude
+            }
+          };
+          
           setNewAddress(prev => ({
             ...prev,
-            street: address.street || 'Current Location',
-            city: address.city || 'Current Area',
-            state: address.state || 'India',
-            zipCode: address.zipCode || '',
+            street: expoAddress.street,
+            city: expoAddress.city,
+            state: expoAddress.state,
+            zipCode: expoAddress.zipCode,
             coordinates: {
               latitude: location.coords.latitude,
               longitude: location.coords.longitude
             }
           }));
-          setSelectedPlace(address);
+          setSelectedPlace(expoAddress);
+          setShowAddressSearch(false);
+          setAddressSearchQuery('');
+          setAddressSearchResults([]);
+          Alert.alert('Success', 'Current location detected successfully!');
         } else {
-          // Fallback to Expo reverse geocoding
-          const addresses = await Location.reverseGeocodeAsync({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          });
-
-          if (addresses.length > 0) {
-            const addr = addresses[0];
-            const fallbackAddress: ParsedAddress = {
-              street: `${addr.streetNumber || ''} ${addr.street || ''}`.trim() || 'Current Location',
-              city: addr.city || 'Current Area',
-              state: addr.region || 'India',
-              zipCode: addr.postalCode || '',
-              country: addr.country || 'IN',
-              fullAddress: [addr.streetNumber, addr.street, addr.city, addr.region, addr.postalCode].filter(Boolean).join(', '),
+          console.log('⚠️ [ADDRESS] Expo reverse geocoding failed, trying maps service fallback...');
+          
+          // Try maps service as fallback
+          try {
+            const address = await mapsService.reverseGeocode(location.coords.latitude, location.coords.longitude);
+            
+            if (address && address.street && address.city) {
+              console.log('✅ [ADDRESS] Maps service fallback successful:', address);
+              setNewAddress(prev => ({
+                ...prev,
+                street: address.street,
+                city: address.city,
+                state: address.state || 'India',
+                zipCode: address.zipCode || '',
+                coordinates: {
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude
+                }
+              }));
+              setSelectedPlace(address);
+              setShowAddressSearch(false);
+              setAddressSearchQuery('');
+              setAddressSearchResults([]);
+              Alert.alert('Success', 'Current location detected successfully!');
+            } else {
+              throw new Error('Maps service returned no results');
+            }
+          } catch (mapsError) {
+            console.log('❌ [ADDRESS] All reverse geocoding methods failed, using coordinates only');
+            // Last fallback - use coordinates only
+            const basicAddress: ParsedAddress = {
+              street: `Location (${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)})`,
+              city: 'Current Area',
+              state: 'India',
+              zipCode: '',
+              country: 'IN',
+              fullAddress: `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`,
               coordinates: {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude
@@ -175,21 +253,42 @@ const Address = () => {
             
             setNewAddress(prev => ({
               ...prev,
-              street: fallbackAddress.street,
-              city: fallbackAddress.city,
-              state: fallbackAddress.state,
-              zipCode: fallbackAddress.zipCode,
+              street: basicAddress.street,
+              city: basicAddress.city,
+              state: basicAddress.state,
+              zipCode: basicAddress.zipCode,
               coordinates: {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude
               }
             }));
-            setSelectedPlace(fallbackAddress);
+            setSelectedPlace(basicAddress);
+            setShowAddressSearch(false);
+            setAddressSearchQuery('');
+            setAddressSearchResults([]);
+            Alert.alert('Location Detected', 'Location coordinates detected. You may need to manually enter the full address details.');
           }
         }
+
       } catch (error) {
-        console.error('Error getting current location:', error);
-        Alert.alert('Error', 'Unable to get current location');
+        console.error('❌ [ADDRESS] Error getting current location:', error);
+        
+        let errorMessage = 'Unable to get current location. ';
+        if (error instanceof Error) {
+          if (error.message.includes('timeout')) {
+            errorMessage += 'Location request timed out. Please ensure you have a clear view of the sky and good GPS signal.';
+          } else if (error.message.includes('denied')) {
+            errorMessage += 'Location access was denied. Please enable location permissions in settings.';
+          } else if (error.message.includes('unavailable')) {
+            errorMessage += 'Location services are currently unavailable. Please try again later.';
+          } else {
+            errorMessage += 'Please try again or enter your address manually.';
+          }
+        } else {
+          errorMessage += 'Please try again or enter your address manually.';
+        }
+        
+        Alert.alert('Location Error', errorMessage);
       }
     } else {
       // Get place details from Ola Maps
@@ -396,36 +495,78 @@ const Address = () => {
                   Add New Address
                 </Text>
                 
-                <View className="space-y-4">
-                  <TextInput
-                    className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
-                    placeholder="Address Label (e.g., Home, Office)"
-                    placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                    value={newAddress.label}
-                    onChangeText={(text) => setNewAddress(prev => ({ ...prev, label: text }))}
-                    style={{ fontFamily: 'Poppins_400Regular' }}
-                  />
+                <View className="gap-4">
+                  {/* Address Label Input */}
+                  <View>
+                    <Text className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300" style={{ fontFamily: 'Poppins_500Medium' }}>
+                      Address Label *
+                    </Text>
+                    <TextInput
+                      className={`rounded-xl border bg-white px-4 py-4 text-black dark:bg-zinc-800 dark:text-white ${
+                        !newAddress.label.trim() && newAddress.label !== ''
+                          ? 'border-red-300 dark:border-red-600'
+                          : 'border-zinc-200 dark:border-zinc-600 focus:border-blue-500 dark:focus:border-blue-400'
+                      }`}
+                      placeholder="e.g., Home, Office, Mom's Place"
+                      placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+                      value={newAddress.label}
+                      onChangeText={(text) => setNewAddress(prev => ({ ...prev, label: text }))}
+                      style={{ fontFamily: 'Poppins_400Regular', fontSize: 16 }}
+                      maxLength={50}
+                    />
+                  </View>
                   
-                  <TouchableOpacity
-                    onPress={() => setShowAddressSearch(!showAddressSearch)}
-                    className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-600 dark:bg-zinc-800">
+                  {/* Address Search */}
+                  <View>
+                    <Text className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300" style={{ fontFamily: 'Poppins_500Medium' }}>
+                      Address Location *
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setShowAddressSearch(!showAddressSearch)}
+                      className={`rounded-xl border p-4 transition-colors ${
+                        selectedPlace
+                          ? 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/20'
+                          : 'border-zinc-200 bg-white dark:border-zinc-600 dark:bg-zinc-800'
+                      }`}
+                      activeOpacity={0.7}>
                     <View className="flex-row items-center">
-                      <Feather name="search" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                      <Feather 
+                        name={selectedPlace ? "map-pin" : "search"} 
+                        size={20} 
+                        color={
+                          selectedPlace 
+                            ? "#22C55E" 
+                            : (colorScheme === 'dark' ? '#9CA3AF' : '#6B7280')
+                        } 
+                      />
                       <Text
                         className={`ml-3 flex-1 text-base ${
                           selectedPlace 
-                            ? 'text-black dark:text-white' 
+                            ? 'text-green-700 dark:text-green-300 font-medium' 
                             : 'text-zinc-500 dark:text-zinc-400'
                         }`}
-                        style={{ fontFamily: 'Poppins_400Regular' }}>
-                        {selectedPlace ? selectedPlace.fullAddress || selectedPlace.street : 'Search for your address'}
+                        style={{ fontFamily: selectedPlace ? 'Poppins_500Medium' : 'Poppins_400Regular' }}
+                        numberOfLines={2}>
+                        {selectedPlace ? selectedPlace.fullAddress || selectedPlace.street : 'Search for your address or use current location'}
                       </Text>
-                      <Feather name="chevron-down" size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                      <Feather 
+                        name={showAddressSearch ? "chevron-up" : "chevron-down"} 
+                        size={20} 
+                        color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} 
+                      />
                     </View>
+                    {selectedPlace && (
+                      <View className="mt-2 flex-row items-center">
+                        <Feather name="check-circle" size={16} color="#22C55E" />
+                        <Text className="ml-2 text-sm text-green-600 dark:text-green-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                          Address selected
+                        </Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
 
                   {showAddressSearch && (
-                    <View className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-600 dark:bg-zinc-800 max-h-80">
+                    <View className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-600 dark:bg-zinc-800 max-h-80 shadow-lg">
                       <View className="flex-row items-center border-b border-zinc-200 p-3 dark:border-zinc-600">
                         <Feather name="search" size={16} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
                         <TextInput
@@ -443,23 +584,34 @@ const Address = () => {
                         {isAddressSearchLoading && (
                           <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
                         )}
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowAddressSearch(false);
+                            setAddressSearchQuery('');
+                            setAddressSearchResults([]);
+                          }}
+                          className="ml-2 p-1">
+                          <Feather name="x" size={16} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                        </TouchableOpacity>
                       </View>
 
-                      <ScrollView className="max-h-52" showsVerticalScrollIndicator={false}>
+                      <ScrollView className="max-h-64" showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
                         <TouchableOpacity
                           onPress={() => handleAddressSelect()}
-                          className="flex-row items-center border-b border-zinc-100 p-3 dark:border-zinc-700">
-                          <View className="h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                            <Feather name="navigation" size={16} color="#22C55E" />
+                          className="flex-row items-center border-b border-zinc-100 p-4 hover:bg-green-50 dark:border-zinc-700 dark:hover:bg-green-900/10"
+                          activeOpacity={0.7}>
+                          <View className="h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                            <Feather name="navigation" size={18} color="#22C55E" />
                           </View>
-                          <View className="ml-3 flex-1">
-                            <Text className="text-sm font-medium text-green-600 dark:text-green-400" style={{ fontFamily: 'Poppins_500Medium' }}>
+                          <View className="ml-4 flex-1">
+                            <Text className="text-base font-medium text-green-600 dark:text-green-400" style={{ fontFamily: 'Poppins_600SemiBold' }}>
                               Use Current Location
                             </Text>
-                            <Text className="text-xs text-zinc-500 dark:text-zinc-400" style={{ fontFamily: 'Poppins_400Regular' }}>
-                              Using GPS
+                            <Text className="text-sm text-zinc-500 dark:text-zinc-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                              Detect your location automatically using GPS
                             </Text>
                           </View>
+                          <Feather name="chevron-right" size={16} color="#22C55E" />
                         </TouchableOpacity>
 
                         {addressSearchResults.map((prediction, index) => (
@@ -495,69 +647,110 @@ const Address = () => {
                   )}
 
                   {selectedPlace && (
-                    <View className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-600 dark:bg-green-900/20">
-                      <Text className="text-sm font-medium text-green-700 dark:text-green-400" style={{ fontFamily: 'Poppins_500Medium' }}>
-                        Selected Address:
-                      </Text>
-                      <Text className="text-sm text-green-600 dark:text-green-300" style={{ fontFamily: 'Poppins_400Regular' }}>
-                        {[newAddress.street, newAddress.city, newAddress.state, newAddress.zipCode].filter(Boolean).join(', ')}
-                      </Text>
+                    <View className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-600 dark:bg-green-900/20">
+                      <View className="flex-row items-start">
+                        <View className="mr-3 mt-0.5">
+                          <Feather name="map-pin" size={16} color="#22C55E" />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-sm font-medium text-green-700 dark:text-green-400" style={{ fontFamily: 'Poppins_500Medium' }}>
+                            Selected Address:
+                          </Text>
+                          <Text className="mt-1 text-sm text-green-600 dark:text-green-300 leading-5" style={{ fontFamily: 'Poppins_400Regular' }}>
+                            {[newAddress.street, newAddress.city, newAddress.state, newAddress.zipCode].filter(Boolean).join(', ')}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   )}
 
+                  {/* Default Address Toggle */}
                   <TouchableOpacity
                     onPress={() => setNewAddress(prev => ({ ...prev, isDefault: !prev.isDefault }))}
-                    className="flex-row items-center">
-                    <View className={`h-5 w-5 rounded border-2 ${
+                    className="flex-row items-center rounded-lg p-3 bg-zinc-50 dark:bg-zinc-800/50"
+                    activeOpacity={0.7}>
+                    <View className={`h-6 w-6 rounded-md border-2 items-center justify-center ${
                       newAddress.isDefault 
                         ? 'border-green-500 bg-green-500' 
                         : 'border-zinc-300 dark:border-zinc-600'
                     }`}>
                       {newAddress.isDefault && (
-                        <Feather name="check" size={12} color="#FFFFFF" />
+                        <Feather name="check" size={14} color="#FFFFFF" />
                       )}
                     </View>
-                    <Text
-                      className="ml-3 text-sm text-black dark:text-white"
-                      style={{ fontFamily: 'Poppins_400Regular' }}>
-                      Set as default address
-                    </Text>
+                    <View className="ml-3 flex-1">
+                      <Text
+                        className="text-sm font-medium text-black dark:text-white"
+                        style={{ fontFamily: 'Poppins_500Medium' }}>
+                        Set as default address
+                      </Text>
+                      <Text
+                        className="text-xs text-zinc-500 dark:text-zinc-400"
+                        style={{ fontFamily: 'Poppins_400Regular' }}>
+                        This will be used for new orders automatically
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
 
-                <View className="mt-6 flex-row space-x-3">
+                {/* Form Actions */}
+                <View className="mt-8 flex-row gap-3">
                   <TouchableOpacity
-                    onPress={() => setShowAddForm(false)}
-                    className="flex-1 rounded-lg border border-zinc-200 py-3 dark:border-zinc-600">
+                    onPress={() => {
+                      setShowAddForm(false);
+                      setSelectedPlace(null);
+                      setNewAddress({
+                        label: '',
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                        isDefault: false,
+                        coordinates: { latitude: 0, longitude: 0 }
+                      });
+                      setShowAddressSearch(false);
+                      setAddressSearchQuery('');
+                      setAddressSearchResults([]);
+                    }}
+                    className="flex-1 rounded-xl border border-zinc-200 py-4 bg-white dark:border-zinc-600 dark:bg-zinc-800"
+                    activeOpacity={0.7}>
                     <Text
-                      className="text-center text-base font-medium text-black dark:text-white"
+                      className="text-center text-base font-medium text-zinc-600 dark:text-zinc-300"
                       style={{ fontFamily: 'Poppins_500Medium' }}>
                       Cancel
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleAddAddress}
-                    disabled={adding}
-                    className={`flex-1 rounded-lg py-3 ${
-                      adding ? 'bg-zinc-400 dark:bg-zinc-600' : 'bg-black dark:bg-white'
-                    }`}>
+                    disabled={adding || !newAddress.label.trim() || !selectedPlace}
+                    className={`flex-1 rounded-xl py-4 ${
+                      adding || !newAddress.label.trim() || !selectedPlace
+                        ? 'bg-zinc-300 dark:bg-zinc-600' 
+                        : 'bg-black dark:bg-white shadow-lg'
+                    }`}
+                    activeOpacity={0.8}>
                     {adding ? (
                       <View className="flex-row items-center justify-center">
                         <ActivityIndicator size="small" color="#FFFFFF" />
                         <Text
-                          className="ml-2 text-center text-base font-medium text-white"
+                          className="ml-2 text-base font-medium text-white"
                           style={{ fontFamily: 'Poppins_500Medium' }}>
                           Adding...
                         </Text>
                       </View>
                     ) : (
                       <Text
-                        className="text-center text-base font-medium text-white dark:text-black"
-                        style={{ fontFamily: 'Poppins_500Medium' }}>
+                        className={`text-center text-base font-medium ${
+                          !newAddress.label.trim() || !selectedPlace
+                            ? 'text-zinc-500 dark:text-zinc-400'
+                            : 'text-white dark:text-black'
+                        }`}
+                        style={{ fontFamily: 'Poppins_600SemiBold' }}>
                         Add Address
                       </Text>
                     )}
                   </TouchableOpacity>
+                </View>
                 </View>
               </View>
             )}
@@ -597,36 +790,48 @@ const Address = () => {
             ) : (
               <View>
                 {Array.isArray(addresses) && addresses.map((address, index) => (
-                  <View key={index} className={`rounded-xl bg-gray-50 p-5 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 ${index > 0 ? 'mt-5' : ''}`}>
+                  <View key={index} className={`rounded-2xl bg-white p-6 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 shadow-sm ${index > 0 ? 'mt-4' : ''}`}>
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1">
-                        <View className="flex-row items-center mb-3">
-                          <View className="mr-3">
+                        <View className="flex-row items-center mb-4">
+                          <View className={`mr-3 h-10 w-10 items-center justify-center rounded-full ${ 
+                            address.isDefault 
+                              ? 'bg-green-100 dark:bg-green-900/50' 
+                              : 'bg-zinc-100 dark:bg-zinc-800'
+                          }`}>
                             <Feather 
                               name={address.label.toLowerCase().includes('home') ? 'home' : 
                                     address.label.toLowerCase().includes('office') || address.label.toLowerCase().includes('work') ? 'briefcase' : 
                                     'map-pin'} 
                               size={18} 
-                              color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} 
+                              color={
+                                address.isDefault 
+                                  ? '#22C55E' 
+                                  : (colorScheme === 'dark' ? '#9CA3AF' : '#6B7280')
+                              } 
                             />
                           </View>
-                          <Text
-                            className="text-lg font-semibold text-black dark:text-white"
-                            style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                            {address.label}
-                          </Text>
-                          {address.isDefault && (
-                            <View className="ml-2 rounded-full bg-green-100 dark:bg-green-900 px-3 py-1">
+                          <View className="flex-1">
+                            <View className="flex-row items-center">
                               <Text
-                                className="text-xs font-medium text-green-700 dark:text-green-300"
-                                style={{ fontFamily: 'Poppins_500Medium' }}>
-                                Default
+                                className="text-lg font-semibold text-black dark:text-white"
+                                style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                                {address.label}
                               </Text>
+                              {address.isDefault && (
+                                <View className="ml-3 rounded-full bg-green-100 dark:bg-green-900 px-3 py-1">
+                                  <Text
+                                    className="text-xs font-medium text-green-700 dark:text-green-300"
+                                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                                    Default
+                                  </Text>
+                                </View>
+                              )}
                             </View>
-                          )}
+                          </View>
                         </View>
                         <Text
-                          className="text-sm text-gray-600 dark:text-gray-300 leading-6 pr-2"
+                          className="text-sm text-zinc-600 dark:text-zinc-300 leading-6 pr-4"
                           style={{ fontFamily: 'Poppins_400Regular' }}>
                           {address && [address.street, address.city, address.state, address.zipCode].filter(Boolean).join(', ')}
                         </Text>
@@ -634,7 +839,8 @@ const Address = () => {
                       <TouchableOpacity
                         onPress={() => handleDeleteAddress(index)}
                         disabled={deleting === index}
-                        className="ml-4 rounded-full bg-red-50 p-2.5 dark:bg-red-900/30">
+                        className="ml-4 rounded-full bg-red-50 p-3 dark:bg-red-900/30 shadow-sm"
+                        activeOpacity={0.7}>
                         {deleting === index ? (
                           <ActivityIndicator size="small" color="#EF4444" />
                         ) : (

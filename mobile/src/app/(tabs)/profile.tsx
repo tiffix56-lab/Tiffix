@@ -21,13 +21,35 @@ const Profile = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const response = await userService.getCurrentUser();
+      console.log('🔄 [PROFILE_TAB] Fetching user profile data (including avatar)...');
       
-      if (response.success && response.data) {
-        setUser(response.data.user);
+      // Get both auth user and user profile to have complete data
+      const [authResponse, profileResponse] = await Promise.all([
+        userService.getCurrentUser(),
+        userService.getUserProfile()
+      ]);
+      
+      console.log('👤 [PROFILE_TAB] Auth response:', authResponse);
+      console.log('📋 [PROFILE_TAB] Profile response:', profileResponse);
+      
+      if (authResponse.success && authResponse.data) {
+        const authUser = authResponse.data.user;
+        let userData = authUser;
+        
+        // Merge profile data if available (includes avatar)
+        if (profileResponse.success && profileResponse.data?.userProfile?.userId) {
+          const profile = profileResponse.data.userProfile.userId;
+          userData = {
+            ...authUser,
+            ...profile, // This should include avatar, phoneNumber, gender, etc.
+          };
+          console.log('✅ [PROFILE_TAB] Merged user data with profile:', userData);
+        }
+        
+        setUser(userData);
       }
     } catch (err) {
-      console.error('Error fetching user data:', err);
+      console.error('[PROFILE_TAB] Error fetching user data:', err);
     } finally {
       setLoading(false);
     }

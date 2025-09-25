@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, TextInput, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
@@ -15,29 +15,91 @@ const ChangePassword = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [errors, setErrors] = useState<{
+    oldPassword?: string;
+    newPassword?: string;
+    confirmPassword?: string;
+  }>({});
+
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+    if (password.length < 8) errors.push('At least 8 characters');
+    if (!/[A-Z]/.test(password)) errors.push('One uppercase letter');
+    if (!/[a-z]/.test(password)) errors.push('One lowercase letter');
+    if (!/\d/.test(password)) errors.push('One number');
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('One special character');
+    return errors;
+  };
+
+  const validateForm = () => {
+    const newErrors: { oldPassword?: string; newPassword?: string; confirmPassword?: string } = {};
+
+    // Validate old password
+    if (!oldPassword.trim()) {
+      newErrors.oldPassword = 'Current password is required';
+    }
+
+    // Validate new password
+    if (!newPassword.trim()) {
+      newErrors.newPassword = 'New password is required';
+    } else {
+      const passwordErrors = validatePassword(newPassword);
+      if (passwordErrors.length > 0) {
+        newErrors.newPassword = `Password must have: ${passwordErrors.join(', ')}`;
+      } else if (newPassword === oldPassword) {
+        newErrors.newPassword = 'New password must be different from current password';
+      }
+    }
+
+    // Validate confirm password
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Please confirm your new password';
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChangePassword = async () => {
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (!validateForm()) {
+      Alert.alert('Validation Error', 'Please fix the errors below and try again.');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      return;
-    }
+    try {
+      const result = await changePassword({
+        currentPassword: oldPassword.trim(),
+        newPassword: newPassword.trim(),
+        confirmPassword: confirmPassword.trim(),
+      });
 
-    const result = await changePassword({
-      oldPassword,
-      newPassword,
-    });
-
-    if (result.success) {
-      setOldPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      router.back();
+      if (result.success) {
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setErrors({});
+        Alert.alert('Success', 'Password changed successfully!', [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
+      } else {
+        Alert.alert('Error', result.message || 'Failed to change password. Please try again.');
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     }
   };
 
-  const isFormValid = oldPassword && newPassword && confirmPassword && newPassword === confirmPassword;
+  const clearError = (field: keyof typeof errors) => {
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const isFormValid = oldPassword.trim() && newPassword.trim() && confirmPassword.trim() && 
+                     newPassword === confirmPassword && validatePassword(newPassword).length === 0;
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -75,63 +137,136 @@ const ChangePassword = () => {
           {/* Password Fields */}
           <View className="gap-6">
             {/* Old Password */}
-            <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-              <TextInput
-                value={oldPassword}
-                onChangeText={setOldPassword}
-                placeholder="Old password"
-                placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                secureTextEntry={!showOldPassword}
-                className="flex-1 text-base text-black dark:text-white"
-                style={{ fontFamily: 'Poppins_400Regular' }}
-              />
-              <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)}>
-                <Feather
-                  name={showOldPassword ? 'eye' : 'eye-off'}
-                  size={20}
-                  color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+            <View>
+              <View className={`min-h-14 flex-row items-center rounded-md border px-4 ${
+                errors.oldPassword 
+                  ? 'border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-900/20' 
+                  : 'border-zinc-100 bg-zinc-50 dark:border-zinc-400 dark:bg-black'
+              }`}>
+                <TextInput
+                  value={oldPassword}
+                  onChangeText={(text) => {
+                    setOldPassword(text);
+                    clearError('oldPassword');
+                  }}
+                  placeholder="Current password"
+                  placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                  secureTextEntry={!showOldPassword}
+                  className="flex-1 text-base text-black dark:text-white"
+                  style={{ fontFamily: 'Poppins_400Regular' }}
                 />
-              </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)}>
+                  <Feather
+                    name={showOldPassword ? 'eye' : 'eye-off'}
+                    size={20}
+                    color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.oldPassword && (
+                <Text className="mt-1 text-sm text-red-500 dark:text-red-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                  {errors.oldPassword}
+                </Text>
+              )}
             </View>
 
             {/* New Password */}
-            <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-              <TextInput
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="New password"
-                placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                secureTextEntry={!showNewPassword}
-                className="flex-1 text-base text-black dark:text-white"
-                style={{ fontFamily: 'Poppins_400Regular' }}
-              />
-              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
-                <Feather
-                  name={showNewPassword ? 'eye' : 'eye-off'}
-                  size={20}
-                  color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+            <View>
+              <View className={`min-h-14 flex-row items-center rounded-md border px-4 ${
+                errors.newPassword 
+                  ? 'border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-900/20' 
+                  : 'border-zinc-100 bg-zinc-50 dark:border-zinc-400 dark:bg-black'
+              }`}>
+                <TextInput
+                  value={newPassword}
+                  onChangeText={(text) => {
+                    setNewPassword(text);
+                    clearError('newPassword');
+                  }}
+                  placeholder="New password"
+                  placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                  secureTextEntry={!showNewPassword}
+                  className="flex-1 text-base text-black dark:text-white"
+                  style={{ fontFamily: 'Poppins_400Regular' }}
                 />
-              </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                  <Feather
+                    name={showNewPassword ? 'eye' : 'eye-off'}
+                    size={20}
+                    color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.newPassword && (
+                <Text className="mt-1 text-sm text-red-500 dark:text-red-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                  {errors.newPassword}
+                </Text>
+              )}
+              {newPassword && !errors.newPassword && (
+                <View className="mt-2">
+                  <Text className="text-sm text-zinc-600 dark:text-zinc-400" style={{ fontFamily: 'Poppins_500Medium' }}>
+                    Password Requirements:
+                  </Text>
+                  {validatePassword(newPassword).map((req, index) => (
+                    <View key={index} className="flex-row items-center mt-1">
+                      <Feather name="x" size={12} color="#EF4444" />
+                      <Text className="ml-2 text-xs text-red-500" style={{ fontFamily: 'Poppins_400Regular' }}>
+                        {req}
+                      </Text>
+                    </View>
+                  ))}
+                  {validatePassword(newPassword).length === 0 && (
+                    <View className="flex-row items-center mt-1">
+                      <Feather name="check" size={12} color="#10B981" />
+                      <Text className="ml-2 text-xs text-green-500" style={{ fontFamily: 'Poppins_400Regular' }}>
+                        Password meets all requirements
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Confirm Password */}
-            <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-              <TextInput
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Confirm new password"
-                placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                secureTextEntry={!showConfirmPassword}
-                className="flex-1 text-base text-black dark:text-white"
-                style={{ fontFamily: 'Poppins_400Regular' }}
-              />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                <Feather
-                  name={showConfirmPassword ? 'eye' : 'eye-off'}
-                  size={20}
-                  color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+            <View>
+              <View className={`min-h-14 flex-row items-center rounded-md border px-4 ${
+                errors.confirmPassword 
+                  ? 'border-red-500 bg-red-50 dark:border-red-400 dark:bg-red-900/20' 
+                  : 'border-zinc-100 bg-zinc-50 dark:border-zinc-400 dark:bg-black'
+              }`}>
+                <TextInput
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    clearError('confirmPassword');
+                  }}
+                  placeholder="Confirm new password"
+                  placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                  secureTextEntry={!showConfirmPassword}
+                  className="flex-1 text-base text-black dark:text-white"
+                  style={{ fontFamily: 'Poppins_400Regular' }}
                 />
-              </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Feather
+                    name={showConfirmPassword ? 'eye' : 'eye-off'}
+                    size={20}
+                    color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.confirmPassword && (
+                <Text className="mt-1 text-sm text-red-500 dark:text-red-400" style={{ fontFamily: 'Poppins_400Regular' }}>
+                  {errors.confirmPassword}
+                </Text>
+              )}
+              {confirmPassword && newPassword && confirmPassword === newPassword && !errors.confirmPassword && (
+                <View className="flex-row items-center mt-1">
+                  <Feather name="check" size={12} color="#10B981" />
+                  <Text className="ml-2 text-xs text-green-500" style={{ fontFamily: 'Poppins_400Regular' }}>
+                    Passwords match
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 

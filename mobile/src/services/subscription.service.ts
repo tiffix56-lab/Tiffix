@@ -196,37 +196,29 @@ class SubscriptionService {
   }
 
   async cancelUserSubscription(subscriptionId: string, cancellationReason: string): Promise<ApiResponse<{ message: string }>> {
-    return await apiService.post<{ message: string }>(
-      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/cancel`,
-      { cancellationReason }
-    );
-  }
-
-  async requestVendorSwitch(subscriptionId: string, reason: string, preferredVendorId?: string): Promise<ApiResponse<{ message: string }>> {
-    return await apiService.post<{ message: string }>(
-      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/request-vendor-switch`,
-      { reason, preferredVendorId }
-    );
-  }
-
-  async cancelSubscription(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
-    console.log('🚀 [SUBSCRIPTION_SERVICE] Starting cancelSubscription:', { subscriptionId, reason });
+    console.log('🚀 [SUBSCRIPTION_SERVICE] Starting cancelUserSubscription:', { subscriptionId, cancellationReason });
     
     const response = await apiService.post<{ message: string }>(
       `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/cancel`,
-      { reason }
+      { cancellationReason }
     );
     
     console.log('📡 [SUBSCRIPTION_SERVICE] Cancel subscription response:', response);
     return response;
   }
 
-  async requestVendorSwitch(subscriptionId: string, reason?: string): Promise<ApiResponse<{ message: string }>> {
-    return await apiService.post<{ message: string }>(
+  async requestVendorSwitch(subscriptionId: string, reason: string, preferredVendorId?: string): Promise<ApiResponse<{ message: string }>> {
+    console.log('🚀 [SUBSCRIPTION_SERVICE] Starting requestVendorSwitch:', { subscriptionId, reason, preferredVendorId });
+    
+    const response = await apiService.post<{ message: string }>(
       `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/request-vendor-switch`,
-      { reason }
+      { reason, preferredVendorId }
     );
+    
+    console.log('📡 [SUBSCRIPTION_SERVICE] Vendor switch response:', response);
+    return response;
   }
+
 
   // Generate available time slots based on subscription meal timings
   generateTimeSlots(subscription: Subscription): TimeSlot[] {

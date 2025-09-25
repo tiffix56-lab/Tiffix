@@ -131,7 +131,12 @@ const Subscription = () => {
         if (subscriptions.length > 0) {
           console.log('📡 [SUBSCRIPTION_TAB] Fetching orders...');
           try {
-            const ordersResponse = await orderService.getUserOrders();
+            // Try to get more comprehensive order data
+            const ordersResponse = await orderService.getUserOrders({
+              page: 1,
+              limit: 100, // Get more orders
+              days: 90    // Get orders from last 90 days
+            });
             console.log('📡 [SUBSCRIPTION_TAB] Orders response:', ordersResponse);
             
             if (ordersResponse.success && ordersResponse.data) {
@@ -140,7 +145,20 @@ const Subscription = () => {
                 count: ordersList.length,
                 orders: ordersList
               });
+              
+              // Log first order for debugging structure
+              if (ordersList.length > 0) {
+                console.log('🔍 [SUBSCRIPTION_TAB] Sample order structure:', ordersList[0]);
+              }
+              
               setOrders(ordersList);
+              
+              // Auto-select first active subscription for orders display
+              if (!selectedSubscriptionId && subscriptions.length > 0) {
+                const activeSubscription = subscriptions.find(sub => sub.status === 'active') || subscriptions[0];
+                setSelectedSubscriptionId(activeSubscription._id);
+                console.log('🎯 [SUBSCRIPTION_TAB] Auto-selected subscription for orders:', activeSubscription._id);
+              }
             } else {
               console.log('❌ [SUBSCRIPTION_TAB] Orders fetch failed:', ordersResponse.message);
               setOrders([]);
@@ -271,14 +289,101 @@ const Subscription = () => {
     );
   };
 
-  const handleViewOrders = (subscriptionId: string) => {
-    // Show orders for this subscription in a third tab
+  const handleViewOrders = async (subscriptionId: string) => {
+    console.log('📋 [SUBSCRIPTION_TAB] View orders clicked for subscription:', subscriptionId);
     setSelectedSubscriptionId(subscriptionId);
     setActiveTab('orders');
+    
+    // Fetch orders specifically for this subscription
+    try {
+      const ordersResponse = await orderService.getUserOrders({
+        page: 1,
+        limit: 100,
+        days: 90
+      });
+      
+      if (ordersResponse.success && ordersResponse.data) {
+        const allOrders = ordersResponse.data.orders || [];
+        console.log('📦 [SUBSCRIPTION_TAB] All orders for filtering:', allOrders.length);
+        
+        // Filter orders by the selected subscription with multiple field checks
+        const filteredOrders = allOrders.filter(order => {
+          const matches = order.subscriptionId === subscriptionId || 
+                         order.subscription?._id === subscriptionId ||
+                         order.userSubscriptionId === subscriptionId ||
+                         order.userSubscription?._id === subscriptionId ||
+                         order.subscription === subscriptionId;
+          
+          if (matches) {
+            console.log('✅ [SUBSCRIPTION_TAB] Order matches subscription:', order._id);
+          }
+          
+          return matches;
+        });
+        
+        console.log('🎯 [SUBSCRIPTION_TAB] Filtered orders for subscription:', filteredOrders.length);
+        setOrders(filteredOrders);
+        
+        // If no filtered orders found, show debug info
+        if (filteredOrders.length === 0) {
+          console.log('🔍 [SUBSCRIPTION_TAB] No orders found for subscription:', subscriptionId);
+          if (allOrders.length > 0) {
+            console.log('🔍 [SUBSCRIPTION_TAB] Sample order fields:', Object.keys(allOrders[0]));
+            console.log('🔍 [SUBSCRIPTION_TAB] Sample order:', allOrders[0]);
+          }
+          // For debugging, show all orders if none are filtered
+          setOrders(allOrders);
+        }
+      } else {
+        console.log('❌ [SUBSCRIPTION_TAB] Failed to fetch orders:', ordersResponse.message);
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error('❌ [SUBSCRIPTION_TAB] Error fetching orders:', error);
+      setOrders([]);
+    }
   };
 
   const handleSwitchVendor = (subscriptionId: string) => {
-    Alert.alert('Switch Vendor', 'This will allow you to switch between vendor food and home chef');
+    Alert.alert(
+      'Switch Vendor',
+      'Do you want to switch between vendor food and home chef for this subscription?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Switch to Home Chef',
+          onPress: () => requestVendorSwitch(subscriptionId, 'home_chef')
+        },
+        {
+          text: 'Switch to Vendor Food', 
+          onPress: () => requestVendorSwitch(subscriptionId, 'food_vendor')
+        }
+      ]
+    );
+  };
+
+  const requestVendorSwitch = async (subscriptionId: string, targetCategory: string) => {
+    try {
+      console.log('🔄 [SUBSCRIPTION_TAB] Requesting vendor switch:', { subscriptionId, targetCategory });
+      
+      const response = await subscriptionService.requestVendorSwitch(
+        subscriptionId, 
+        `User requested switch to ${targetCategory.replace('_', ' ')}`
+      );
+      
+      if (response.success) {
+        Alert.alert(
+          'Switch Request Submitted', 
+          'Your vendor switch request has been submitted. You will be notified once it is processed.',
+          [{ text: 'OK', onPress: () => fetchData() }]
+        );
+      } else {
+        Alert.alert('Switch Request Failed', response.message || 'Failed to submit switch request. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ [SUBSCRIPTION_TAB] Error requesting vendor switch:', error);
+      Alert.alert('Error', 'Failed to submit switch request. Please try again.');
+    }
   };
 
   console.log('🔍 [SUBSCRIPTION_TAB] Starting data filtering...');

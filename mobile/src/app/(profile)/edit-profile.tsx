@@ -36,10 +36,31 @@ const EditProfile = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const response = await userService.getCurrentUser();
+      console.log('🔄 Fetching user profile data (including avatar)...');
       
-      if (response.success && response.data) {
-        const userData = response.data.user;
+      // Get both auth user and user profile to have complete data
+      const [authResponse, profileResponse] = await Promise.all([
+        userService.getCurrentUser(),
+        userService.getUserProfile()
+      ]);
+      
+      console.log('👤 Auth response:', authResponse);
+      console.log('📋 Profile response:', profileResponse);
+      
+      if (authResponse.success && authResponse.data) {
+        const authUser = authResponse.data.user;
+        let userData = authUser;
+        
+        // Merge profile data if available (includes avatar)
+        if (profileResponse.success && profileResponse.data?.userProfile?.userId) {
+          const profile = profileResponse.data.userProfile.userId;
+          userData = {
+            ...authUser,
+            ...profile, // This should include avatar, phoneNumber, gender, etc.
+          };
+          console.log('✅ Merged user data with profile:', userData);
+        }
+        
         setUser(userData);
         setName(userData.name || userData.fullName || '');
         setMobileNumber(userData.phoneNumber || '');
@@ -120,53 +141,85 @@ const EditProfile = () => {
         mimeType: asset.mimeType,
         fileSize: asset.fileSize
       });
-      
-      const formData = new FormData();
-      
-      // Create proper file object for React Native
-      const fileData = {
-        uri: asset.uri,
-        type: asset.mimeType || 'image/jpeg', 
-        name: asset.fileName || `profile_edit_${Date.now()}.jpg`,
-      };
-      
-      console.log('📦 File data for upload:', fileData);
-      
-      formData.append('file', fileData as any);
-      formData.append('category', 'profile');
 
-      console.log('🚀 Uploading profile image...');
-      const response = await uploadService.uploadProfilePhoto(formData);
+      // Validate file size (max 5MB)
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        Alert.alert('File Too Large', 'Please select an image smaller than 5MB.');
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (asset.mimeType && !allowedTypes.includes(asset.mimeType)) {
+        Alert.alert('Invalid File Type', 'Please select a JPEG, PNG, or WebP image.');
+        return;
+      }
+
+      console.log('🚀 Uploading profile image using working method from profile page...');
       
-      console.log('📤 Profile image upload response:', response);
+      // Use the same method that works in the profile page
+      const imageUrl = await uploadService.uploadImageAsset(asset);
+      console.log('✅ Image upload successful, got URL:', imageUrl);
       
-      if (response.success && response.data) {
-        console.log('✅ Image upload successful, updating user profile...');
+      // Update user profile with new image URL
+      const updateResponse = await userService.updateUserProfile({
+        name: name.trim(),
+        phoneNumber: mobileNumber.trim() || undefined,
+        gender: gender,
+        avatar: imageUrl,
+      });
+      
+      console.log('👤 User profile update response:', updateResponse);
+      
+      if (updateResponse.success) {
+        console.log('🖼️ Updating user state with new avatar URL:', imageUrl);
         
-        // Update user profile with new image URL
-        const updateResponse = await userService.updateUserProfile({
-          name: name.trim(),
-          phoneNumber: mobileNumber.trim() || undefined,
-          gender: gender,
-          avatar: response.data.url,
+        // Update the user state immediately with the new image URL
+        setUser(prev => {
+          const updatedUser = prev ? { ...prev, avatar: imageUrl } : null;
+          console.log('👤 Updated user state:', updatedUser);
+          return updatedUser;
         });
         
-        console.log('👤 User profile update response:', updateResponse);
+        // Also refresh user data to make sure everything is in sync
+        console.log('🔄 Refreshing user data from server...');
+        await fetchUserData();
         
-        if (updateResponse.success) {
-          Alert.alert('Success', 'Profile picture updated successfully');
-          fetchUserData(); // Refresh user data
-        } else {
-          console.error('❌ Profile update failed:', updateResponse.message);
-          Alert.alert('Error', updateResponse.message || 'Failed to update profile picture');
-        }
+        Alert.alert('Success', 'Profile picture updated successfully!');
       } else {
-        console.error('❌ Image upload failed:', response.message);
-        Alert.alert('Error', response.message || 'Failed to upload image');
+        console.error('❌ Profile update failed:', updateResponse.message);
+        Alert.alert('Profile Update Failed', updateResponse.message || 'Image uploaded but failed to update profile. Please try again.');
       }
     } catch (error) {
       console.error('❌ Profile image upload error:', error);
-      Alert.alert('Error', 'Failed to upload image. Please try again.');
+      
+      let errorMessage = 'Failed to upload image. ';
+      let title = 'Upload Error';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Network Error') || error.message.includes('network') || error.message.includes('timeout') || error.message.includes('internet connection')) {
+          title = 'Network Error';
+          errorMessage = 'Please check your internet connection and try again. Make sure you have a stable connection.';
+        } else if (error.message.includes('size') || error.message.includes('large')) {
+          title = 'File Too Large';
+          errorMessage = 'The image is too large. Please select a smaller image (under 5MB).';
+        } else if (error.message.includes('format') || error.message.includes('type')) {
+          title = 'Invalid File Type';
+          errorMessage = 'Please select a valid image file (JPEG, PNG, or WebP).';
+        } else if (error.message.includes('server') || error.message.includes('500')) {
+          title = 'Server Error';
+          errorMessage = 'Server is temporarily unavailable. Please try again in a few moments.';
+        } else {
+          errorMessage = 'An unexpected error occurred. Please try again.';
+        }
+      } else {
+        errorMessage = 'An unexpected error occurred. Please try again.';
+      }
+      
+      Alert.alert(title, errorMessage, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Retry', onPress: handleImagePick }
+      ]);
     } finally {
       setUploading(false);
     }
@@ -192,23 +245,25 @@ const EditProfile = () => {
           <View className="mx-auto mb-8 items-center">
             <View className="relative mb-4">
               <Image
+                key={user?.avatar || 'default'} // Force re-render when avatar changes
                 source={{
                   uri: user?.avatar || user?.profilePicture || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
                 }}
-                className="h-24 w-24 rounded-full"
+                className="h-28 w-28 rounded-full border-4 border-white dark:border-zinc-800"
                 resizeMode="cover"
               />
               <TouchableOpacity 
                 onPress={handleImagePick}
                 disabled={uploading}
-                className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800">
+                className="absolute bottom-1 right-1 h-10 w-10 items-center justify-center rounded-full bg-black shadow-lg dark:bg-white"
+                activeOpacity={0.7}>
                 {uploading ? (
-                  <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+                  <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
                 ) : (
                   <Feather
                     name="camera"
-                    size={16}
-                    color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'}
+                    size={18}
+                    color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'}
                   />
                 )}
               </TouchableOpacity>
@@ -218,6 +273,17 @@ const EditProfile = () => {
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
               {user?.name || user?.fullName || 'User'}
             </Text>
+            <TouchableOpacity 
+              onPress={handleImagePick}
+              disabled={uploading}
+              className="mt-2 rounded-lg bg-zinc-100 px-4 py-2 dark:bg-zinc-800"
+              activeOpacity={0.7}>
+              <Text
+                className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
+                style={{ fontFamily: 'Poppins_500Medium' }}>
+                {uploading ? 'Uploading...' : 'Change Photo'}
+              </Text>
+            </TouchableOpacity>
           </View>
           <View className="h-10 w-10" />
         </View>
@@ -289,29 +355,45 @@ const EditProfile = () => {
                 {/* Gender Field */}
                 <View>
                   <Text
-                    className="mb-3 text-sm font-medium text-black dark:text-white"
+                    className="mb-4 text-sm font-medium text-black dark:text-white"
                     style={{ fontFamily: 'Poppins_500Medium' }}>
                     Gender
                   </Text>
-                  <View className="flex-row space-x-4">
-                    {['male', 'female', 'other'].map((option) => (
+                  <View className="flex-row gap-3">
+                    {[
+                      { value: 'male', label: 'Male', icon: 'user' },
+                      { value: 'female', label: 'Female', icon: 'user' },
+                      { value: 'other', label: 'Other', icon: 'user' }
+                    ].map((option) => (
                       <TouchableOpacity
-                        key={option}
-                        onPress={() => setGender(option as 'male' | 'female' | 'other')}
-                        className={`flex-1 rounded-lg border py-3 ${
-                          gender === option
+                        key={option.value}
+                        onPress={() => setGender(option.value as 'male' | 'female' | 'other')}
+                        className={`flex-1 rounded-xl border-2 py-4 px-3 ${
+                          gender === option.value
                             ? 'border-black bg-black dark:border-white dark:bg-white'
                             : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900'
-                        }`}>
-                        <Text
-                          className={`text-center text-sm font-medium ${
-                            gender === option
-                              ? 'text-white dark:text-black'
-                              : 'text-black dark:text-white'
-                          }`}
-                          style={{ fontFamily: 'Poppins_500Medium' }}>
-                          {option.charAt(0).toUpperCase() + option.slice(1)}
-                        </Text>
+                        }`}
+                        activeOpacity={0.7}>
+                        <View className="items-center">
+                          <Feather 
+                            name={option.icon as any} 
+                            size={20} 
+                            color={
+                              gender === option.value
+                                ? (colorScheme === 'dark' ? '#000000' : '#FFFFFF')
+                                : (colorScheme === 'dark' ? '#FFFFFF' : '#000000')
+                            } 
+                          />
+                          <Text
+                            className={`mt-2 text-center text-sm font-medium ${
+                              gender === option.value
+                                ? 'text-white dark:text-black'
+                                : 'text-black dark:text-white'
+                            }`}
+                            style={{ fontFamily: 'Poppins_500Medium' }}>
+                            {option.label}
+                          </Text>
+                        </View>
                       </TouchableOpacity>
                     ))}
                   </View>

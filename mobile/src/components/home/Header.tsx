@@ -3,21 +3,28 @@ import { View, Text, TouchableOpacity, Modal, ScrollView, ActivityIndicator } fr
 import { useColorScheme } from 'nativewind';
 import { Feather } from '@expo/vector-icons';
 import ThemeToggle from '../ui/ThemeToggle';
-import { useAddress } from '@/context/AddressContext';
+import { useDefaultAddress } from '@/hooks/useDefaultAddress';
 import LocationPicker from '../common/LocationPicker';
 import { router } from 'expo-router';
 import { Address } from '@/types/address.types';
 
 const Header = () => {
   const { colorScheme } = useColorScheme();
-  const { selectedAddress, savedAddresses, setSelectedAddress, loading } = useAddress();
+  const { 
+    selectedAddress, 
+    savedAddresses, 
+    defaultAddress, 
+    setSelectedAddress, 
+    loading, 
+    setAsDefault,
+    getFormattedAddress,
+    hasAddresses
+  } = useDefaultAddress();
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  const currentLocation = selectedAddress 
-    ? `${selectedAddress.label}, ${selectedAddress.city}`
-    : savedAddresses.length > 0 
-      ? 'Select Address'
-      : 'Add Address';
+  const currentLocation = getFormattedAddress() === 'No address selected' 
+    ? (hasAddresses() ? 'Select Address' : 'Add Address')
+    : getFormattedAddress();
 
   const truncateLocation = (location: string, maxLength: number = 25) => {
     if (location.length <= maxLength) return location;
@@ -126,24 +133,42 @@ const Header = () => {
                       }`}>
                       <View className="flex-row items-start justify-between">
                         <View className="flex-1">
-                          <View className="flex-row items-center">
-                            <Text
-                              className={`text-sm font-medium ${
-                                selectedAddress?.label === address.label
-                                  ? 'text-white dark:text-black'
-                                  : 'text-zinc-700 dark:text-zinc-300'
-                              }`}
-                              style={{ fontFamily: 'Poppins_500Medium' }}>
-                              {address.label}
-                            </Text>
-                            {address.isDefault && (
-                              <View className="ml-2 rounded-full bg-green-500 px-2 py-1">
+                          <View className="flex-row items-center justify-between">
+                            <View className="flex-row items-center flex-1">
+                              <Text
+                                className={`text-sm font-medium ${
+                                  selectedAddress?.label === address.label
+                                    ? 'text-white dark:text-black'
+                                    : 'text-zinc-700 dark:text-zinc-300'
+                                }`}
+                                style={{ fontFamily: 'Poppins_500Medium' }}>
+                                {address.label}
+                              </Text>
+                              {address.isDefault && (
+                                <View className="ml-2 rounded-full bg-green-500 px-2 py-1">
+                                  <Text
+                                    className="text-xs font-medium text-white"
+                                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                                    Default
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                            
+                            {/* Set as Default Button */}
+                            {!address.isDefault && (
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setAsDefault(address);
+                                }}
+                                className="ml-2 rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-1"
+                                activeOpacity={0.7}>
                                 <Text
-                                  className="text-xs font-medium text-white"
+                                  className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
                                   style={{ fontFamily: 'Poppins_500Medium' }}>
-                                  Default
+                                  Set Default
                                 </Text>
-                              </View>
+                              </TouchableOpacity>
                             )}
                           </View>
                           <Text
@@ -156,7 +181,7 @@ const Header = () => {
                             {[address.street, address.city, address.state].filter(Boolean).join(', ')}
                           </Text>
                         </View>
-                        <View className={`h-5 w-5 rounded-full border-2 ${
+                        <View className={`ml-3 h-5 w-5 rounded-full border-2 ${
                           selectedAddress?.label === address.label
                             ? 'border-white bg-white dark:border-black dark:bg-black'
                             : 'border-zinc-300 dark:border-zinc-600'

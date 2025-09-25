@@ -86,7 +86,7 @@ const MySubscription = () => {
   const handleCancelSubscription = async (subscriptionId: string) => {
     Alert.alert(
       'Cancel Subscription',
-      'Are you sure you want to cancel this subscription? This action cannot be undone.',
+      'Are you sure you want to cancel this subscription? This action cannot be undone and there will be no refund.',
       [
         { text: 'No', style: 'cancel' },
         {
@@ -95,17 +95,25 @@ const MySubscription = () => {
           onPress: async () => {
             try {
               setCancelling(subscriptionId);
-              const response = await subscriptionService.cancelSubscription(subscriptionId, 'User requested cancellation');
+              console.log('🚀 [MY_SUBSCRIPTION] Starting subscription cancellation:', subscriptionId);
+              
+              const response = await subscriptionService.cancelUserSubscription(
+                subscriptionId, 
+                'User requested cancellation'
+              );
+              
+              console.log('📡 [MY_SUBSCRIPTION] Cancellation response:', response);
               
               if (response.success) {
-                Alert.alert('Success', 'Subscription cancelled successfully');
-                fetchSubscriptions(); // Refresh the list
+                Alert.alert('Success', 'Subscription cancelled successfully', [
+                  { text: 'OK', onPress: () => fetchSubscriptions() }
+                ]);
               } else {
-                Alert.alert('Error', response.message || 'Failed to cancel subscription');
+                Alert.alert('Cancellation Failed', response.message || 'Failed to cancel subscription. Please try again.');
               }
             } catch (err) {
-              Alert.alert('Error', 'Failed to cancel subscription');
-              console.error('Error cancelling subscription:', err);
+              console.error('❌ [MY_SUBSCRIPTION] Error cancelling subscription:', err);
+              Alert.alert('Error', 'Failed to cancel subscription. Please check your internet connection and try again.');
             } finally {
               setCancelling('');
             }
