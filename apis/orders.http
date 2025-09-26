@@ -1,7 +1,7 @@
 ### Order Management API Testing
 
-@baseURL = http://localhost:4000/v1
-@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIzMzI2OWUxZTUwZWJlNmY0ZDZkYTkiLCJlbWFpbCI6InVzZXIyQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoidXNlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU2NTc0MzI5LCJleHAiOjE3NTY2NjA3Mjl9.dpLcQX_SuS_9hkcn_zLzYHAacQFahZKJoeNYf6TXPHw
+@baseURL = https://app.tiffix.in/api/v1
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGIxZmM1YmQ3MGQyODc5YjBiN2FkZjkiLCJlbWFpbCI6ImthdGFyZWF5dXNoMjAwNUBnbWFpbC5jb20iLCJ1c2VyVHlwZSI6InVzZXIiLCJyb2xlIjoidXNlciIsImlhdCI6MTc1ODg2NTIzNywiZXhwIjoxNzU4OTUxNjM3fQ.2Q0dVIE12R6PHoTzNsM8W0s0kIX1m894xt-lUae2ANc
 @vendorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODkyNTRiNjcwMTU1MzVkODE0MmQ2MWIiLCJlbWFpbCI6InNwaWNlLnJlc3RhdXJhbnRAZXhhbXBsZS5jb20iLCJ1c2VyVHlwZSI6InZlbmRvciIsInJvbGUiOiJ2ZW5kb3IiLCJpYXQiOjE3NTY1ODMyMTksImV4cCI6MTc1NjY2OTYxOX0.iPg6M4lXOEVQOzNmCSJ6Lov6s_FCSt8F-utAbdGYKHY
 @adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODk2MzBkYjI3Y2I3OWM0YTFiMzJjM2UiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInVzZXJUeXBlIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTY4MTEyMDQsImV4cCI6MTc1Njg5NzYwNH0.XCfF4bgA0hXVAwwhummqak4vkh_ZWpTE3_mDaKoHkR4
 @orderId = 68b35970a24e266b6f31e31d
@@ -21,7 +21,7 @@ GET {{baseURL}}/my-orders?search=pizza&page=1&limit=10
 Authorization: Bearer {{userToken}}
 
 ### Get User's Orders by Date Range
-GET {{baseURL}}/my-orders?startDate=2024-01-01&endDate=2024-01-31
+GET {{baseURL}}/my-orders?startDate=2025-09-01&endDate=2025-09-31
 Authorization: Bearer {{userToken}}
 
 ### Get User's Orders for Next 7 Days
