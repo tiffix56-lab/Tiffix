@@ -189,7 +189,7 @@ const MealSubscriptions = () => {
                 <View className="relative">
                   <Image 
                     source={{ uri: menu.foodImage }} 
-                    className="h-20 w-20 rounded-full" 
+                    style={{ height: 80, width: 80, borderRadius: 40 }}
                     defaultSource={require('@/assets/category-1.png')}
                   />
                   <View className="absolute inset-0 rounded-full bg-black/10" />

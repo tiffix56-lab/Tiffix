@@ -244,109 +244,113 @@ const EditProfile = () => {
             </TouchableOpacity>
           </View>
         ) : (
-          <ScrollView className="flex-1 px-6 pt-12" showsVerticalScrollIndicator={false}>
-          {/* Form Fields */}
-          <View className="gap-6">
-            {/* Name Field */}
-            <View className="rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Name"
-                placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                className="min-h-14 px-4 py-4 text-base text-black dark:text-white"
-                style={{ fontFamily: 'Poppins_400Regular' }}
-              />
-            </View>
+          <View className="flex-1">
+            <ScrollView className="flex-1 px-6 pt-12" showsVerticalScrollIndicator={false}>
+              {/* Form Fields */}
+              <View className="gap-6">
+                {/* Name Field */}
+                <View className="rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Name"
+                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                    className="min-h-14 px-4 py-4 text-base text-black dark:text-white"
+                    style={{ fontFamily: 'Poppins_400Regular' }}
+                  />
+                </View>
 
-            {/* Mobile Number Field */}
-            <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-              <View className="mr-3 flex-row items-center">
-                <Text className="mr-1 text-lg">🇮🇳</Text>
-                <Feather
-                  name="chevron-down"
-                  size={16}
-                  color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                />
+                {/* Mobile Number Field */}
+                <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
+                  <View className="mr-3 flex-row items-center">
+                    <Text className="mr-1 text-lg">🇮🇳</Text>
+                    <Feather
+                      name="chevron-down"
+                      size={16}
+                      color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                    />
+                  </View>
+                  <Text
+                    className="mr-2 text-base text-zinc-500 dark:text-zinc-400"
+                    style={{ fontFamily: 'Poppins_400Regular' }}>
+                    +91
+                  </Text>
+                  <TextInput
+                    value={mobileNumber}
+                    onChangeText={setMobileNumber}
+                    placeholder="Your mobile number"
+                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                    className="flex-1 text-base text-black dark:text-white"
+                    style={{ fontFamily: 'Poppins_400Regular' }}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+
+                {/* Gender Field */}
+                <View>
+                  <Text
+                    className="mb-3 text-sm font-medium text-black dark:text-white"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    Gender
+                  </Text>
+                  <View className="flex-row space-x-4">
+                    {['male', 'female', 'other'].map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        onPress={() => setGender(option as 'male' | 'female' | 'other')}
+                        className={`flex-1 rounded-lg border py-3 ${
+                          gender === option
+                            ? 'border-black bg-black dark:border-white dark:bg-white'
+                            : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900'
+                        }`}>
+                        <Text
+                          className={`text-center text-sm font-medium ${
+                            gender === option
+                              ? 'text-white dark:text-black'
+                              : 'text-black dark:text-white'
+                          }`}
+                          style={{ fontFamily: 'Poppins_500Medium' }}>
+                          {option.charAt(0).toUpperCase() + option.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
               </View>
-              <Text
-                className="mr-2 text-base text-zinc-500 dark:text-zinc-400"
-                style={{ fontFamily: 'Poppins_400Regular' }}>
-                +91
-              </Text>
-              <TextInput
-                value={mobileNumber}
-                onChangeText={setMobileNumber}
-                placeholder="Your mobile number"
-                placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                className="flex-1 text-base text-black dark:text-white"
-                style={{ fontFamily: 'Poppins_400Regular' }}
-                keyboardType="phone-pad"
-              />
-            </View>
 
-            {/* Gender Field */}
-            <View>
-              <Text
-                className="mb-2 text-sm font-medium text-black dark:text-white"
-                style={{ fontFamily: 'Poppins_500Medium' }}>
-                Gender
-              </Text>
-              <View className="flex-row space-x-4">
-                {['male', 'female', 'other'].map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    onPress={() => setGender(option as 'male' | 'female' | 'other')}
-                    className={`flex-1 rounded-lg border py-3 ${
-                      gender === option
-                        ? 'border-black bg-black dark:border-white dark:bg-white'
-                        : 'border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900'
-                    }`}>
+              {/* Bottom Spacing */}
+              <View className="h-24" />
+            </ScrollView>
+
+            {/* Update Button - Fixed at bottom */}
+            <View className="px-6 pb-6 pt-4 bg-white dark:bg-black border-t border-zinc-100 dark:border-zinc-800">
+              <TouchableOpacity 
+                onPress={handleUpdate}
+                disabled={saving}
+                className={`rounded-lg py-4 ${
+                  saving 
+                    ? 'bg-zinc-400 dark:bg-zinc-600' 
+                    : 'bg-black dark:bg-white'
+                }`}>
+                {saving ? (
+                  <View className="flex-row items-center justify-center">
+                    <ActivityIndicator size="small" color="#FFFFFF" />
                     <Text
-                      className={`text-center text-sm font-medium ${
-                        gender === option
-                          ? 'text-white dark:text-black'
-                          : 'text-black dark:text-white'
-                      }`}
+                      className="ml-2 text-center text-base font-medium text-white"
                       style={{ fontFamily: 'Poppins_500Medium' }}>
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
+                      Updating...
                     </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                  </View>
+                ) : (
+                  <Text
+                    className="text-center text-base font-medium text-white dark:text-black"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    Update Profile
+                  </Text>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
-
-          {/* Update Button */}
-          <TouchableOpacity 
-            onPress={handleUpdate}
-            disabled={saving}
-            className={`mt-8 rounded-lg py-4 ${
-              saving 
-                ? 'bg-zinc-400 dark:bg-zinc-600' 
-                : 'bg-black dark:bg-white'
-            }`}>
-            {saving ? (
-              <View className="flex-row items-center justify-center">
-                <ActivityIndicator size="small" color="#FFFFFF" />
-                <Text
-                  className="ml-2 text-center text-base font-medium text-white"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  Updating...
-                </Text>
-              </View>
-            ) : (
-              <Text
-                className="text-center text-base font-medium text-white dark:text-black"
-                style={{ fontFamily: 'Poppins_500Medium' }}>
-                Update Profile
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Bottom Spacing */}
-          <View className="h-20" />
-        </ScrollView>
         )}
       </View>
     </View>

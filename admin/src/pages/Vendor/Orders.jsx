@@ -29,7 +29,6 @@ function Orders() {
 
   // Order statuses that vendor can update
   const vendorStatuses = [
-    { value: 'confirmed', label: 'Confirmed', color: 'blue', icon: CheckCircle },
     { value: 'preparing', label: 'Preparing', color: 'yellow', icon: ChefHat },
     { value: 'out_for_delivery', label: 'Out for Delivery', color: 'purple', icon: Truck }
   ]
@@ -41,7 +40,8 @@ function Orders() {
     { value: 'preparing', label: 'Preparing' },
     { value: 'out_for_delivery', label: 'Out for Delivery' },
     { value: 'delivered', label: 'Delivered' },
-    { value: 'cancelled', label: 'Cancelled' }
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'skipped', label: 'Skipped' }
   ]
 
   const fetchOrders = async () => {
@@ -53,20 +53,21 @@ function Orders() {
       const data = await getVendorOrdersApi(cleanFilters)
       console.log(data, "Vendor Orders")
       
-      setOrders(data.orders || [])
+      setOrders(data.data.orders || [])
       
       // Calculate stats from orders
+      const ordersArray = data.data.orders || []
       const stats = {
-        totalOrders: data.orders?.length || 0,
-        todayOrders: data.orders?.filter(order => {
+        totalOrders: ordersArray.length || 0,
+        todayOrders: ordersArray.filter(order => {
           const orderDate = new Date(order.deliveryDate).toDateString()
           const today = new Date().toDateString()
           return orderDate === today
         }).length || 0,
-        pendingOrders: data.orders?.filter(order => 
-          ['upcoming', 'confirmed'].includes(order.status)
+        pendingOrders: ordersArray.filter(order =>
+          ['upcoming', 'confirmed', 'preparing'].includes(order.status)
         ).length || 0,
-        completedOrders: data.orders?.filter(order => 
+        completedOrders: ordersArray.filter(order =>
           order.status === 'delivered'
         ).length || 0
       }
@@ -94,7 +95,7 @@ function Orders() {
   const updateOrderStatus = async (orderId, status, notes = '') => {
     setUpdatingStatus(orderId)
     try {
-      await updateOrderStatusApi(orderId, { status, notes })
+      await updateOrderStatusApi(orderId, { status })
       toast.success(`Order status updated to ${status.replace('_', ' ')}`)
       fetchOrders() // Refresh the orders list
     } catch (error) {
@@ -124,7 +125,8 @@ function Orders() {
       preparing: { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-400' },
       out_for_delivery: { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-400' },
       delivered: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-400' },
-      cancelled: { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-400' }
+      cancelled: { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-400' },
+      skipped: { bg: 'bg-orange-100', text: 'text-orange-800', dot: 'bg-orange-400' }
     }
 
     const config = statusConfig[status] || statusConfig.upcoming
@@ -138,14 +140,14 @@ function Orders() {
   }
 
   const canUpdateStatus = (currentStatus) => {
-    // Vendors can update from upcoming -> confirmed -> preparing -> out_for_delivery
+    // Vendors can only update to 'preparing' and 'out_for_delivery'
     const updateFlow = {
-      upcoming: ['confirmed'],
+      upcoming: ['preparing'],
       confirmed: ['preparing'],
       preparing: ['out_for_delivery'],
       out_for_delivery: [] // Can't update further, admin handles delivery
     }
-    
+
     return updateFlow[currentStatus] || []
   }
 
@@ -318,21 +320,30 @@ function Orders() {
                 {orders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      #{order._id?.slice(-6) || 'N/A'}
+                      {order.orderNumber || `#${order._id?.slice(-6)}` || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-400" />
                         <div>
-                          <div className="text-sm text-white">{order.customer?.name || 'N/A'}</div>
+                          <div className="text-sm text-white">{order.userId?.name || 'N/A'}</div>
                           <div className="text-xs text-gray-400">{order.deliveryAddress?.city || ''}</div>
+                          <div className="text-xs text-gray-400">{order.userId?.phoneNumber ? `+${order.userId.phoneNumber.countryCode} ${order.userId.phoneNumber.internationalNumber?.replace(`+${order.userId.phoneNumber.countryCode} `, '')}` : ''}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-white">
-                        <div className="font-medium">{order.menu?.title || 'N/A'}</div>
+                        <div className="font-medium">
+                          {order.selectedMenus?.length > 0
+                            ? order.selectedMenus.map(menu => menu.foodTitle).join(', ')
+                            : 'N/A'
+                          }
+                        </div>
                         <div className="text-xs text-gray-400 capitalize">{order.mealType?.replace('_', ' ') || ''}</div>
+                        {order.selectedMenus?.length > 1 && (
+                          <div className="text-xs text-blue-400">+{order.selectedMenus.length - 1} more items</div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -347,7 +358,7 @@ function Orders() {
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span className="text-sm text-gray-300">
-                          {formatTime(order.deliveryTime)}
+                          {order.deliveryTime || 'N/A'}
                         </span>
                       </div>
                     </td>
@@ -356,13 +367,13 @@ function Orders() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
-                        <button 
+                        {/* <button 
                           onClick={() => fetchOrderDetails(order._id)}
                           className="text-orange-400 hover:text-orange-300 transition-colors"
                           title="View Details"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
+                        </button> */}
                         
                         {getNextStatus(order.status) && (
                           <button
@@ -441,8 +452,8 @@ function Orders() {
               {/* Order Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-gray-400 text-sm">Order ID</p>
-                  <p className="text-white font-medium">#{selectedOrder._id?.slice(-8) || 'N/A'}</p>
+                  <p className="text-gray-400 text-sm">Order Number</p>
+                  <p className="text-white font-medium">{selectedOrder.orderNumber || `#${selectedOrder._id?.slice(-8)}` || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Status</p>
@@ -454,7 +465,15 @@ function Orders() {
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Delivery Time</p>
-                  <p className="text-white">{formatTime(selectedOrder.deliveryTime)}</p>
+                  <p className="text-white">{selectedOrder.deliveryTime || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Credits Used</p>
+                  <p className="text-white">{selectedOrder.creditsUsed || 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Meal Type</p>
+                  <p className="text-white capitalize">{selectedOrder.mealType?.replace('_', ' ') || 'N/A'}</p>
                 </div>
               </div>
 
@@ -462,11 +481,19 @@ function Orders() {
               <div>
                 <h4 className="text-white font-medium mb-3">Customer Information</h4>
                 <div className="bg-gray-700 p-4 rounded-lg">
-                  <p className="text-white mb-2">{selectedOrder.customer?.name || 'N/A'}</p>
+                  <p className="text-white mb-2">{selectedOrder.userId?.name || 'N/A'}</p>
+                  {selectedOrder.userId?.phoneNumber && (
+                    <p className="text-gray-300 text-sm mb-2">
+                      +{selectedOrder.userId.phoneNumber.countryCode} {selectedOrder.userId.phoneNumber.internationalNumber?.replace(`+${selectedOrder.userId.phoneNumber.countryCode} `, '')}
+                    </p>
+                  )}
                   <div className="text-gray-300 text-sm">
                     <p>{selectedOrder.deliveryAddress?.street}</p>
                     <p>{selectedOrder.deliveryAddress?.city}, {selectedOrder.deliveryAddress?.state}</p>
-                    <p>{selectedOrder.deliveryAddress?.zipCode}</p>
+                    <p>{selectedOrder.deliveryAddress?.country} - {selectedOrder.deliveryAddress?.zipCode}</p>
+                    {selectedOrder.deliveryAddress?.landmark && (
+                      <p className="text-gray-400 text-xs mt-1">Landmark: {selectedOrder.deliveryAddress.landmark}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -474,12 +501,76 @@ function Orders() {
               {/* Menu Details */}
               <div>
                 <h4 className="text-white font-medium mb-3">Menu Details</h4>
-                <div className="bg-gray-700 p-4 rounded-lg">
-                  <p className="text-white font-medium mb-2">{selectedOrder.menu?.title || 'N/A'}</p>
-                  <p className="text-gray-300 text-sm mb-2">{selectedOrder.menu?.description || ''}</p>
-                  <p className="text-gray-400 text-sm">Meal Type: {selectedOrder.mealType?.replace('_', ' ').charAt(0).toUpperCase() + selectedOrder.mealType?.replace('_', ' ').slice(1)}</p>
+                <div className="bg-gray-700 p-4 rounded-lg space-y-3">
+                  {selectedOrder.selectedMenus?.length > 0 ? (
+                    selectedOrder.selectedMenus.map((menu, index) => (
+                      <div key={menu._id || index} className="flex items-center gap-3 p-2 bg-gray-600 rounded">
+                        {menu.foodImage && (
+                          <img
+                            src={menu.foodImage}
+                            alt={menu.foodTitle}
+                            className="w-12 h-12 rounded object-cover"
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        )}
+                        <div>
+                          <p className="text-white font-medium">{menu.foodTitle}</p>
+                          <p className="text-gray-400 text-xs">Item {index + 1}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400">No menu items selected</p>
+                  )}
+                  <p className="text-gray-400 text-sm mt-2">Meal Type: {selectedOrder.mealType?.replace('_', ' ').charAt(0).toUpperCase() + selectedOrder.mealType?.replace('_', ' ').slice(1)}</p>
                 </div>
               </div>
+
+              {/* Skip Details */}
+              {selectedOrder.skipDetails?.isSkipped && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Skip Information</h4>
+                  <div className="bg-orange-900/30 border border-orange-700 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-4 h-4 text-orange-400" />
+                      <span className="text-orange-400 font-medium">Order Skipped</span>
+                    </div>
+                    <p className="text-gray-300 text-sm mb-2">{selectedOrder.skipDetails.skipReason}</p>
+                    <p className="text-gray-400 text-xs">
+                      Skipped at: {formatDate(selectedOrder.skipDetails.skippedAt)} {formatTime(selectedOrder.skipDetails.skippedAt)}
+                    </p>
+                    {selectedOrder.skipDetails.creditsRefunded && (
+                      <p className="text-green-400 text-xs mt-1">✓ Credits refunded</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Status History */}
+              {selectedOrder.statusHistory?.length > 0 && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Status History</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="space-y-3">
+                      {selectedOrder.statusHistory.map((history, index) => (
+                        <div key={index} className="flex items-start gap-3 p-2 bg-gray-600 rounded">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {getStatusBadge(history.status)}
+                              <span className="text-gray-400 text-xs">
+                                {formatDate(history.updatedAt)} {formatTime(history.updatedAt)}
+                              </span>
+                            </div>
+                            {history.notes && (
+                              <p className="text-gray-300 text-sm">{history.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons */}
               {getNextStatus(selectedOrder.status) && (

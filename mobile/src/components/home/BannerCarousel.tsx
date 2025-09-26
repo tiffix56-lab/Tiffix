@@ -47,8 +47,8 @@ const BannerCarousel = () => {
   ];
 
   const renderBanner = ({ item }: { item: BannerItem }) => (
-    <View className="relative mx-3 overflow-hidden rounded-md" style={{ width: width - 48 }}>
-      <Image source={item.image} className="h-48 w-full" resizeMode="cover" />
+    <View className="relative mx-3 overflow-hidden rounded-xl" style={{ width: width - 48 }}>
+      <Image source={item.image} style={{ height: 200, width: '100%', resizeMode: 'cover' }} />
     </View>
   );
 

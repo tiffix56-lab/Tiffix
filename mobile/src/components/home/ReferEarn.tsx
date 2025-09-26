@@ -6,16 +6,15 @@ const ReferEarn = () => {
   const { colorScheme } = useColorScheme();
 
   return (
-    <View className="my-4">
-      <View className="overflow-hidden ">
+    <View className="my-4 mx-6">
+      <View className="overflow-hidden rounded-xl">
         <Image
           source={
             colorScheme === 'dark'
               ? require('@/assets/refer-earn-dark.png')
               : require('@/assets/refer-earn-light.png')
           }
-          className="h-48 "
-          resizeMode="cover"
+          style={{ height: 192, width: '100%', resizeMode: 'cover' }}
         />
       </View>
     </View>

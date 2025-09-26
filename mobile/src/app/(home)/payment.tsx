@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import { orderService } from '@/services/order.service';
+import { usePayment, SubscriptionPurchaseData } from '@/context/PaymentContext';
+import PaymentWebView from '@/components/payment/PaymentWebView';
 import { orderStore, OrderData } from '@/utils/order-store';
-import { InitiatePurchaseRequest } from '@/types/order.types';
 
 const Payment = () => {
   const { colorScheme } = useColorScheme();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  const {
+    isLoading: paymentLoading,
+    showPaymentWebView,
+    razorpayOptions,
+    initiateSubscriptionPurchase,
+    handlePaymentResponse,
+    verifySubscriptionPayment,
+    closePaymentWebView,
+    generateRazorpayHTML,
+  } = usePayment();
 
   useEffect(() => {
     const loadOrderData = async () => {
@@ -102,8 +113,9 @@ const Payment = () => {
     try {
       setLoading(true);
 
-      const orderPayload: InitiatePurchaseRequest = {
+      const subscriptionData: SubscriptionPurchaseData = {
         subscriptionId: orderData.subscriptionId,
+        promoCode: orderData.promoCode,
         deliveryAddress: {
           street: orderData.deliveryAddress.street || orderData.deliveryAddress.label || "",
           city: orderData.deliveryAddress.city || "",
@@ -157,72 +169,65 @@ const Payment = () => {
         })(),
       };
 
-      console.log('📦 Complete order payload being sent:', JSON.stringify(orderPayload, null, 2));
+      console.log('📦 Complete subscription data being sent:', JSON.stringify(subscriptionData, null, 2));
       
-      const response = await orderService.initiatePurchase(orderPayload);
+      const result = await initiateSubscriptionPurchase(subscriptionData);
 
-      if (response.success && response.data) {
-        const { orderId, amount, currency, phonepeKey, userSubscriptionId, paymentUrl } = response.data;
+      // Store payment data for verification later
+      await orderStore.saveOrderData({
+        ...orderData,
+        orderId: result.orderId,
+        userSubscriptionId: result.userSubscriptionId,
+        paymentAmount: 0 // Will be updated from Razorpay response
+      });
 
-        // Store payment data for verification later
-        await orderStore.saveOrderData({
-          ...orderData,
-          orderId,
-          userSubscriptionId,
-          paymentAmount: amount
-        });
-
-        // Open PhonePe payment URL
-        if (paymentUrl) {
-          const supported = await Linking.canOpenURL(paymentUrl);
-          if (supported) {
-            await Linking.openURL(paymentUrl);
-            
-            // Navigate to payment verification screen
-            router.push({
-              pathname: '/(home)/payment-verification',
-              params: {
-                orderId,
-                userSubscriptionId,
-                amount: amount.toString()
-              }
-            });
-          } else {
-            Alert.alert('Error', 'Cannot open PhonePe payment URL');
-            setLoading(false);
-          }
-        } else {
-          Alert.alert('Error', 'Payment URL not received from PhonePe');
-          setLoading(false);
-        }
-      } else {
-        // Check if it's a delivery not available error
-        if (response.message?.includes('Delivery not available') || response.message?.includes('pincode')) {
-          Alert.alert(
-            'Delivery Not Available', 
-            'Sorry, we don\'t deliver to this address yet. Please select a different address or check back soon!',
-            [
-              {
-                text: 'Select Different Address',
-                onPress: () => {
-                  router.back(); // Go back to delivery information screen
-                }
-              },
-              {
-                text: 'Cancel',
-                style: 'cancel'
-              }
-            ]
-          );
-        } else {
-          Alert.alert('Order Failed', response.message || 'Failed to initiate payment');
-        }
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      Alert.alert('Error', 'Something went wrong while processing payment');
       setLoading(false);
+      // Payment WebView will be shown by PaymentContext
+      
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      
+      // Check if it's a delivery not available error
+      if (error.message?.includes('Delivery not available') || error.message?.includes('pincode')) {
+        Alert.alert(
+          'Delivery Not Available', 
+          'Sorry, we don\'t deliver to this address yet. Please select a different address or check back soon!',
+          [
+            {
+              text: 'Select Different Address',
+              onPress: () => {
+                router.back(); // Go back to delivery information screen
+              }
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel'
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Order Failed', error.message || 'Failed to initiate payment');
+      }
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentData: any) => {
+    try {
+      if (!orderData) return;
+      
+      await verifySubscriptionPayment(paymentData, orderData.userSubscriptionId!);
+      
+      // Navigate to order confirmation
+      router.push({
+        pathname: '/(home)/order-confirmed',
+        params: {
+          orderId: orderData.orderId,
+          userSubscriptionId: orderData.userSubscriptionId
+        }
+      });
+    } catch (error) {
+      console.error('Payment verification error:', error);
     }
   };
 
@@ -394,13 +399,13 @@ const Payment = () => {
       <View className="px-6 pb-6">
         <TouchableOpacity
           onPress={handlePayment}
-          disabled={loading}
+          disabled={loading || paymentLoading}
           className={`rounded-xl py-4 ${
-            loading 
+            loading || paymentLoading 
               ? 'bg-zinc-400 dark:bg-zinc-600' 
               : 'bg-green-500'
           }`}>
-          {loading ? (
+          {loading || paymentLoading ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator size="small" color="#FFFFFF" />
               <Text
@@ -418,6 +423,22 @@ const Payment = () => {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Razorpay Payment WebView */}
+      {showPaymentWebView && razorpayOptions && (
+        <PaymentWebView
+          visible={showPaymentWebView}
+          razorpayOptions={razorpayOptions}
+          onPaymentResponse={(response) => {
+            handlePaymentResponse(response);
+            if (response.success) {
+              handlePaymentSuccess(response);
+            }
+          }}
+          onClose={closePaymentWebView}
+          generateHTML={generateRazorpayHTML}
+        />
+      )}
     </View>
   );
 };

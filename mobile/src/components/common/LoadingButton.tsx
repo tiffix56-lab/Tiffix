@@ -25,7 +25,7 @@ export const LoadingButton: React.FC<LoadingButtonProps> = ({
   const isDisabled = disabled || loading;
 
   const getButtonStyles = () => {
-    const baseStyles = 'flex-row items-center justify-center rounded-3xl';
+    const baseStyles = 'flex-row items-center justify-center rounded-xl';
     
     const sizeStyles = {
       small: 'py-2 px-4',
@@ -91,7 +91,7 @@ export const LoadingButton: React.FC<LoadingButtonProps> = ({
           <ActivityIndicator size="small" color={getSpinnerColor()} />
         </View>
       )}
-      <Text className={getTextStyles()}>{title}</Text>
+      <Text className={getTextStyles()} style={{ fontFamily: 'Poppins_500Medium' }}>{title}</Text>
     </TouchableOpacity>
   );
 };

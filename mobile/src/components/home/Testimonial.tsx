@@ -46,7 +46,7 @@ const Testimonial = () => {
 
   const renderTestimonial = ({ item }: { item: TestimonialItem }) => (
     <View style={{ width: width - 80 }} className="items-center px-4">
-      <Image source={{ uri: item.image }} className="mb-4 h-16 w-16 rounded-full" />
+      <Image source={{ uri: item.image }} style={{ height: 64, width: 64, borderRadius: 32, marginBottom: 16 }} />
       <Text
         className="mb-2 text-lg font-semibold text-black dark:text-white"
         style={{ fontFamily: 'Poppins_600SemiBold' }}>

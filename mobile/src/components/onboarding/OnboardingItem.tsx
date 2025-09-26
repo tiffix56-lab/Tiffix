@@ -23,10 +23,10 @@ const OnboardingItem: React.FC<OnboardingItemProps> = ({ item }) => {
         paddingHorizontal: 16,
         width,
       }}>
-      <Text className="mb-8 px-4 text-center text-3xl font-semibold text-black dark:text-white">
+      <Text className="mb-8 px-4 text-center text-3xl font-semibold text-black dark:text-white" style={{ fontFamily: 'Poppins_600SemiBold' }}>
         {item.title}
       </Text>
-      <Image source={item.image} className="h-96 w-96" style={{ width, resizeMode: 'contain' }} />
+      <Image source={item.image} style={{ width: width * 0.8, height: width * 0.8, resizeMode: 'contain' }} />
     </View>
   );
 };

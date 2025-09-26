@@ -18,6 +18,7 @@ import { enableScreens } from 'react-native-screens';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from '@/context/AuthContext';
 import { AddressProvider } from '@/context/AddressContext';
+import { PaymentProvider } from '@/context/PaymentContext';
 import { toastConfig } from '@/components/ui/ToastConfig';
 import '../global.css';
 
@@ -53,15 +54,17 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <AddressProvider>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(home)" options={{ headerShown: false }} />
-          <Stack.Screen name="(profile)" options={{ headerShown: false }} />
-        </Stack>
-        <Toast config={toastConfig} />
+        <PaymentProvider>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(home)" options={{ headerShown: false }} />
+            <Stack.Screen name="(profile)" options={{ headerShown: false }} />
+          </Stack>
+          <Toast config={toastConfig} />
+        </PaymentProvider>
       </AddressProvider>
     </AuthProvider>
   );

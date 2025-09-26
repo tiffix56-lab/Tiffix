@@ -395,9 +395,9 @@ function Customers() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Subscription Period
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Actions
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="bg-gray-800 divide-y divide-gray-700">
@@ -532,11 +532,11 @@ function Customers() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button className="text-green-400 hover:text-green-300 transition-colors">
                         <Eye className="w-4 h-4" />
                       </button>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               )}

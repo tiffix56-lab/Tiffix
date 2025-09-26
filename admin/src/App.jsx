@@ -21,6 +21,7 @@ import PromoCodes from "./pages/Admin/PromoCodes";
 import Referals from "./pages/Admin/Referals";
 import Order from "./pages/Admin/Order";
 import Reviews from "./pages/Admin/Reviews";
+import ReviewsVendor from "./pages/Vendor/Reviews";
 import Profile from "./pages/Vendor/Profile";
 import Dashboard from "./pages/Admin/Dashboard";
 import Analytics from "./pages/Admin/Analytics";
@@ -64,7 +65,7 @@ function App() {
           }>
             <Route path="/vendor" element={<Profile />} />
             <Route path="/vendor/orders" element={<Orders />} />
-            <Route path="/vendor/reviews" element={<Reviews />} />
+            <Route path="/vendor/reviews" element={<ReviewsVendor />} />
             <Route path="/vendor/customers" element={<Customers />} />
           </Route>
         </Routes>
