@@ -11,7 +11,7 @@ import Badge from '../../components/ui/Badge';
 import { getVendorReviewsApi, getVendorReviewsSummaryApi } from '../../service/api.service';
 import toast from 'react-hot-toast';
 
-const Reviews = () => {
+const VendorReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -522,4 +522,4 @@ const Reviews = () => {
   );
 };
 
-export default Reviews;
+export default VendorReviews;
