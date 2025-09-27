@@ -794,7 +794,21 @@ async function getHourlyOrderPattern() {
         },
         {
             $addFields: {
-                hour: { $hour: { $dateFromString: { dateString: '$deliveryTime' } } }
+                hour: {
+                    $let: {
+                        vars: {
+                            timeStr: '$deliveryTime',
+                            hourStr: { $substr: ['$deliveryTime', 0, 2] }
+                        },
+                        in: {
+                            $cond: {
+                                if: { $regexMatch: { input: '$$timeStr', regex: '^\\d{1,2}:\\d{2}$' } },
+                                then: { $toInt: '$$hourStr' },
+                                else: { $hour: '$createdAt' }
+                            }
+                        }
+                    }
+                }
             }
         },
         {

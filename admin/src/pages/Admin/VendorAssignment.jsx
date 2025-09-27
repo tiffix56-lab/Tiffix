@@ -299,7 +299,7 @@ function VendorAssignment() {
       setAssignFormData({ vendorId: '', adminNotes: '' });
       fetchAssignments();
     } catch (error) {
-      toast.error('Failed to assign vendor');
+      toast.error(error.response?.data?.message || 'Failed to assign vendor');
       console.error('Error assigning vendor:', error);
     }
   };
@@ -946,7 +946,7 @@ function VendorAssignment() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Admin Notes (Optional)
+                  Admin Notes
                 </label>
                 <textarea
                   value={assignFormData.adminNotes}
@@ -1003,7 +1003,7 @@ function VendorAssignment() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Admin Notes (Optional)
+                  Admin Notes
                 </label>
                 <textarea
                   value={rejectFormData.adminNotes}

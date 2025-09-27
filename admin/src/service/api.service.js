@@ -633,7 +633,7 @@ export const subscribeVendorPlanApi = async (body) => {
 }
 
 export const getVendorReviewsSummaryApi = async () => {
-    const response = await servicesAxiosInstance.get('/vendors/me/reviews-summary');
+    const response = await servicesAxiosInstance.get('/vendor/reviews/summary');
     return response.data;
 }
 

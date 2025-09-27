@@ -54,7 +54,7 @@ export default {
 
             // Skip delivery validation - allow all addresses
             console.log("Skipping delivery validation - allowing all addresses");
-            
+
             /* Original delivery validation code - commented out
             let deliveryValidation;
             try {
@@ -91,7 +91,7 @@ export default {
 
             console.log("Delivery validation passed, continuing with subscription creation...");
             */
-            
+
             // Mock validation that always passes
             const deliveryValidation = {
                 isValid: true,
@@ -699,7 +699,7 @@ export default {
             const userSubscription = await UserSubscription.findOne({
                 _id: subscriptionId,
                 userId
-            });
+            }).populate("subscriptionId")
 
             if (!userSubscription) {
                 console.error("Subscription not found for vendor switch:", {
@@ -739,11 +739,22 @@ export default {
                 return httpError(next, new Error('Vendor switch has already been used for this subscription'), req, 400);
             }
 
-            console.log("Vendor switch validation passed:", {
-                subscriptionId,
-                currentVendorId: userSubscription.vendorDetails.currentVendor.vendorId,
-                isVendorAssigned: userSubscription.vendorDetails.isVendorAssigned
+
+            // Check for existing pending vendor switch requests
+            const existingPendingRequest = await VendorAssignmentRequest.findOne({
+                userSubscriptionId: subscriptionId,
+                requestType: 'vendor_switch',
+                status: 'pending'
             });
+
+            if (existingPendingRequest) {
+                console.log("Cannot switch vendor - pending request already exists:", {
+                    subscriptionId,
+                    existingRequestId: existingPendingRequest._id,
+                    existingRequestStatus: existingPendingRequest.status
+                });
+                return httpError(next, new Error('A vendor switch request is already pending for this subscription'), req, 400);
+            }
 
 
             const deliveryZone = await LocationZone.findByPincode(userSubscription.deliveryAddress.zipCode);

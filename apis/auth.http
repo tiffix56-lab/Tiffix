@@ -3,12 +3,12 @@
 @baseURL = http://localhost:4000/v1
 // For user
 # @email = user@gmail.com
-@email = user22232@gmail.com
+# @email = swarup@gmail.com
 // For vendor
 # @email = vendor@gmail.com
 # @email = spice.restaurant@example.com
 // for Admin
-# @email = admin@gmail.com
+@email = admin@gmail.com
 @password = 12345678
 @name = Test User
 @phoneNumber = 918308657425

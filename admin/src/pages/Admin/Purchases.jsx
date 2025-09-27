@@ -15,6 +15,9 @@ function Purchases() {
   const [purchases, setPurchases] = useState([])
   const [stats, setStats] = useState({})
   const [loading, setLoading] = useState(false)
+  const [selectedPurchase, setSelectedPurchase] = useState(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [loadingDetails, setLoadingDetails] = useState(false)
   const [filters, setFilters] = useState({
     page: 1,
     limit: 20,
@@ -57,12 +60,17 @@ function Purchases() {
     }
   }
 
-  const fetchPurchaseById = async (purchaseId) => {
+  const fetchPurchaseDetails = async (purchaseId) => {
+    setLoadingDetails(true)
     try {
       const data = await getSubscriptionPurchaseByIdApi(purchaseId)
-      return data
+      setSelectedPurchase(data.data.subscription || data)
+      setShowDetailsModal(true)
     } catch (error) {
       console.error('Error fetching purchase by ID:', error)
+      toast.error('Error fetching purchase details')
+    } finally {
+      setLoadingDetails(false)
     }
   }
 
@@ -332,12 +340,17 @@ function Purchases() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button 
-                            onClick={() => fetchPurchaseById(purchase._id)}
-                            className="text-orange-400 hover:text-orange-300 transition-colors"
+                          <button
+                            onClick={() => fetchPurchaseDetails(purchase._id)}
+                            disabled={loadingDetails}
+                            className="text-orange-400 hover:text-orange-300 transition-colors disabled:opacity-50"
                             title="View Details"
                           >
-                            <Eye className="w-4 h-4" />
+                            {loadingDetails ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -381,6 +394,503 @@ function Purchases() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Details Modal */}
+      {showDetailsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-4xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white">Purchase Details</h3>
+              <button
+                onClick={() => {
+                  setShowDetailsModal(false)
+                  setSelectedPurchase(null)
+                  setLoadingDetails(false)
+                }}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {loadingDetails ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto mb-4" />
+                  <div className="text-lg text-gray-400">Loading purchase details...</div>
+                </div>
+              </div>
+            ) : selectedPurchase ? (
+              <div className="space-y-6">
+                {/* Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-gray-400 text-sm">Purchase ID</p>
+                    <p className="text-white font-medium">{selectedPurchase.subscription?._id || selectedPurchase._id}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Status</p>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      (selectedPurchase.subscription?.status || selectedPurchase.status) === 'active' ? 'bg-green-100 text-green-800' :
+                      (selectedPurchase.subscription?.status || selectedPurchase.status) === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      (selectedPurchase.subscription?.status || selectedPurchase.status) === 'cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {selectedPurchase.subscription?.status || selectedPurchase.status}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Final Price</p>
+                    <p className="text-white font-medium">₹{selectedPurchase.subscription?.finalPrice || selectedPurchase.finalPrice}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Start Date</p>
+                    <p className="text-white">{new Date(selectedPurchase.subscription?.startDate || selectedPurchase.startDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">End Date</p>
+                    <p className="text-white">{new Date(selectedPurchase.subscription?.endDate || selectedPurchase.endDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Created At</p>
+                    <p className="text-white">{new Date(selectedPurchase.subscription?.createdAt || selectedPurchase.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Credits Granted</p>
+                    <p className="text-white">{selectedPurchase.subscription?.creditsGranted || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Credits Used</p>
+                    <p className="text-white">{selectedPurchase.subscription?.creditsUsed || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Skip Credits Available</p>
+                    <p className="text-white">{selectedPurchase.subscription?.skipCreditAvailable || 0}</p>
+                  </div>
+                </div>
+
+              {/* User Information */}
+              <div>
+                <h4 className="text-white font-medium mb-3">User Information</h4>
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Name</p>
+                      <p className="text-white">{selectedPurchase.userId?.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Email</p>
+                      <p className="text-white">{selectedPurchase.userId?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Phone</p>
+                      <p className="text-white">
+                        {selectedPurchase.userId?.phoneNumber
+                          ? `+${selectedPurchase.userId.phoneNumber.countryCode} ${selectedPurchase.userId.phoneNumber.internationalNumber?.replace(`+${selectedPurchase.userId.phoneNumber.countryCode} `, '')}`
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">User ID</p>
+                      <p className="text-white text-xs">{selectedPurchase.userId?._id || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subscription Details */}
+              <div>
+                <h4 className="text-white font-medium mb-3">Subscription Details</h4>
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Plan Name</p>
+                      <p className="text-white font-medium">{selectedPurchase.subscriptionId?.planName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Category</p>
+                      <p className="text-white capitalize">{selectedPurchase.subscriptionId?.category?.replace('_', ' ') || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Duration</p>
+                      <p className="text-white">{selectedPurchase.subscriptionId?.durationDays || 0} days</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Original Price</p>
+                      <p className="text-white">₹{selectedPurchase.subscriptionId?.price || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Credits Included</p>
+                      <p className="text-white">{selectedPurchase.subscriptionId?.creditsIncluded || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Subscription ID</p>
+                      <p className="text-white text-xs">{selectedPurchase.subscriptionId?._id || 'N/A'}</p>
+                    </div>
+                  </div>
+                  {selectedPurchase.subscriptionId?.description && (
+                    <div className="mt-4">
+                      <p className="text-gray-400 text-sm">Description</p>
+                      <p className="text-gray-300 text-sm">{selectedPurchase.subscriptionId.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Vendor Details */}
+              <div>
+                <h4 className="text-white font-medium mb-3">Vendor Information</h4>
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Assignment Status</p>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        (selectedPurchase.subscription?.vendorDetails?.isVendorAssigned || selectedPurchase.vendorDetails?.isVendorAssigned) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {(selectedPurchase.subscription?.vendorDetails?.isVendorAssigned || selectedPurchase.vendorDetails?.isVendorAssigned) ? 'Assigned' : 'Unassigned'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Vendor ID</p>
+                      <p className="text-white text-xs">{selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?._id || selectedPurchase.vendorDetails?.vendorId || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Business Name</p>
+                      <p className="text-white">{selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.businessInfo?.businessName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Vendor Type</p>
+                      <p className="text-white capitalize">{(selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorType || selectedPurchase.vendorDetails?.vendorType || 'N/A').replace('_', ' ')}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Verification Status</p>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.isVerified ? 'Verified' : 'Not Verified'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Rating</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white">{selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.rating?.average || 0}/5</span>
+                        <span className="text-gray-400 text-xs">({selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.rating?.totalReviews || 0} reviews)</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Current Load</p>
+                      <p className="text-white">{selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.capacity?.currentLoad || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Daily Orders Capacity</p>
+                      <p className="text-white">{selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.capacity?.dailyOrders || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Assigned At</p>
+                      <p className="text-white text-sm">{selectedPurchase.subscription?.vendorDetails?.currentVendor?.assignedAt ? new Date(selectedPurchase.subscription.vendorDetails.currentVendor.assignedAt).toLocaleString() : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Switch Used</p>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        selectedPurchase.subscription?.vendorDetails?.vendorSwitchUsed ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {selectedPurchase.subscription?.vendorDetails?.vendorSwitchUsed ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Service Radius</p>
+                      <p className="text-white">{selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.businessInfo?.serviceArea?.radius || 0} km</p>
+                    </div>
+                  </div>
+                  {selectedPurchase.subscription?.vendorDetails?.currentVendor?.vendorId?.businessInfo?.description && (
+                    <div className="mt-4">
+                      <p className="text-gray-400 text-sm">Description</p>
+                      <p className="text-gray-300 text-sm">{selectedPurchase.subscription.vendorDetails.currentVendor.vendorId.businessInfo.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Details */}
+              {selectedPurchase.paymentDetails && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Payment Information</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-gray-400 text-sm">Payment Method</p>
+                        <p className="text-white">{selectedPurchase.paymentDetails.method || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Transaction ID</p>
+                        <p className="text-white text-xs">{selectedPurchase.paymentDetails.transactionId || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Payment Status</p>
+                        <p className="text-white">{selectedPurchase.paymentDetails.status || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Payment Date</p>
+                        <p className="text-white">
+                          {selectedPurchase.paymentDetails.paidAt
+                            ? new Date(selectedPurchase.paymentDetails.paidAt).toLocaleString()
+                            : 'N/A'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Meal Timing */}
+              {selectedPurchase.subscription?.mealTiming && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Meal Timing Configuration</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedPurchase.subscription.mealTiming.lunch && (
+                        <div>
+                          <p className="text-gray-400 text-sm">Lunch</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              selectedPurchase.subscription.mealTiming.lunch.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {selectedPurchase.subscription.mealTiming.lunch.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                            {selectedPurchase.subscription.mealTiming.lunch.enabled && (
+                              <span className="text-white">at {selectedPurchase.subscription.mealTiming.lunch.time}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {selectedPurchase.subscription.mealTiming.dinner && (
+                        <div>
+                          <p className="text-gray-400 text-sm">Dinner</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              selectedPurchase.subscription.mealTiming.dinner.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {selectedPurchase.subscription.mealTiming.dinner.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                            {selectedPurchase.subscription.mealTiming.dinner.enabled && (
+                              <span className="text-white">at {selectedPurchase.subscription.mealTiming.dinner.time}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cancellation Details */}
+              {selectedPurchase.subscription?.cancellationDetails && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Cancellation Information</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-gray-400 text-sm">Cancellation Status</p>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedPurchase.subscription.cancellationDetails.isCancel ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {selectedPurchase.subscription.cancellationDetails.isCancel ? 'Cancelled' : 'Active'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Refund Amount</p>
+                        <p className="text-white">₹{selectedPurchase.subscription.cancellationDetails.refundAmount || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Timeline */}
+              {selectedPurchase.timeline && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Timeline</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-2 bg-gray-600 rounded">
+                        <span className="text-gray-400 text-sm">Purchased</span>
+                        <span className="text-white text-sm">{new Date(selectedPurchase.timeline.purchased).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-600 rounded">
+                        <span className="text-gray-400 text-sm">Subscription Start</span>
+                        <span className="text-white text-sm">{new Date(selectedPurchase.timeline.subscriptionStart).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-600 rounded">
+                        <span className="text-gray-400 text-sm">Subscription End</span>
+                        <span className="text-white text-sm">{new Date(selectedPurchase.timeline.subscriptionEnd).toLocaleString()}</span>
+                      </div>
+                      {selectedPurchase.timeline.vendorAssigned && (
+                        <div className="flex items-center justify-between p-2 bg-gray-600 rounded">
+                          <span className="text-gray-400 text-sm">Vendor Assigned</span>
+                          <span className="text-white text-sm">{new Date(selectedPurchase.timeline.vendorAssigned).toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between p-2 bg-gray-600 rounded">
+                        <span className="text-gray-400 text-sm">Last Updated</span>
+                        <span className="text-white text-sm">{new Date(selectedPurchase.timeline.lastUpdated).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Analytics */}
+              {selectedPurchase.analytics && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Analytics</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-gray-400 text-sm">Remaining Days</p>
+                        <p className="text-white font-medium">{selectedPurchase.analytics.remainingDays}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Daily Meal Count</p>
+                        <p className="text-white">{selectedPurchase.analytics.dailyMealCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Total Meals Expected</p>
+                        <p className="text-white">{selectedPurchase.analytics.totalMealsExpected}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Credits Used %</p>
+                        <p className="text-white">{selectedPurchase.analytics.creditsUsedPercentage}%</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Remaining Credits</p>
+                        <p className="text-white">{selectedPurchase.analytics.remainingCredits}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Is Active</p>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedPurchase.analytics.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {selectedPurchase.analytics.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vendor Requests */}
+              {selectedPurchase.vendorRequests && selectedPurchase.vendorRequests.length > 0 && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Vendor Requests History</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg space-y-3">
+                    {selectedPurchase.vendorRequests.map((request, index) => (
+                      <div key={request._id || index} className="bg-gray-600 p-3 rounded">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-gray-400">Type: </span>
+                            <span className="text-white capitalize">{request.requestType?.replace('_', ' ')}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Status: </span>
+                            <span className={`px-2 py-1 text-xs rounded ${
+                              request.status === 'approved' ? 'bg-green-600 text-white' :
+                              request.status === 'pending' ? 'bg-yellow-600 text-white' :
+                              'bg-red-600 text-white'
+                            }`}>
+                              {request.status}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Reason: </span>
+                            <span className="text-white">{request.reason}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Processed At: </span>
+                            <span className="text-white">{new Date(request.processedAt).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        {request.description && (
+                          <div className="mt-2">
+                            <span className="text-gray-400 text-sm">Description: </span>
+                            <span className="text-gray-300 text-sm">{request.description}</span>
+                          </div>
+                        )}
+                        {request.adminNotes && (
+                          <div className="mt-2">
+                            <span className="text-gray-400 text-sm">Admin Notes: </span>
+                            <span className="text-gray-300 text-sm">{request.adminNotes}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Delivery Address */}
+              {selectedPurchase.subscription?.deliveryAddress && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Delivery Address</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="text-gray-300">
+                      <p>{selectedPurchase.subscription.deliveryAddress.street}</p>
+                      <p>{selectedPurchase.subscription.deliveryAddress.city}, {selectedPurchase.subscription.deliveryAddress.state}</p>
+                      <p>{selectedPurchase.subscription.deliveryAddress.country} - {selectedPurchase.subscription.deliveryAddress.zipCode}</p>
+                      {selectedPurchase.subscription.deliveryAddress.coordinates && (
+                        <p className="text-gray-400 text-sm mt-2">
+                          Coordinates: {selectedPurchase.subscription.deliveryAddress.coordinates.coordinates.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Details */}
+              <div>
+                <h4 className="text-white font-medium mb-3">Additional Information</h4>
+                <div className="bg-gray-700 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Skip Credits Used</p>
+                      <p className="text-white">{selectedPurchase.subscription?.skipCreditUsed || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Discount Applied</p>
+                      <p className="text-white">₹{selectedPurchase.subscription?.discountApplied || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Promo Code Used</p>
+                      <p className="text-white">{selectedPurchase.subscription?.promoCodeUsed || 'None'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Is Expired</p>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        selectedPurchase.subscription?.isExpired ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {selectedPurchase.subscription?.isExpired ? 'Expired' : 'Active'}
+                      </span>
+                    </div>
+                    {selectedPurchase.deliveryZone && (
+                      <div>
+                        <p className="text-gray-400 text-sm">Delivery Zone</p>
+                        <p className="text-white">{selectedPurchase.deliveryZone}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-lg text-gray-400">Failed to load purchase details</div>
+            </div>
+          )}
           </div>
         </div>
       )}
