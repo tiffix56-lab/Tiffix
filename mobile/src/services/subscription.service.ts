@@ -198,13 +198,40 @@ class SubscriptionService {
   async cancelUserSubscription(subscriptionId: string, cancellationReason: string): Promise<ApiResponse<{ message: string }>> {
     console.log('🚀 [SUBSCRIPTION_SERVICE] Starting cancelUserSubscription:', { subscriptionId, cancellationReason });
     
-    const response = await apiService.post<{ message: string }>(
-      `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/cancel`,
-      { cancellationReason }
-    );
-    
-    console.log('📡 [SUBSCRIPTION_SERVICE] Cancel subscription response:', response);
-    return response;
+    try {
+      const response = await apiService.post<{ message: string }>(
+        `${API_ENDPOINTS.SUBSCRIPTION.MY_SUBSCRIPTIONS}/${subscriptionId}/cancel`,
+        { reason: cancellationReason }
+      );
+      
+      console.log('📡 [SUBSCRIPTION_SERVICE] Cancel subscription response:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ [SUBSCRIPTION_SERVICE] Cancel subscription error:', error);
+      
+      // Handle specific error cases for better UX
+      if (error instanceof Error && error.message.includes('422')) {
+        return {
+          success: false,
+          message: 'Invalid cancellation request. Please try again.',
+          error: { code: 'VALIDATION_ERROR' }
+        };
+      }
+      
+      if (error instanceof Error && error.message.includes('404')) {
+        return {
+          success: false,
+          message: 'Subscription not found or already cancelled.',
+          error: { code: 'NOT_FOUND' }
+        };
+      }
+      
+      return {
+        success: false,
+        message: 'Failed to cancel subscription. Please try again.',
+        error: { code: 'UNKNOWN_ERROR' }
+      };
+    }
   }
 
   async requestVendorSwitch(subscriptionId: string, reason: string, preferredVendorId?: string): Promise<ApiResponse<{ message: string }>> {

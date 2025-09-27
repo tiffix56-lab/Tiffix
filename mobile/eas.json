@@ -9,7 +9,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://app.tiffix.in/api/v1",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
+        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
       }
     },
     "preview": {
@@ -22,7 +22,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://app.tiffix.in/api/v1",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
+        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
       }
     },
     "production": {
@@ -33,7 +33,8 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://app.tiffix.in/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://app.tiffix.in/api/v1",
+        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
       }
     }
   },

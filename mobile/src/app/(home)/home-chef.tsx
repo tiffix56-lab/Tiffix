@@ -105,6 +105,7 @@ const HomeChef = () => {
                         source={menu.foodImage ? { uri: menu.foodImage } : require('@/assets/category-2.png')}
                         className="h-20 w-20 rounded-full"
                         resizeMode="cover"
+                        onError={(error) => console.log('Image loading error:', error.nativeEvent.error)}
                       />
                     </View>
 
@@ -120,7 +121,7 @@ const HomeChef = () => {
                           <Text
                             className="text-base text-black dark:text-white"
                             style={{ fontFamily: 'Poppins_500Medium' }}>
-                            ₹{menu.price}/Meal
+                            ₹{menu.price}/month
                           </Text>
                           <View className="mt-1 flex-row items-center">
                             <Text className="text-yellow-500">★</Text>

@@ -3,36 +3,31 @@ import { View, Text, TouchableOpacity, ScrollView, Image, StatusBar, ActivityInd
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
-import { menuService } from '@/services/menu.service';
-import { MenuItem } from '@/types/menu.types';
+import { subscriptionService, Subscription } from '@/services/subscription.service';
 
 const VendorFood = () => {
   const { colorScheme } = useColorScheme();
-  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [plans, setPlans] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    fetchVendorMenus();
+    fetchSubscriptionPlans();
   }, []);
 
-  const fetchVendorMenus = async () => {
+  const fetchSubscriptionPlans = async () => {
     try {
       setLoading(true);
-      const response = await menuService.getVendorMenus({
-        isAvailable: true,
-        sortBy: 'rating.average',
-        sortOrder: 'desc'
-      });
+      const response = await subscriptionService.getActiveSubscriptions();
       
       if (response.success && response.data) {
-        setMenus(response.data.menus);
+        setPlans(response.data.subscriptions || []);
       } else {
-        setError(response.message || 'Failed to load menu');
+        setError(response.message || 'Failed to load subscription plans');
       }
     } catch (err) {
-      setError('Failed to load menu');
-      console.error('Error fetching vendor menus:', err);
+      setError('Failed to load subscription plans');
+      console.error('Error fetching subscription plans:', err);
     } finally {
       setLoading(false);
     }
@@ -67,44 +62,46 @@ const VendorFood = () => {
 
       {/* Main Content */}
       <View className="flex-1 rounded-t-3xl bg-white dark:bg-black">
+        
         {loading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
-            <Text className="mt-4 text-base text-zinc-500 dark:text-zinc-400">Loading menu...</Text>
+            <Text className="mt-4 text-base text-zinc-500 dark:text-zinc-400">Loading subscription plans...</Text>
           </View>
         ) : error ? (
           <View className="flex-1 items-center justify-center px-6">
             <Feather name="alert-circle" size={48} color="#EF4444" />
             <Text className="mt-4 text-center text-base text-red-500">{error}</Text>
             <TouchableOpacity
-              onPress={fetchVendorMenus}
+              onPress={fetchSubscriptionPlans}
               className="mt-4 rounded-lg bg-black px-6 py-3 dark:bg-white">
               <Text className="text-sm font-medium text-white dark:text-black">Retry</Text>
             </TouchableOpacity>
           </View>
-        ) : menus.length === 0 ? (
+        ) : plans.length === 0 ? (
           <View className="flex-1 items-center justify-center px-6">
             <Feather name="package" size={48} color="#71717A" />
             <Text className="mt-4 text-center text-base text-zinc-500 dark:text-zinc-400">
-              No vendor meals available at the moment
+              No menu available at the moment
             </Text>
           </View>
         ) : (
           <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
             {/* Meal Cards */}
-            {menus.map((menu) => {
-              const isVegetarian = menu.dietaryOptions.includes('vegetarian');
-              const isNonVeg = menu.dietaryOptions.includes('non-vegetarian');
+            {plans.map((plan) => {
+              const isVegetarian = plan.tags?.includes('vegetarian');
+              const isNonVeg = plan.tags?.includes('non-vegetarian');
               
               return (
-                <View key={menu._id} className="mb-4 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+                <View key={plan._id} className="mb-4 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
                   <View className="flex-row">
                     {/* Meal Image */}
                     <View className="mr-4">
                       <Image
-                        source={menu.foodImage ? { uri: menu.foodImage } : require('@/assets/category-1.png')}
+                        source={plan.image ? { uri: plan.image } : require('@/assets/category-1.png')}
                         className="h-20 w-20 rounded-full"
                         resizeMode="cover"
+                        onError={(error) => console.log('Image loading error:', error.nativeEvent.error)}
                       />
                     </View>
 
@@ -115,25 +112,25 @@ const VendorFood = () => {
                           <Text
                             className="text-lg font-semibold text-black dark:text-white"
                             style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                            {menu.foodTitle}
+                            {plan.planName}
                           </Text>
                           <Text
                             className="text-base text-black dark:text-white"
                             style={{ fontFamily: 'Poppins_500Medium' }}>
-                            ₹{menu.price}/Meal
+                            ₹{plan.discountedPrice}/month
                           </Text>
                           <View className="mt-1 flex-row items-center">
                             <Text className="text-yellow-500">★</Text>
                             <Text
                               className="ml-1 text-sm text-zinc-500 dark:text-zinc-400"
                               style={{ fontFamily: 'Poppins_400Regular' }}>
-                              {menu.rating.average.toFixed(1)} ({menu.rating.totalReviews} reviews)
+                              4.5 (0 reviews)
                             </Text>
                           </View>
                           <Text
                             className="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
                             style={{ fontFamily: 'Poppins_400Regular' }}>
-                            {menu.description.short}
+                            {plan.description}
                           </Text>
                         </View>
 
@@ -163,7 +160,7 @@ const VendorFood = () => {
                           className="flex-1 rounded-lg border border-zinc-200 bg-white py-2 dark:border-zinc-700 dark:bg-zinc-800"
                           onPress={() => router.push({
                             pathname: '/meal-details',
-                            params: { id: menu._id }
+                            params: { id: plan._id }
                           })}>
                           <Text
                             className="text-center text-sm font-medium text-black dark:text-white"
@@ -174,13 +171,13 @@ const VendorFood = () => {
                         <TouchableOpacity
                           onPress={() => router.push({
                             pathname: '/subscription',
-                            params: { menuId: menu._id }
+                            params: { menuId: plan._id }
                           })}
                           className="flex-1 rounded-lg bg-black py-2 dark:bg-white">
                           <Text
                             className="text-center text-sm font-medium text-white dark:text-black"
                             style={{ fontFamily: 'Poppins_500Medium' }}>
-                            Select Meal
+                            Subscribe Now
                           </Text>
                         </TouchableOpacity>
                       </View>

@@ -30,21 +30,36 @@ export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) =>
   const refreshAddresses = async () => {
     try {
       setLoading(true);
+      console.log('🔄 [ADDRESS_CONTEXT] Refreshing addresses...');
+      
       const response = await addressService.getAllAddresses();
+      console.log('📡 [ADDRESS_CONTEXT] Address service response:', {
+        success: response.success,
+        addressesCount: response.data?.addresses?.length || 0,
+        addresses: response.data?.addresses || []
+      });
       
       if (response.success && response.data?.addresses) {
         const addresses = response.data.addresses.filter((addr: Address) => 
           addr && addr.label && addr.street && addr.city && addr.state
         );
         
+        console.log('✅ [ADDRESS_CONTEXT] Filtered addresses:', {
+          originalCount: response.data.addresses.length,
+          filteredCount: addresses.length,
+          addresses: addresses.map(addr => ({ label: addr.label, isDefault: addr.isDefault }))
+        });
+        
         setSavedAddresses(addresses);
         
         // Set default address
         const foundDefaultAddress = addresses.find((addr: Address) => addr.isDefault);
+        console.log('🎯 [ADDRESS_CONTEXT] Found default address:', foundDefaultAddress?.label || 'none');
         setDefaultAddress(foundDefaultAddress || null);
         
-        // Auto-select default address if no address is currently selected
+        // Auto-select default address logic
         if (!selectedAddress) {
+          // No address currently selected, auto-select default or first
           if (foundDefaultAddress) {
             setSelectedAddress(foundDefaultAddress);
             await persistSelectedAddress(foundDefaultAddress);
@@ -52,6 +67,27 @@ export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) =>
             // If no default, use first address
             setSelectedAddress(addresses[0]);
             await persistSelectedAddress(addresses[0]);
+          }
+        } else {
+          // Check if currently selected address still exists in saved addresses
+          const selectedStillExists = addresses.find(addr => 
+            addr.label === selectedAddress.label && 
+            addr.street === selectedAddress.street
+          );
+          
+          if (!selectedStillExists) {
+            // Selected address no longer exists, auto-select default or first
+            if (foundDefaultAddress) {
+              setSelectedAddress(foundDefaultAddress);
+              await persistSelectedAddress(foundDefaultAddress);
+            } else if (addresses.length > 0) {
+              setSelectedAddress(addresses[0]);
+              await persistSelectedAddress(addresses[0]);
+            } else {
+              // No addresses available
+              setSelectedAddress(null);
+              await persistSelectedAddress(null);
+            }
           }
         }
       } else {
@@ -131,8 +167,12 @@ export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) =>
   };
 
   useEffect(() => {
-    loadPersistedAddress();
-    refreshAddresses();
+    const initializeAddresses = async () => {
+      await loadPersistedAddress();
+      await refreshAddresses();
+    };
+    
+    initializeAddresses();
   }, []);
 
   const value: AddressContextType = {

@@ -22,6 +22,15 @@ const Header = () => {
   } = useDefaultAddress();
   const [showAddressModal, setShowAddressModal] = useState(false);
 
+  // Debug logging
+  console.log('🏠 [HEADER] Address state:', {
+    selectedAddress: selectedAddress?.label || 'null',
+    defaultAddress: defaultAddress?.label || 'null',
+    savedAddressesCount: savedAddresses.length,
+    hasAddresses: hasAddresses(),
+    loading
+  });
+
   const currentLocation = getFormattedAddress() === 'No address selected' 
     ? (hasAddresses() ? 'Select Address' : 'Add Address')
     : getFormattedAddress();

@@ -58,24 +58,51 @@ interface UserSubscription {
 
 interface Order {
   _id: string;
-  subscriptionId: string;
-  menuId: string;
-  vendorId: string;
+  orderNumber: string;
   userId: string;
-  orderDate: string;
-  deliveryTime: string;
-  status: 'pending' | 'confirmed' | 'prepared' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'skipped';
-  mealType: 'lunch' | 'dinner';
-  menu?: {
-    name: string;
-    description: string;
-    image: string;
-    isVegetarian: boolean;
+  userSubscriptionId?: {
+    _id: string;
+    subscriptionId?: {
+      _id: string;
+      planName: string;
+      category: string;
+    };
+    mealTiming: any;
+    skipCreditAvailable: number;
   };
-  skipCount?: string;
-  canSkip: boolean;
-  canCancel: boolean;
+  selectedMenus?: Array<{
+    _id: string;
+    foodTitle: string;
+    foodImage?: string;
+    price: number;
+  }>;
+  vendorDetails?: {
+    vendorId: {
+      _id: string;
+      businessInfo?: {
+        businessName: string;
+      };
+    };
+  };
+  deliveryDate: string;
+  deliveryTime: string;
+  mealType: 'lunch' | 'dinner';
+  status: 'upcoming' | 'preparing' | 'out_for_delivery' | 'delivered' | 'skipped' | 'cancelled';
+  specialInstructions?: string;
+  skipDetails?: {
+    skipReason?: string;
+    isSkipped?: boolean;
+  };
+  cancellationDetails?: {
+    cancelReason?: string;
+    isCancelled?: boolean;
+  };
+  deliveryConfirmation?: {
+    deliveryNotes?: string;
+    deliveredAt?: string;
+  };
   createdAt: string;
+  updatedAt: string;
 }
 
 interface SubscriptionCardProps {
@@ -135,7 +162,7 @@ const Subscription = () => {
             const ordersResponse = await orderService.getUserOrders({
               page: 1,
               limit: 100, // Get more orders
-              days: 90    // Get orders from last 90 days
+              days: 30    // Get orders from last 30 days (API limit)
             });
             console.log('📡 [SUBSCRIPTION_TAB] Orders response:', ordersResponse);
             
@@ -202,23 +229,30 @@ const Subscription = () => {
   const handleSkipOrder = async (orderId: string) => {
     Alert.alert(
       'Skip Order',
-      'Are you sure you want to skip this order?',
+      'Are you sure you want to skip this order? This will use one of your skip credits.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Skip',
           style: 'destructive',
           onPress: async () => {
+            console.log('🔄 [SUBSCRIPTION_TAB] Skipping order:', orderId);
             try {
-              const response = await orderService.skipOrder(orderId, 'User requested skip');
+              const response = await orderService.skipOrder(orderId, 'User requested skip from subscription tab');
+              console.log('📡 [SUBSCRIPTION_TAB] Skip order response:', response);
+              
               if (response.success) {
-                Alert.alert('Success', 'Order skipped successfully');
-                fetchData();
+                Alert.alert(
+                  'Order Skipped', 
+                  'Your order has been skipped successfully. A skip credit has been used.',
+                  [{ text: 'OK', onPress: () => fetchData() }]
+                );
               } else {
-                Alert.alert('Error', response.message || 'Failed to skip order');
+                Alert.alert('Skip Failed', response.message || 'Failed to skip order. Please try again.');
               }
             } catch (error) {
-              Alert.alert('Error', 'Failed to skip order');
+              console.error('❌ [SUBSCRIPTION_TAB] Skip order error:', error);
+              Alert.alert('Error', 'Failed to skip order. Please check your connection and try again.');
             }
           },
         },
@@ -229,23 +263,30 @@ const Subscription = () => {
   const handleCancelOrder = async (orderId: string) => {
     Alert.alert(
       'Cancel Order',
-      'Are you sure you want to cancel this order? This action cannot be undone.',
+      'Are you sure you want to cancel this order? This action cannot be undone and you may not receive a refund.',
       [
         { text: 'No', style: 'cancel' },
         {
           text: 'Yes, Cancel',
           style: 'destructive',
           onPress: async () => {
+            console.log('❌ [SUBSCRIPTION_TAB] Cancelling order:', orderId);
             try {
-              const response = await orderService.cancelOrder(orderId, 'User requested cancellation');
+              const response = await orderService.cancelOrder(orderId, 'User requested cancellation from subscription tab');
+              console.log('📡 [SUBSCRIPTION_TAB] Cancel order response:', response);
+              
               if (response.success) {
-                Alert.alert('Success', 'Order cancelled successfully');
-                fetchData();
+                Alert.alert(
+                  'Order Cancelled', 
+                  'Your order has been cancelled successfully.',
+                  [{ text: 'OK', onPress: () => fetchData() }]
+                );
               } else {
-                Alert.alert('Error', response.message || 'Failed to cancel order');
+                Alert.alert('Cancellation Failed', response.message || 'Failed to cancel order. Please try again.');
               }
             } catch (error) {
-              Alert.alert('Error', 'Failed to cancel order');
+              console.error('❌ [SUBSCRIPTION_TAB] Cancel order error:', error);
+              Alert.alert('Error', 'Failed to cancel order. Please check your connection and try again.');
             }
           },
         },
@@ -299,24 +340,26 @@ const Subscription = () => {
       const ordersResponse = await orderService.getUserOrders({
         page: 1,
         limit: 100,
-        days: 90
+        days: 30
       });
       
       if (ordersResponse.success && ordersResponse.data) {
         const allOrders = ordersResponse.data.orders || [];
         console.log('📦 [SUBSCRIPTION_TAB] All orders for filtering:', allOrders.length);
         
-        // Filter orders by the selected subscription with multiple field checks
+        // Filter orders by the selected subscription using correct property names
         const filteredOrders = allOrders.filter(order => {
-          const matches = order.subscriptionId === subscriptionId || 
-                         order.subscription?._id === subscriptionId ||
-                         order.userSubscriptionId === subscriptionId ||
-                         order.userSubscription?._id === subscriptionId ||
-                         order.subscription === subscriptionId;
+          // Debug logging for each order
+          const userSubId = order.userSubscriptionId?._id;
+          console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}:`, {
+            userSubscriptionId: userSubId || 'undefined',
+            selectedId: subscriptionId
+          });
           
-          if (matches) {
-            console.log('✅ [SUBSCRIPTION_TAB] Order matches subscription:', order._id);
-          }
+          // Use the correct property from backend response
+          const matches = userSubId === subscriptionId;
+          
+          console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}: userSubscriptionId=${userSubId || 'undefined'}, selectedId=${subscriptionId}, match=${matches}`);
           
           return matches;
         });
@@ -345,21 +388,41 @@ const Subscription = () => {
   };
 
   const handleSwitchVendor = (subscriptionId: string) => {
-    Alert.alert(
-      'Switch Vendor',
-      'Do you want to switch between vendor food and home chef for this subscription?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Switch to Home Chef',
-          onPress: () => requestVendorSwitch(subscriptionId, 'home_chef')
-        },
-        {
-          text: 'Switch to Vendor Food', 
-          onPress: () => requestVendorSwitch(subscriptionId, 'food_vendor')
-        }
-      ]
-    );
+    // Find the subscription to get its current category
+    const subscription = subscriptions.find(sub => sub._id === subscriptionId);
+    if (!subscription) {
+      Alert.alert('Error', 'Subscription not found');
+      return;
+    }
+
+    const currentCategory = subscription.subscriptionId.category;
+    
+    // Simple switching based on current category
+    if (currentCategory === 'home_chef') {
+      Alert.alert(
+        'Switch Home Chef',
+        'Do you want to switch to a different home chef for your subscription?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Switch Home Chef', onPress: () => requestVendorSwitch(subscriptionId, 'home_chef') }
+        ]
+      );
+    } else if (currentCategory === 'food_vendor') {
+      Alert.alert(
+        'Switch Vendor',
+        'Do you want to switch to a different vendor for your subscription?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Switch Vendor', onPress: () => requestVendorSwitch(subscriptionId, 'food_vendor') }
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Switch Not Available',
+        'Switching is not available for this subscription type.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    }
   };
 
   const requestVendorSwitch = async (subscriptionId: string, targetCategory: string) => {
@@ -422,11 +485,14 @@ const Subscription = () => {
     pastItems: pastSubscriptions
   });
   
-  // Filter orders by selected subscription
+  // Filter orders by selected subscription using correct backend property
   const subscriptionOrders = selectedSubscriptionId 
     ? orders.filter(order => {
-        console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}: subscriptionId=${order.subscriptionId}, selectedId=${selectedSubscriptionId}, match=${order.subscriptionId === selectedSubscriptionId}`);
-        return order.subscriptionId === selectedSubscriptionId;
+        const userSubId = order.userSubscriptionId?._id;
+        const matches = userSubId === selectedSubscriptionId;
+        
+        console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}: userSubscriptionId=${userSubId || 'undefined'}, selectedId=${selectedSubscriptionId}, match=${matches}`);
+        return matches;
       })
     : orders;
     
@@ -438,7 +504,7 @@ const Subscription = () => {
   });
     
   const upcomingOrders = subscriptionOrders.filter(order => {
-    const isUpcoming = ['pending', 'confirmed', 'prepared', 'out_for_delivery'].includes(order.status);
+    const isUpcoming = ['upcoming', 'preparing', 'out_for_delivery'].includes(order.status);
     console.log(`🔍 [SUBSCRIPTION_TAB] Order ${order._id} status: ${order.status}, isUpcoming: ${isUpcoming}`);
     return isUpcoming;
   });
@@ -590,116 +656,183 @@ const Subscription = () => {
     </View>
   );
 
-  const OrderCard: React.FC<OrderCardProps> = ({ order, isUpcoming = false, onSkip, onCancel, onReview }) => (
-    <View className="mb-6 rounded-md bg-white shadow-sm dark:bg-neutral-800">
-      <View className="flex-row overflow-hidden ">
-        {/* Meal Image - Full Height */}
-        <View className="mr-2">
-          <Image 
-            source={order.menu?.image ? { uri: order.menu.image } : require('@/assets/category-2.png')} 
-            className="h-52 w-36 rounded-lg" 
-            resizeMode="cover" 
-          />
+  const OrderCard: React.FC<OrderCardProps> = ({ order, isUpcoming = false, onSkip, onCancel, onReview }) => {
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric'
+      });
+    };
+
+    const formatTime = (timeString: string) => {
+      // Handle both "HH:MM" format and full datetime
+      if (timeString.includes(':') && timeString.length <= 5) {
+        return timeString;
+      }
+      return new Date(timeString).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    };
+
+    const getStatusColor = () => {
+      switch (order.status) {
+        case 'upcoming': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+        case 'preparing': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+        case 'out_for_delivery': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+        case 'delivered': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        case 'skipped': return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+        default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+      }
+    };
+
+    return (
+      <View className="mb-4 overflow-hidden rounded-2xl bg-white shadow-lg dark:bg-neutral-800" 
+            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+        
+        {/* Order Header */}
+        <View className="flex-row items-center justify-between px-4 pt-4 pb-2">
+          <View className="flex-row items-center">
+            <View className="mr-3 h-3 w-3 rounded-full bg-blue-500" />
+            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Poppins_500Medium' }}>
+              Order #{order.orderNumber?.slice(-4) || order._id.slice(-4)}
+            </Text>
+          </View>
+          <View className={`rounded-full px-3 py-1 ${getStatusColor()}`}>
+            <Text className="text-xs font-semibold capitalize" style={{ fontFamily: 'Poppins_600SemiBold' }}>
+              {order.status.replace('_', ' ')}
+            </Text>
+          </View>
         </View>
 
-        {/* Meal Details */}
-        <View className="flex-1 p-2">
-          <View className=" flex-row items-center justify-between">
+        <View className="flex-row px-4 pb-4">
+          {/* Meal Image - Responsive */}
+          <View className="mr-4">
+            <View className="overflow-hidden rounded-xl">
+              <Image 
+                source={order.selectedMenus?.[0]?.foodImage ? { uri: order.selectedMenus[0].foodImage } : require('@/assets/category-2.png')} 
+                className="h-24 w-24" 
+                style={{ aspectRatio: 1 }}
+                resizeMode="cover"
+              />
+            </View>
+          </View>
+
+          {/* Meal Details - Flexible */}
+          <View className="flex-1">
+            {/* Meal Title */}
             <Text
-              className="mb-1 flex-1 text-xl font-semibold text-black dark:text-white"
-              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              {order.menu?.name || 'Meal'}
+              className="mb-2 text-lg font-bold text-black dark:text-white"
+              style={{ fontFamily: 'Poppins_700Bold' }}
+              numberOfLines={2}>
+              {order.selectedMenus?.[0]?.foodTitle || 'Delicious Meal'}
             </Text>
-            {order.menu?.isVegetarian && (
-              <View className="mb-4 rounded-md border border-lime-500 bg-lime-50 px-2 py-1 dark:bg-lime-900/20">
+
+            {/* Meal Type Badge */}
+            <View className="mb-2 self-start rounded-lg bg-amber-50 px-3 py-1 dark:bg-amber-900/20">
+              <Text
+                className="text-xs font-semibold text-amber-700 dark:text-amber-400"
+                style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                {order.mealType?.toUpperCase() || 'MEAL'}
+              </Text>
+            </View>
+
+            {/* Date and Time */}
+            <View className="flex-row items-center">
+              <Feather
+                name="calendar"
+                size={14}
+                color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+              />
+              <Text
+                className="ml-1.5 text-sm text-gray-600 dark:text-gray-300"
+                style={{ fontFamily: 'Poppins_500Medium' }}>
+                {formatDate(order.deliveryDate)}
+              </Text>
+              <View className="mx-2 h-1 w-1 rounded-full bg-gray-400" />
+              <Feather
+                name="clock"
+                size={14}
+                color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+              />
+              <Text
+                className="ml-1.5 text-sm text-gray-600 dark:text-gray-300"
+                style={{ fontFamily: 'Poppins_500Medium' }}>
+                {formatTime(order.deliveryTime)}
+              </Text>
+            </View>
+
+            {/* Price Display (if available) */}
+            {order.selectedMenus?.[0]?.price && (
+              <View className="mt-1 flex-row items-center">
+                <Feather
+                  name="tag"
+                  size={14}
+                  color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+                />
                 <Text
-                  className="mb-1 text-xs font-medium text-lime-700 dark:text-lime-400"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  VEG
+                  className="ml-1.5 text-sm font-semibold text-green-600 dark:text-green-400"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  ₹{order.selectedMenus[0].price}
                 </Text>
               </View>
             )}
           </View>
-
-          <Text
-            className="mb-4 text-sm text-gray-600 dark:text-gray-300"
-            style={{ fontFamily: 'Poppins_400Regular' }}>
-            {order.menu?.description || 'No description available'}
-          </Text>
-
-          <View className="mb-4 flex-row items-center justify-between">
-            <View className="flex-row items-center">
-              <Feather
-                name="clock"
-                size={16}
-                color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-              />
-              <Text
-                className="ml-2 text-sm font-semibold text-gray-600 dark:text-gray-300"
-                style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                {order.mealType.toUpperCase()} • {new Date(order.deliveryDate).toLocaleDateString()} at {order.deliveryTime}
-              </Text>
-            </View>
-
-            {isUpcoming && (
-              <TouchableOpacity className="flex-row items-center">
-                <Feather
-                  name="refresh-cw"
-                  size={16}
-                  color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
-                />
-                <Text
-                  className="ml-2 text-sm font-semibold text-gray-600 dark:text-gray-300"
-                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                  Switch
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Action Buttons */}
-          {isUpcoming ? (
-            <View className="flex-row gap-3">
-              {order.canCancel && (
-                <TouchableOpacity 
-                  className="flex-1 rounded-lg bg-red-500 py-4"
-                  onPress={() => onCancel(order._id)}>
-                  <Text
-                    className="text-center text-sm font-medium text-white"
-                    style={{ fontFamily: 'Poppins_500Medium' }}>
-                    Cancel Meal
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {order.canSkip && (
-                <TouchableOpacity 
-                  className="flex-1 rounded-lg bg-black py-4 dark:bg-white"
-                  onPress={() => onSkip(order._id)}>
-                  <Text
-                    className="text-center text-base font-medium text-white dark:text-black"
-                    style={{ fontFamily: 'Poppins_500Medium' }}>
-                    {order.skipCount || 'Skip'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ) : (
-            <View>
-              <TouchableOpacity 
-                className="rounded-lg bg-black py-4 dark:bg-white"
-                onPress={() => onReview(order._id)}>
-                <Text
-                  className="text-center text-base font-medium text-white dark:text-black"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  Review Us
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
+
+        {/* Action Buttons */}
+        {isUpcoming ? (
+          <View className="flex-row border-t border-gray-100 dark:border-neutral-700">
+            <TouchableOpacity 
+              className="flex-1 items-center justify-center border-r border-gray-100 py-4 dark:border-neutral-700"
+              onPress={() => onCancel(order._id)}
+              activeOpacity={0.7}>
+              <View className="flex-row items-center">
+                <Feather name="x-circle" size={16} color="#EF4444" />
+                <Text
+                  className="ml-2 text-sm font-semibold text-red-500"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  Cancel
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              className="flex-1 items-center justify-center py-4"
+              onPress={() => onSkip(order._id)}
+              activeOpacity={0.7}>
+              <View className="flex-row items-center">
+                <Feather name="skip-forward" size={16} color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
+                <Text
+                  className="ml-2 text-sm font-semibold text-black dark:text-white"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  Skip
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View className="border-t border-gray-100 dark:border-neutral-700">
+            <TouchableOpacity 
+              className="w-full items-center justify-center py-4"
+              onPress={() => onReview(order._id)}
+              activeOpacity={0.7}>
+              <View className="flex-row items-center">
+                <Feather name="star" size={16} color="#F59E0B" />
+                <Text
+                  className="ml-2 text-sm font-semibold text-amber-600 dark:text-amber-400"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  Write Review
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -818,37 +951,71 @@ const Subscription = () => {
             <View>
               <Text className="mb-4 text-lg font-semibold text-black dark:text-white">Upcoming Orders</Text>
               {upcomingOrders.length > 0 ? (
-                upcomingOrders.map((order) => (
-                  <OrderCard 
-                    key={order._id} 
-                    order={order} 
-                    isUpcoming={true} 
-                    onSkip={handleSkipOrder}
-                    onCancel={handleCancelOrder}
-                    onReview={handleReviewOrder}
-                  />
-                ))
+                <View className="space-y-4">
+                  {upcomingOrders.map((order) => (
+                    <OrderCard 
+                      key={order._id} 
+                      order={order} 
+                      isUpcoming={true} 
+                      onSkip={handleSkipOrder}
+                      onCancel={handleCancelOrder}
+                      onReview={handleReviewOrder}
+                    />
+                  ))}
+                </View>
               ) : (
-                <View className="py-10 items-center">
-                  <Text className="text-gray-600 dark:text-gray-300">No upcoming orders for this subscription</Text>
+                <View className="items-center py-16">
+                  <View className="mb-4 rounded-full bg-blue-50 p-6 dark:bg-blue-900/20">
+                    <Feather name="calendar" size={32} color={colorScheme === 'dark' ? '#60A5FA' : '#3B82F6'} />
+                  </View>
+                  <Text 
+                    className="mb-2 text-center text-xl font-semibold text-gray-800 dark:text-gray-200"
+                    style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                    No Upcoming Orders
+                  </Text>
+                  <Text 
+                    className="text-center text-sm leading-relaxed text-gray-500 dark:text-gray-400"
+                    style={{ fontFamily: 'Poppins_400Regular', maxWidth: 280 }}>
+                    {orders.length === 0 
+                      ? "Orders will appear here once your subscription generates them. This usually happens 1-2 days after subscription activation."
+                      : "No upcoming orders for this subscription"
+                    }
+                  </Text>
                 </View>
               )}
               
               <Text className="mb-4 mt-6 text-lg font-semibold text-black dark:text-white">Delivered Orders</Text>
               {deliveredOrders.length > 0 ? (
-                deliveredOrders.map((order) => (
-                  <OrderCard 
-                    key={order._id} 
-                    order={order} 
-                    isUpcoming={false} 
-                    onSkip={handleSkipOrder}
-                    onCancel={handleCancelOrder}
-                    onReview={handleReviewOrder}
-                  />
-                ))
+                <View className="space-y-4">
+                  {deliveredOrders.map((order) => (
+                    <OrderCard 
+                      key={order._id} 
+                      order={order} 
+                      isUpcoming={false} 
+                      onSkip={handleSkipOrder}
+                      onCancel={handleCancelOrder}
+                      onReview={handleReviewOrder}
+                    />
+                  ))}
+                </View>
               ) : (
-                <View className="py-10 items-center">
-                  <Text className="text-gray-600 dark:text-gray-300">No delivered orders for this subscription</Text>
+                <View className="items-center py-16">
+                  <View className="mb-4 rounded-full bg-green-50 p-6 dark:bg-green-900/20">
+                    <Feather name="package" size={32} color={colorScheme === 'dark' ? '#10B981' : '#059669'} />
+                  </View>
+                  <Text 
+                    className="mb-2 text-center text-xl font-semibold text-gray-800 dark:text-gray-200"
+                    style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                    No Delivered Orders
+                  </Text>
+                  <Text 
+                    className="text-center text-sm leading-relaxed text-gray-500 dark:text-gray-400"
+                    style={{ fontFamily: 'Poppins_400Regular', maxWidth: 280 }}>
+                    {orders.length === 0 
+                      ? "Your completed orders will appear here"
+                      : "No delivered orders for this subscription yet"
+                    }
+                  </Text>
                 </View>
               )}
             </View>

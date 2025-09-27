@@ -28,7 +28,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "",
       "config": {
-        "googleMapsApiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
+        "googleMapsApiKey": ""
       },
       "associatedDomains": [
         "applinks:tiffix.in"
@@ -49,10 +49,10 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.katareayush2005.tiffixmobile",
+      "package": "com.tiffix.tiffixmobile",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBEJu-eN2KF-gtqYrO2g0OHyH27hzuLeGo"
+          "apiKey": ""
         }
       }
     },
@@ -60,7 +60,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "60300204-dda6-44b1-93e3-dfa41cbaf2ca"
+        "projectId": "12862b1b-d529-4628-bfb2-2bae511fe1dc"
       }
     },
     "updates": {
@@ -69,6 +69,6 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "katareayush2005"
+    "owner": ""
   }
 }

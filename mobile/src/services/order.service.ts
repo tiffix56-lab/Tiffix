@@ -1,6 +1,5 @@
-import { ApiResponse } from './api.service';
+import { ApiResponse, apiService } from './api.service';
 import { API_ENDPOINTS } from '../constants/api';
-import api from '../lib/axios';
 import { 
   RazorpayPurchaseResponse, 
   RazorpayVerificationRequest, 
@@ -9,70 +8,105 @@ import {
 } from '../types/order.types';
 import { SubscriptionPurchaseData } from '../context/PaymentContext';
 
+interface Order {
+  _id: string;
+  orderNumber: string;
+  userId: string;
+  userSubscriptionId?: {
+    _id: string;
+    subscriptionId?: {
+      _id: string;
+      planName: string;
+      category: string;
+    };
+    mealTiming: any;
+    skipCreditAvailable: number;
+  };
+  selectedMenus?: Array<{
+    _id: string;
+    foodTitle: string;
+    foodImage?: string;
+    price: number;
+  }>;
+  vendorDetails?: {
+    vendorId: {
+      _id: string;
+      businessInfo?: {
+        businessName: string;
+      };
+    };
+  };
+  deliveryDate: string;
+  deliveryTime: string;
+  mealType: 'lunch' | 'dinner';
+  status: 'upcoming' | 'preparing' | 'out_for_delivery' | 'delivered' | 'skipped' | 'cancelled';
+  specialInstructions?: string;
+  skipDetails?: {
+    skipReason?: string;
+    isSkipped?: boolean;
+  };
+  cancellationDetails?: {
+    cancelReason?: string;
+    isCancelled?: boolean;
+  };
+  deliveryConfirmation?: {
+    deliveryNotes?: string;
+    deliveredAt?: string;
+    deliveryPhotos?: string[];
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface GetOrdersParams {
+  page?: number;
+  limit?: number; // max 100 as per backend validation
+  status?: 'upcoming' | 'preparing' | 'out_for_delivery' | 'delivered' | 'skipped' | 'cancelled';
+  search?: string; // min 1, max 100 chars
+  startDate?: string; // ISO date string
+  endDate?: string; // ISO date string
+  days?: number; // max 30 as per backend validation
+  vendorId?: string; // MongoDB ObjectId for admin queries
+}
+
+interface OrdersResponse {
+  orders: Order[];
+  pagination?: {
+    current: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 class OrderService {
   async initiateRazorpayPurchase(orderData: SubscriptionPurchaseData): Promise<ApiResponse<RazorpayPurchaseResponse['data']>> {
-    console.log('🚀 Initiating Razorpay purchase with data:', JSON.stringify(orderData, null, 2));
-    console.log('🔗 API Endpoint:', `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/initiate`);
-    
-    const response = await api.post<RazorpayPurchaseResponse['data']>(
+    return await apiService.post<RazorpayPurchaseResponse['data']>(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/initiate`,
       orderData
     );
-    
-    console.log('📡 Razorpay purchase response:', response);
-    return response;
   }
 
   async verifyRazorpayPayment(data: RazorpayVerificationRequest): Promise<ApiResponse<RazorpayVerificationResponse['data']>> {
-    console.log('🔍 Verifying Razorpay payment:', {
-      razorpay_order_id: data.razorpay_order_id,
-      razorpay_payment_id: data.razorpay_payment_id,
-      userSubscriptionId: data.userSubscriptionId
-    });
-
-    const response = await api.post<RazorpayVerificationResponse['data']>(
+    return await apiService.post<RazorpayVerificationResponse['data']>(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/verify-payment`,
       data
     );
-    
-    console.log('✅ Payment verification response:', response);
-    return response;
   }
 
   async checkPaymentStatus(orderId: string): Promise<ApiResponse<PaymentStatusResponse['data']>> {
-    console.log('📊 Checking payment status for orderId:', orderId);
-
-    const response = await api.get<PaymentStatusResponse['data']>(
+    return await apiService.get<PaymentStatusResponse['data']>(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/check-payment-status/${orderId}`
     );
-    
-    console.log('📈 Payment status response:', response);
-    return response;
   }
 
   async getSubscriptionStatus(userSubscriptionId: string): Promise<ApiResponse<any>> {
-    console.log('🔍 Getting subscription status for userSubscriptionId:', userSubscriptionId);
-
-    const response = await api.get(
+    return await apiService.get(
       `${API_ENDPOINTS.SUBSCRIPTION.PURCHASE}/subscription-status/${userSubscriptionId}`
     );
-    
-    console.log('📊 Subscription status response:', response);
-    return response;
   }
 
-  // Get user orders (based on order.http)
-  async getUserOrders(params?: {
-    page?: number;
-    limit?: number;
-    status?: string; // 'upcoming', 'delivered', etc.
-    search?: string;
-    startDate?: string;
-    endDate?: string;
-    days?: number; // Get orders for next N days
-  }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
-    console.log('🚀 [ORDER_SERVICE] Getting user orders with params:', params);
-
+  async getUserOrders(params?: GetOrdersParams): Promise<ApiResponse<OrdersResponse>> {
     try {
       const queryParams = new URLSearchParams();
       
@@ -87,89 +121,143 @@ class OrderService {
       const url = queryParams.toString() 
         ? `${API_ENDPOINTS.ORDERS.MY_ORDERS}?${queryParams.toString()}`
         : API_ENDPOINTS.ORDERS.MY_ORDERS;
-        
-      console.log('🔗 [ORDER_SERVICE] API URL constructed:', url);
       
-      const response = await api.get<{ orders: any[]; pagination?: any }>(url);
+      const response = await apiService.get<any>(url);
       
-      console.log('📡 [ORDER_SERVICE] Orders response:', response);
-      return response;
+      if (response.success && response.data) {
+        // Backend returns: { orders: [...], pagination: {...}, filters: {...} }
+        return {
+          ...response,
+          data: {
+            orders: response.data.orders || [],
+            pagination: response.data.pagination || null
+          }
+        };
+      }
+      
+      return {
+        success: false,
+        message: response.message || 'No orders found',
+        data: { orders: [] }
+      };
+      
     } catch (error) {
-      console.error('❌ [ORDER_SERVICE] Error getting user orders:', error);
-      throw error;
+      console.error('Error getting user orders:', error);
+      
+      return {
+        success: false,
+        message: 'Failed to fetch orders',
+        error: { code: 'FETCH_ERROR' },
+        data: { orders: [] }
+      };
     }
   }
 
-  // Get order by ID
-  async getOrderById(orderId: string): Promise<ApiResponse<{ order: any }>> {
-    console.log('🔍 [ORDER_SERVICE] Getting order by ID:', orderId);
-
+  async getOrderById(orderId: string): Promise<ApiResponse<{ order: Order }>> {
     try {
-      const response = await api.get<{ order: any }>(`${API_ENDPOINTS.ORDERS.GET_BY_ID}/${orderId}`);
-      
-      console.log('📡 [ORDER_SERVICE] Order response:', response);
+      const response = await apiService.get<{ order: Order }>(`${API_ENDPOINTS.ORDERS.GET_BY_ID}/${orderId}`);
       return response;
     } catch (error) {
-      console.error('❌ [ORDER_SERVICE] Error getting order:', error);
+      console.error('Error getting order:', error);
       throw error;
     }
   }
 
-  // Skip order (based on order.http)
   async skipOrder(orderId: string, skipReason?: string): Promise<ApiResponse<{ message: string }>> {
-    console.log('⏭️ [ORDER_SERVICE] Skipping order:', orderId, 'skipReason:', skipReason);
-
     try {
-      const response = await api.post<{ message: string }>(
-        `${API_ENDPOINTS.ORDERS.SKIP}/${orderId}/skip`,
-        { skipReason }
+      const response = await apiService.post<{ message: string }>(
+        `/orders/${orderId}/skip`,
+        { skipReason: skipReason || 'User requested skip' }
       );
       
-      console.log('📡 [ORDER_SERVICE] Skip order response:', response);
-      return response;
+      if (response.success) {
+        return response;
+      } else {
+        return {
+          success: false,
+          message: response.message || 'Failed to skip order',
+          error: { code: 'SKIP_ERROR' }
+        };
+      }
     } catch (error) {
-      console.error('❌ [ORDER_SERVICE] Error skipping order:', error);
-      throw error;
+      if (error instanceof Error && error.message.includes('422')) {
+        return {
+          success: false,
+          message: 'Cannot skip this order. It may be too close to delivery time.',
+          error: { code: 'VALIDATION_ERROR' }
+        };
+      }
+      
+      if (error instanceof Error && error.message.includes('404')) {
+        return {
+          success: false,
+          message: 'Order not found or already processed.',
+          error: { code: 'NOT_FOUND' }
+        };
+      }
+      
+      return {
+        success: false,
+        message: 'Failed to skip order. Please try again.',
+        error: { code: 'UNKNOWN_ERROR' }
+      };
     }
   }
 
-  // Cancel order (based on order.http)
   async cancelOrder(orderId: string, cancelReason?: string): Promise<ApiResponse<{ message: string }>> {
-    console.log('❌ [ORDER_SERVICE] Cancelling order:', orderId, 'cancelReason:', cancelReason);
-
     try {
-      const response = await api.post<{ message: string }>(
-        `${API_ENDPOINTS.ORDERS.CANCEL}/${orderId}/cancel`,
-        { cancelReason }
+      const response = await apiService.post<{ message: string }>(
+        `/orders/${orderId}/cancel`,
+        { cancelReason: cancelReason || 'User requested cancellation' }
       );
       
-      console.log('📡 [ORDER_SERVICE] Cancel order response:', response);
-      return response;
+      if (response.success) {
+        return response;
+      } else {
+        return {
+          success: false,
+          message: response.message || 'Failed to cancel order',
+          error: { code: 'CANCEL_ERROR' }
+        };
+      }
     } catch (error) {
-      console.error('❌ [ORDER_SERVICE] Error cancelling order:', error);
-      throw error;
+      if (error instanceof Error && error.message.includes('422')) {
+        return {
+          success: false,
+          message: 'Cannot cancel this order. It may be too close to delivery time or already processed.',
+          error: { code: 'VALIDATION_ERROR' }
+        };
+      }
+      
+      if (error instanceof Error && error.message.includes('404')) {
+        return {
+          success: false,
+          message: 'Order not found or already processed.',
+          error: { code: 'NOT_FOUND' }
+        };
+      }
+      
+      return {
+        success: false,
+        message: 'Failed to cancel order. Please try again.',
+        error: { code: 'UNKNOWN_ERROR' }
+      };
     }
   }
 
-  // Convenience methods for common use cases
-
-  // Get upcoming orders (common filter)
-  async getUpcomingOrders(params?: { page?: number; limit?: number }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+  async getUpcomingOrders(params?: { page?: number; limit?: number }): Promise<ApiResponse<OrdersResponse>> {
     return this.getUserOrders({ ...params, status: 'upcoming' });
   }
 
-  // Get delivered orders (common filter)
-  async getDeliveredOrders(params?: { page?: number; limit?: number }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+  async getDeliveredOrders(params?: { page?: number; limit?: number }): Promise<ApiResponse<OrdersResponse>> {
     return this.getUserOrders({ ...params, status: 'delivered' });
   }
 
-  // Get next 7 days orders (common filter)
-  async getNext7DaysOrders(): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+  async getNext7DaysOrders(): Promise<ApiResponse<OrdersResponse>> {
     return this.getUserOrders({ days: 7 });
   }
 
-  // Search orders by text
-  async searchOrders(searchText: string, params?: { page?: number; limit?: number }): Promise<ApiResponse<{ orders: any[]; pagination?: any }>> {
+  async searchOrders(searchText: string, params?: { page?: number; limit?: number }): Promise<ApiResponse<OrdersResponse>> {
     return this.getUserOrders({ ...params, search: searchText });
   }
 }
