@@ -15,6 +15,7 @@ import UserSubscription from '../../models/userSubscription.model.js'
 import VendorProfile from '../../models/vendorProfile.model.js'
 import LocationZone from '../../models/locationZone.model.js'
 import TimezoneUtil from '../../util/timezone.js'
+import { ESubscriptionStatus } from '../../constant/application.js'
 
 export default {
     // Get all pending vendor assignment requests (both initial and switches)
@@ -302,6 +303,12 @@ export default {
                 return httpError(next, new Error('Request has already been processed'), req, 400)
             }
 
+            if (request.userSubscriptionId.status !== ESubscriptionStatus.ACTIVE) {
+                request.status = "rejected";
+                await request.save();
+                return httpError(next, new Error('Subscription is not active'), req, 400);
+            }
+
             // Validate vendor exists and is available
             const vendor = await VendorProfile.findById(vendorId)
             if (!vendor) {
@@ -385,16 +392,28 @@ export default {
             const { priority } = req.body
 
             const request = await VendorAssignmentRequest.findById(requestId)
+                .populate('userSubscriptionId');
 
             if (!request) {
-                return httpError(next, new Error('Assignment request not found'), req, 404)
+                return httpError(next, new Error('Assignment request not found'), req, 404);
+            }
+
+            // Check if userSubscriptionId is populated and valid
+            if (!request.userSubscriptionId) {
+                return httpError(next, new Error('Associated subscription not found'), req, 404);
+            }
+
+            // Check subscription status
+            if (request.userSubscriptionId.status !== ESubscriptionStatus.ACTIVE) {
+                return httpError(next, new Error('Associated subscription is not active'), req, 400);
             }
 
             if (request.status !== 'pending') {
-                return httpError(next, new Error('Cannot update priority of processed request'), req, 400)
+                return httpError(next, new Error('Cannot update priority of processed request'), req, 400);
             }
 
-            await request.updatePriority(priority)
+            await request.updatePriority(priority);
+
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 message: 'Priority updated successfully',
