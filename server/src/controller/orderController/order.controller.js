@@ -225,7 +225,6 @@ export default {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
 
-            // Check if order can be cancelled (2 hours before delivery )
             const now = TimezoneUtil.now();
             const deliveryDateTime = TimezoneUtil.parseTimeString(order.deliveryTime, order.deliveryDate);
             const timeDifference = deliveryDateTime.getTime() - now.getTime();
@@ -242,15 +241,14 @@ export default {
             await order.cancelOrder(cancelReason, userId);
 
             const userSubscription = await UserSubscription.findById(order.userSubscriptionId);
-            if (userSubscription.canUseCredits(1)) {
-                await userSubscription.useCredits(1);
-            }
+            userSubscription.creditsUsed += 1;
+            await userSubscription.save();
 
             const updatedOrder = await Order.findById(orderId).populate('selectedMenus', 'foodTitle');
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 order: updatedOrder,
-                message: `${order.mealType} order cancelled. Credits have been deducted (no refund).`
+                message: `${order.mealType} order cancelled. Credit has been used.`
             });
 
         } catch (err) {
@@ -627,6 +625,11 @@ export default {
             }
 
             await order.confirmDelivery(userId, notes, photos);
+
+            // Increment creditsUsed on successful delivery
+            const userSubscription = await UserSubscription.findById(order.userSubscriptionId);
+            userSubscription.creditsUsed += 1;
+            await userSubscription.save();
 
             const updatedOrder = await Order.findById(orderId)
                 .populate('selectedMenus', 'foodTitle')

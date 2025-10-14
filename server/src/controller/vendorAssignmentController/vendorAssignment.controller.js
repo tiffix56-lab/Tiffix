@@ -565,122 +565,142 @@ export default {
                 endDate,
                 sortBy = 'requestedAt',
                 sortOrder = 'desc'
-            } = req.query
+            } = req.query;
 
-            const skip = (page - 1) * limit
-            const query = {}
+            const skip = (page - 1) * limit;
+            const query = {};
 
-            // Apply filters
-            if (status) query.status = status
-            if (requestType) query.requestType = requestType
-            if (priority) query.priority = priority
-            if (deliveryZone) query.deliveryZone = deliveryZone
+            if (status) query.status = status;
+            if (requestType) query.requestType = requestType;
+            if (priority) query.priority = priority;
+            if (deliveryZone) query.deliveryZone = deliveryZone;
 
-            // Date range filter
             if (startDate || endDate) {
-                query.requestedAt = {}
-                if (startDate) query.requestedAt.$gte = TimezoneUtil.toIST(startDate)
-                if (endDate) query.requestedAt.$lte = TimezoneUtil.endOfDay(endDate)
+                query.requestedAt = {};
+                if (startDate) query.requestedAt.$gte = TimezoneUtil.toIST(startDate);
+                if (endDate) query.requestedAt.$lte = TimezoneUtil.endOfDay(endDate);
             }
 
-            const sortObj = {}
-            sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1
+            const sortObj = {};
+            sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-            let requests;
+            const pipeline = [
+                {
+                    $lookup: {
+                        from: 'usersubscriptions',
+                        localField: 'userSubscriptionId',
+                        foreignField: '_id',
+                        as: 'userSubscription'
+                    }
+                },
+                {
+                    $match: {
+                        'userSubscription.status': 'active',
+                        'userSubscription.endDate': { $gte: TimezoneUtil.now() }
+                    }
+                },
+                { $match: query },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userId',
+                        foreignField: '_id',
+                        as: 'userId'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'usersubscriptions',
+                        localField: 'userSubscriptionId',
+                        foreignField: '_id',
+                        as: 'userSubscriptionId'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'vendorprofiles',
+                        localField: 'currentVendorId',
+                        foreignField: '_id',
+                        as: 'currentVendorId'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'vendorprofiles',
+                        localField: 'newVendorId',
+                        foreignField: '_id',
+                        as: 'newVendorId'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'processedBy',
+                        foreignField: '_id',
+                        as: 'processedBy'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'locationzones',
+                        localField: 'deliveryZone',
+                        foreignField: '_id',
+                        as: 'deliveryZone'
+                    }
+                },
+                {
+                    $addFields: {
+                        userId: { $arrayElemAt: ['$userId', 0] },
+                        userSubscriptionId: { $arrayElemAt: ['$userSubscriptionId', 0] },
+                        currentVendorId: { $arrayElemAt: ['$currentVendorId', 0] },
+                        newVendorId: { $arrayElemAt: ['$newVendorId', 0] },
+                        processedBy: { $arrayElemAt: ['$processedBy', 0] },
+                        deliveryZone: { $arrayElemAt: ['$deliveryZone', 0] }
+                    }
+                }
+            ];
+
             if (search) {
-                requests = await VendorAssignmentRequest.aggregate([
-                    { $match: query },
-                    {
-                        $lookup: {
-                            from: 'users',
-                            localField: 'userId',
-                            foreignField: '_id',
-                            as: 'userId'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'usersubscriptions',
-                            localField: 'userSubscriptionId',
-                            foreignField: '_id',
-                            as: 'userSubscriptionId'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'vendorprofiles',
-                            localField: 'currentVendorId',
-                            foreignField: '_id',
-                            as: 'currentVendorId'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'vendorprofiles',
-                            localField: 'newVendorId',
-                            foreignField: '_id',
-                            as: 'newVendorId'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'users',
-                            localField: 'processedBy',
-                            foreignField: '_id',
-                            as: 'processedBy'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'locationzones',
-                            localField: 'deliveryZone',
-                            foreignField: '_id',
-                            as: 'deliveryZone'
-                        }
-                    },
-                    {
-                        $match: {
-                            $or: [
-                                { description: { $regex: search, $options: 'i' } },
-                                { adminNotes: { $regex: search, $options: 'i' } },
-                                { rejectionReason: { $regex: search, $options: 'i' } },
-                                { 'userId.name': { $regex: search, $options: 'i' } },
-                                { 'userId.emailAddress': { $regex: search, $options: 'i' } },
-                                { 'currentVendorId.businessInfo.businessName': { $regex: search, $options: 'i' } },
-                                { 'newVendorId.businessInfo.businessName': { $regex: search, $options: 'i' } },
-                                { 'processedBy.name': { $regex: search, $options: 'i' } }
-                            ]
-                        }
-                    },
-                    {
-                        $addFields: {
-                            userId: { $arrayElemAt: ['$userId', 0] },
-                            userSubscriptionId: { $arrayElemAt: ['$userSubscriptionId', 0] },
-                            currentVendorId: { $arrayElemAt: ['$currentVendorId', 0] },
-                            newVendorId: { $arrayElemAt: ['$newVendorId', 0] },
-                            processedBy: { $arrayElemAt: ['$processedBy', 0] },
-                            deliveryZone: { $arrayElemAt: ['$deliveryZone', 0] }
-                        }
-                    },
-                    { $sort: sortObj },
-                    { $skip: skip },
-                    { $limit: Number(limit) }
-                ])
-            } else {
-                requests = await VendorAssignmentRequest.find(query)
-                    .populate('userId', 'name emailAddress phoneNumber')
-                    .populate('userSubscriptionId', 'startDate endDate')
-                    .populate('currentVendorId', 'businessInfo')
-                    .populate('newVendorId', 'businessInfo')
-                    .populate('processedBy', 'name')
-                    .populate('deliveryZone', 'zoneName city')
-                    .sort(sortObj)
-                    .skip(skip)
-                    .limit(Number(limit))
+                pipeline.push({
+                    $match: {
+                        $or: [
+                            { description: { $regex: search, $options: 'i' } },
+                            { adminNotes: { $regex: search, $options: 'i' } },
+                            { rejectionReason: { $regex: search, $options: 'i' } },
+                            { 'userId.name': { $regex: search, $options: 'i' } },
+                            { 'userId.emailAddress': { $regex: search, $options: 'i' } },
+                            { 'currentVendorId.businessInfo.businessName': { $regex: search, $options: 'i' } },
+                            { 'newVendorId.businessInfo.businessName': { $regex: search, $options: 'i' } },
+                            { 'processedBy.name': { $regex: search, $options: 'i' } }
+                        ]
+                    }
+                });
             }
 
-            const totalRequests = await VendorAssignmentRequest.countDocuments(query)
-            const totalPages = Math.ceil(totalRequests / limit)
+            const dataPipeline = [...pipeline, { $sort: sortObj }, { $skip: skip }, { $limit: Number(limit) }];
+            const requests = await VendorAssignmentRequest.aggregate(dataPipeline);
+
+            const countPipeline = [
+                {
+                    $lookup: {
+                        from: 'usersubscriptions',
+                        localField: 'userSubscriptionId',
+                        foreignField: '_id',
+                        as: 'userSubscription'
+                    }
+                },
+                {
+                    $match: {
+                        'userSubscription.status': 'active',
+                        'userSubscription.endDate': { $gte: TimezoneUtil.now() }
+                    }
+                },
+                { $match: query },
+                { $count: 'total' }
+            ];
+            const countResult = await VendorAssignmentRequest.aggregate(countPipeline);
+            const totalRequests = countResult.length > 0 ? countResult[0].total : 0;
+            const totalPages = Math.ceil(totalRequests / limit);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 requests,
@@ -700,11 +720,10 @@ export default {
                     startDate,
                     endDate
                 }
-            })
-
+            });
         } catch (error) {
             const errorMessage = error.message || 'Internal server error while fetching all requests';
-            httpError(next, new Error(errorMessage), req, 500)
+            httpError(next, new Error(errorMessage), req, 500);
         }
     }
 }

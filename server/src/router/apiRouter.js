@@ -25,6 +25,7 @@ import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
 import passport from '../config/passport.js'
 import { EUserRole } from '../constant/application.js'
+import contactController from '../controller/contactController/contact.controller.js'
 
 const router = Router()
 
@@ -317,5 +318,16 @@ router.route('/complains/phone').get(complainController.getComplainsByPhoneNumbe
 router.route('/admin/complains').get(authentication, authorization([EUserRole.ADMIN]), complainController.getAllComplains)
 router.route('/admin/complains/:complainId').put(authentication, authorization([EUserRole.ADMIN]), complainController.updateComplain)
 router.route('/admin/complains/:complainId').delete(authentication, authorization([EUserRole.ADMIN]), complainController.deleteComplain)
+
+
+
+// ############### CONTACT ROUTES ####################
+// Public/User contact routes
+router.route('/contacts').post(contactController.createContact)
+
+// Admin contact routes
+router.route('/admin/contacts').get(authentication, authorization([EUserRole.ADMIN]), contactController.getAllContacts)
+router.route('/admin/contacts/:contactId').put(authentication, authorization([EUserRole.ADMIN]), contactController.updateContact)
+router.route('/admin/contacts/:contactId').delete(authentication, authorization([EUserRole.ADMIN]), contactController.deleteContact)
 
 export default router
