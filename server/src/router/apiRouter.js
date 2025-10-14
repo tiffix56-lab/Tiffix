@@ -19,6 +19,7 @@ import orderController from '../controller/orderController/order.controller.js'
 import reviewController from '../controller/reviewController/review.controller.js'
 import adminController from '../controller/AdminController/admin.controller.js'
 import mapsController from '../controller/mapsController/maps.controller.js'
+import complainController from '../controller/complainController/complain.controller.js'
 import { uploadFiles } from '../middleware/multerHandler.js'
 import authentication from '../middleware/authentication.js'
 import authorization from '../middleware/authorization.js'
@@ -305,5 +306,16 @@ router.route('/maps/reverse-geocode').post(authentication, mapsController.revers
 router.route('/maps/place-details').post(authentication, mapsController.placeDetails)
 router.route('/maps/session-token').get(authentication, mapsController.generateSessionToken)
 router.route('/maps/test-connection').get(authentication, authorization([EUserRole.ADMIN]), mapsController.testConnection)
+
+// ############### COMPLAIN ROUTES ####################
+// Public/User complain routes
+router.route('/complains').post(complainController.createComplain)
+router.route('/complains/:complainId').get(complainController.getComplainById)
+router.route('/complains/phone').get(complainController.getComplainsByPhoneNumber)
+
+// Admin complain routes
+router.route('/admin/complains').get(authentication, authorization([EUserRole.ADMIN]), complainController.getAllComplains)
+router.route('/admin/complains/:complainId').put(authentication, authorization([EUserRole.ADMIN]), complainController.updateComplain)
+router.route('/admin/complains/:complainId').delete(authentication, authorization([EUserRole.ADMIN]), complainController.deleteComplain)
 
 export default router
