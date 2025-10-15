@@ -4,7 +4,7 @@ import httpError from '../../util/httpError.js';
 import { validateJoiSchema, ValidateCreateSubscription, ValidateUpdateSubscription, ValidateSubscriptionQuery } from '../../service/validationService.js';
 import Subscription from '../../models/subscription.model.js';
 import UserSubscription from '../../models/userSubscription.model.js';
-import reviewModel, { EReviewStatus, EReviewType } from '../../models/review.model.js';
+import Review, { EReviewStatus, EReviewType } from '../../models/review.model.js';
 
 export default {
     // Public methods for users to view available subscriptions
