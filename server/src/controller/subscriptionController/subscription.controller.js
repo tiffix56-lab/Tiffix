@@ -4,6 +4,7 @@ import httpError from '../../util/httpError.js';
 import { validateJoiSchema, ValidateCreateSubscription, ValidateUpdateSubscription, ValidateSubscriptionQuery } from '../../service/validationService.js';
 import Subscription from '../../models/subscription.model.js';
 import UserSubscription from '../../models/userSubscription.model.js';
+import reviewModel, { EReviewStatus, EReviewType } from '../../models/review.model.js';
 
 export default {
     // Public methods for users to view available subscriptions
@@ -36,11 +37,46 @@ export default {
                 .skip(skip)
                 .limit(Number(limit));
 
+            const subscriptionIds = subscriptions.map(s => s._id);
+            const reviewStats = await Review.aggregate([
+                {
+                    $match: {
+                        subscriptionId: { $in: subscriptionIds },
+                        reviewType: EReviewType.SUBSCRIPTION,
+                        status: EReviewStatus.ACTIVE
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$subscriptionId',
+                        avgRating: { $avg: '$rating' },
+                        totalReviews: { $sum: 1 }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        subscriptionId: '$_id',
+                        avgRating: { $round: ['$avgRating', 1] },
+                        totalReviews: 1
+                    }
+                }
+            ]);
+
+            const subscriptionsWithReviews = subscriptions.map(sub => {
+                const stats = reviewStats.find(r => r.subscriptionId.toString() === sub._id.toString());
+                return {
+                    ...sub.toObject(),
+                    avgRating: stats?.avgRating || 0,
+                    totalReviews: stats?.totalReviews || 0
+                };
+            });
+
             const totalSubscriptions = await Subscription.countDocuments(query);
             const totalPages = Math.ceil(totalSubscriptions / limit);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                subscriptions,
+                subscriptions: subscriptionsWithReviews,
                 pagination: {
                     currentPage: Number(page),
                     totalPages,
@@ -69,8 +105,22 @@ export default {
                 return httpError(next, new Error('Subscription not found or inactive'), req, 404);
             }
 
+            const reviewStats = await Review.getAverageRating(subscriptionId, EReviewType.SUBSCRIPTION);
+            const stats = reviewStats[0] || { averageRating: 0, totalReviews: 0 };
+
+            const recentReviews = await Review.findForSubscription(subscriptionId, {
+                status: EReviewStatus.ACTIVE,
+                limit: 5,
+                sortBy: 'createdAt'
+            });
+
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                subscription
+                subscription: {
+                    ...subscription.toObject(),
+                    avgRating: stats.averageRating,
+                    totalReviews: stats.totalReviews,
+                    recentReviews
+                }
             });
 
         } catch (error) {
@@ -181,11 +231,53 @@ export default {
                 .skip(skip)
                 .limit(Number(limit));
 
+            const subscriptionIds = subscriptions.map(s => s._id);
+            const reviewStats = await Review.aggregate([
+                {
+                    $match: {
+                        subscriptionId: { $in: subscriptionIds },
+                        reviewType: EReviewType.SUBSCRIPTION,
+                        status: EReviewStatus.ACTIVE
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$subscriptionId',
+                        avgRating: { $avg: '$rating' },
+                        totalReviews: { $sum: 1 }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'subscriptions',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'subscription'
+                    }
+                },
+                {
+                    $project: {
+                        subscriptionId: '$_id',
+                        avgRating: { $round: ['$avgRating', 1] },
+                        totalReviews: 1
+                    }
+                }
+            ]);
+
+            const subscriptionsWithReviews = subscriptions.map(sub => {
+                const stats = reviewStats.find(r => r.subscriptionId.toString() === sub._id.toString());
+                return {
+                    ...sub.toObject(),
+                    avgRating: stats?.avgRating || 0,
+                    totalReviews: stats?.totalReviews || 0
+                };
+            });
+
             const totalSubscriptions = await Subscription.countDocuments(query);
             const totalPages = Math.ceil(totalSubscriptions / limit);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                subscriptions,
+                subscriptions: subscriptionsWithReviews,
                 pagination: {
                     currentPage: Number(page),
                     totalPages,
@@ -213,8 +305,21 @@ export default {
                 return httpError(next, new Error('Subscription not found'), req, 404);
             }
 
+            const reviewStats = await Review.getAverageRating(subscriptionId, EReviewType.SUBSCRIPTION);
+            const stats = reviewStats[0] || { averageRating: 0, totalReviews: 0 };
+
+            const recentReviews = await Review.findForSubscription(subscriptionId, {
+                status: EReviewStatus.ACTIVE,
+                limit: 10
+            });
+
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                subscription
+                subscription: {
+                    ...subscription.toObject(),
+                    avgRating: stats.averageRating,
+                    totalReviews: stats.totalReviews,
+                    recentReviews
+                }
             });
 
         } catch (error) {
@@ -222,7 +327,6 @@ export default {
             httpError(next, new Error(errorMessage), req, 500);
         }
     },
-
     // Update subscription (Admin only)
     updateSubscription: async (req, res, next) => {
         try {

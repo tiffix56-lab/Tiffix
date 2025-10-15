@@ -24,16 +24,10 @@ export default {
     // Initiate subscription purchase
     initiatePurchase: async (req, res, next) => {
         try {
-            console.log('=== INITIATE PURCHASE START ===');
-            console.log('Request body:', JSON.stringify(req.body, null, 2));
-            console.log('User ID:', req.authenticatedUser?._id);
-
             const { error } = validateJoiSchema(ValidateInitiatePurchase, req.body);
             if (error) {
-                console.log('❌ Validation error:', error.message || error);
                 return httpError(next, error, req, 422);
             }
-            console.log('✅ Validation passed');
 
             const {
                 subscriptionId,
@@ -43,103 +37,48 @@ export default {
                 startDate
             } = req.body;
             const userId = req.authenticatedUser._id;
-            console.log('📝 Processing purchase for user:', userId, 'subscription:', subscriptionId);
 
             const subscription = await Subscription.findById(subscriptionId);
-            console.log('📦 Subscription found:', !!subscription, 'Active:', subscription?.isActive);
             if (!subscription || !subscription.isActive) {
                 return httpError(next, new Error('Subscription plan not found or inactive'), req, 404);
             }
-            console.log("Delivery");
 
-            // Skip delivery validation - allow all addresses
-            console.log("Skipping delivery validation - allowing all addresses");
-
-            /* Original delivery validation code - commented out
-            let deliveryValidation;
-            try {
-                deliveryValidation = await LocationZone.validateDeliveryForSubscription(
-                    deliveryAddress,
-                    subscription.category
-                );
-            } catch (validationError) {
-                console.error("Delivery Validation Error:", {
-                    error: validationError.message,
-                    stack: validationError.stack,
-                    userId: userId,
-                    subscriptionId: subscriptionId,
-                    zipCode: deliveryAddress.zipCode,
-                    category: subscription.category
-                });
-                return httpError(next, new Error('Failed to validate delivery address'), req, 500);
-            }
-
-            console.log("Delivery validation result:", deliveryValidation);
+            // Reactivated delivery validation
+            const deliveryValidation = await LocationZone.validateDeliveryForSubscription(
+                deliveryAddress,
+                subscription.category
+            );
 
             if (!deliveryValidation.isValid) {
-                console.error("Delivery Validation Failed:", {
-                    errors: deliveryValidation.errors,
-                    suggestedZones: deliveryValidation.suggestedZones,
-                    userId: userId,
-                    subscriptionId: subscriptionId,
-                    zipCode: deliveryAddress.zipCode,
-                    category: subscription.category
-                });
-
                 return httpError(next, new Error(`Delivery not available: ${deliveryValidation.errors.join(', ')}`), req, 400);
             }
 
-            console.log("Delivery validation passed, continuing with subscription creation...");
-            */
-
-            // Mock validation that always passes
-            const deliveryValidation = {
-                isValid: true,
-                zone: null,
-                deliveryFee: 0
-            };
-
-            console.log("Checking for existing active subscriptions...");
+            // Check existing active subscription
             const currentIST = TimezoneUtil.now();
             const existingSubscription = await UserSubscription.findOne({
                 userId,
                 status: 'active',
                 endDate: { $gte: currentIST }
             });
-            console.log('📊 Existing subscription check:', !!existingSubscription);
 
             if (existingSubscription) {
-                console.log("User already has active subscription:", existingSubscription._id);
                 return httpError(next, new Error('You already have an active subscription'), req, 400);
             }
 
-            console.log("No existing active subscription found, proceeding...");
-
-            console.log("Validating meal timings...", {
-                requestMealTimings: mealTimings,
-                planMealTimings: subscription.mealTimings
-            });
-
+            // Validate meal timings
             const planMealTimings = subscription.mealTimings;
+
             if (mealTimings.lunch.enabled && !planMealTimings.isLunchAvailable) {
-                console.log("Lunch not available in subscription plan");
                 return httpError(next, new Error('Lunch is not available for this subscription plan'), req, 400);
             }
             if (mealTimings.dinner.enabled && !planMealTimings.isDinnerAvailable) {
-                console.log("Dinner not available in subscription plan");
                 return httpError(next, new Error('Dinner is not available for this subscription plan'), req, 400);
             }
 
-            console.log("Validating meal timing windows...");
             if (mealTimings.lunch.enabled) {
                 const lunchTime = mealTimings.lunch.time;
                 const lunchWindow = planMealTimings.lunchOrderWindow;
-                console.log("Checking lunch timing:", {
-                    lunchTime,
-                    lunchWindow
-                });
                 if (lunchTime < lunchWindow.startTime || lunchTime > lunchWindow.endTime) {
-                    console.log("Lunch time outside allowed window");
                     return httpError(next, new Error(`Lunch time must be between ${lunchWindow.startTime} and ${lunchWindow.endTime}`), req, 400);
                 }
             }
@@ -147,78 +86,55 @@ export default {
             if (mealTimings.dinner.enabled) {
                 const dinnerTime = mealTimings.dinner.time;
                 const dinnerWindow = planMealTimings.dinnerOrderWindow;
-                console.log("Checking dinner timing:", {
-                    dinnerTime,
-                    dinnerWindow
-                });
                 if (dinnerTime < dinnerWindow.startTime || dinnerTime > dinnerWindow.endTime) {
-                    console.log("Dinner time outside allowed window");
                     return httpError(next, new Error(`Dinner time must be between ${dinnerWindow.startTime} and ${dinnerWindow.endTime}`), req, 400);
                 }
             }
 
             if (!mealTimings.lunch.enabled && !mealTimings.dinner.enabled) {
-                console.log("No meal timings enabled");
                 return httpError(next, new Error('At least one meal timing must be selected'), req, 400);
             }
 
-            console.log("Meal timing validation passed, proceeding to payment...");
-
+            // Apply promo code
             let finalPrice = subscription.discountedPrice;
             let discountApplied = 0;
             let promoCodeData = null;
 
             if (promoCode) {
-                console.log('🎫 Applying promo code:', promoCode);
-                try {
-                    const promoResult = await promoCodeService.validateAndApplyPromoCode(
-                        promoCode,
-                        userId,
-                        finalPrice,
-                        subscriptionId
-                    );
-                    console.log('💰 Promo code applied:', {
-                        originalPrice: finalPrice,
-                        finalPrice: promoResult.finalAmount,
-                        discount: promoResult.discountAmount
-                    });
-
-                    finalPrice = promoResult.finalAmount;
-                    discountApplied = promoResult.discountAmount;
-                    promoCodeData = promoResult.promoCode;
-                } catch (error) {
-                    return httpError(next, new Error(error.message), req, 400);
-                }
-            } else {
-                console.log('💰 No promo code applied, final price:', finalPrice);
+                const promoResult = await promoCodeService.validateAndApplyPromoCode(
+                    promoCode,
+                    userId,
+                    finalPrice,
+                    subscriptionId
+                );
+                finalPrice = promoResult.finalAmount;
+                discountApplied = promoResult.discountAmount;
+                promoCodeData = promoResult.promoCode;
             }
 
-            const gstRate = 0.18; // 18% GST
+            const gstRate = 0.18;
             const gstAmount = Math.round(finalPrice * gstRate);
-            const finalPriceWithGST = finalPrice + gstAmount;
+            let finalPriceWithGST = finalPrice + gstAmount;
 
-            console.log('💰 Price calculation:', {
-                basePrice: finalPrice,
-                gstRate: `${gstRate * 100}%`,
-                gstAmount,
-                finalPriceWithGST
-            });
+            // Calculate delivery fee
+            let deliveryFee = 0;
+            if (!subscription.freeDelivery) {
+                deliveryFee = deliveryValidation.deliveryFee || 0;
+                finalPriceWithGST += deliveryFee;
+            }
 
-            const subscriptionStartDate = startDate ?
-                TimezoneUtil.toIST(startDate) :
-                TimezoneUtil.now();
-
+            // Validate start date
+            const subscriptionStartDate = startDate ? TimezoneUtil.toIST(startDate) : TimezoneUtil.now();
             const today = TimezoneUtil.startOfDay();
             if (TimezoneUtil.startOfDay(subscriptionStartDate) < today) {
                 return httpError(next, new Error('Subscription start date cannot be in the past'), req, 400);
             }
 
             const subscriptionEndDate = TimezoneUtil.addDays(subscription.durationDays, subscriptionStartDate);
-
             const finalStartDate = TimezoneUtil.startOfDay(subscriptionStartDate);
             const finalEndDate = TimezoneUtil.endOfDay(subscriptionEndDate);
 
-            // Create payment order with GST
+            // Create payment order
             const paymentOrder = await paymentService.createOrder({
                 amount: finalPriceWithGST,
                 currency: 'INR',
@@ -228,15 +144,17 @@ export default {
                     subscriptionId: subscriptionId.toString(),
                     type: 'subscription_purchase',
                     baseAmount: finalPrice.toString(),
-                    gstAmount: gstAmount.toString()
+                    gstAmount: gstAmount.toString(),
+                    deliveryFee: deliveryFee.toString()
                 }
             });
 
+            // Create transaction
             const transaction = new Transaction({
                 userId,
                 subscriptionId,
                 amount: finalPriceWithGST,
-                finalAmount: finalPrice, // Base amount after discount, before GST
+                finalAmount: finalPrice,
                 transactionId: paymentOrder.id,
                 gatewayTransactionId: paymentOrder.id,
                 originalAmount: subscription.discountedPrice,
@@ -248,11 +166,13 @@ export default {
                 paymentMethod: 'razorpay',
                 gatewayOrderId: paymentOrder.id,
                 gstAmount: gstAmount,
-                baseAmount: finalPrice
+                baseAmount: finalPrice,
+                deliveryFee: deliveryFee
             });
 
             await transaction.save();
 
+            // Create user subscription
             const userSubscription = new UserSubscription({
                 userId,
                 subscriptionId,
@@ -267,13 +187,11 @@ export default {
                 finalPrice,
                 discountApplied: discountApplied,
                 promoCodeUsed: promoCodeData?._id || null,
-                status: 'pending'
+                status: 'pending',
+                deliveryZone: deliveryValidation.zone?._id
             });
 
             await userSubscription.save();
-
-            const deliveryZone = deliveryValidation.zone;
-
             transaction.userSubscriptionId = userSubscription._id;
             await transaction.save();
 
@@ -282,6 +200,7 @@ export default {
                 amount: finalPriceWithGST,
                 baseAmount: finalPrice,
                 gstAmount: gstAmount,
+                deliveryFee: deliveryFee,
                 currency: 'INR',
                 userSubscriptionId: userSubscription._id,
                 razorpayKeyId: paymentOrder.razorpay_key_id,
@@ -298,6 +217,7 @@ export default {
                     basePrice: finalPrice,
                     gstRate: '18%',
                     gstAmount: gstAmount,
+                    deliveryFee: deliveryFee,
                     totalAmount: finalPriceWithGST
                 }
             });
@@ -305,11 +225,9 @@ export default {
         } catch (error) {
             console.error("Initiate Purchase Error:", {
                 message: error.message,
-                stack: error.stack,
                 userId: req.authenticatedUser?._id,
                 subscriptionId: req.body?.subscriptionId
             });
-
             const errorMessage = error.message || 'Internal server error while initiating purchase';
             return httpError(next, new Error(errorMessage), req, 500);
         }

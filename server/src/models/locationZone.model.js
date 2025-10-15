@@ -173,7 +173,7 @@ locationZoneSchema.methods.isServiceAvailable = function (vendorType = null, ski
     if (!skipOperatingHours) {
         // Check operating hours using IST
         const currentTime = TimezoneUtil.getTimeString();
-        
+
         if (!TimezoneUtil.isTimeInRange(currentTime, this.operatingHours.start, this.operatingHours.end)) {
             console.log("Outside operating hours:", {
                 currentTime,
@@ -228,7 +228,7 @@ locationZoneSchema.methods.validateDeliveryAddress = function (address) {
                 lat: address.coordinates.coordinates[1],
                 lng: address.coordinates.coordinates[0]
             };
-            
+
             // Validate coordinate values
             if (typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
                 errors.push('Invalid coordinate values');
@@ -254,7 +254,7 @@ locationZoneSchema.methods.isSubscriptionCategorySupported = function (subscript
         serviceType: this.serviceType,
         zoneName: this.zoneName
     });
-    
+
     // Handle specific subscription categories
     if (subscriptionCategory === 'home_chef') {
         const isSupported = this.supportedVendorTypes.includes('home_chef');
@@ -265,33 +265,33 @@ locationZoneSchema.methods.isSubscriptionCategorySupported = function (subscript
         console.log("Food vendor support:", isSupported);
         return isSupported;
     }
-    
+
     // Handle service type mapping for backwards compatibility
     if (subscriptionCategory === 'both_vendor_home_chef') {
-        const isSupported = this.serviceType === 'both_vendor_home_chef' || 
-                           (this.supportedVendorTypes.includes('home_chef') && 
-                            this.supportedVendorTypes.includes('food_vendor'));
+        const isSupported = this.serviceType === 'both_vendor_home_chef' ||
+            (this.supportedVendorTypes.includes('home_chef') &&
+                this.supportedVendorTypes.includes('food_vendor'));
         console.log("Both vendor types support:", isSupported);
         return isSupported;
     }
-    
+
     // Also check if the subscription category matches the service type directly
     if (this.serviceType === subscriptionCategory) {
         console.log("Direct service type match:", true);
         return true;
     }
-    
+
     console.log("Unknown subscription category:", subscriptionCategory);
     return false;
 }
 
 locationZoneSchema.methods.isPincodeSupported = function (pincode) {
     if (!pincode) return false;
-    
+
     // Convert to string and ensure it's a valid 6-digit pincode
     const pincodeStr = String(pincode).trim();
     if (!/^[0-9]{6}$/.test(pincodeStr)) return false;
-    
+
     return this.pincodes.includes(pincodeStr);
 }
 
@@ -299,10 +299,10 @@ locationZoneSchema.methods.calculateDeliveryFee = function (distance, orderValue
     // Validate inputs
     distance = parseFloat(distance) || 0;
     orderValue = parseFloat(orderValue) || 0;
-    
+
     if (distance < 0) distance = 0;
     if (orderValue < 0) orderValue = 0;
-    
+
     // Check for free delivery
     if (this.deliveryFee.freeDeliveryAbove && orderValue >= this.deliveryFee.freeDeliveryAbove) {
         return 0;
@@ -310,7 +310,7 @@ locationZoneSchema.methods.calculateDeliveryFee = function (distance, orderValue
 
     const baseCharge = this.deliveryFee.baseCharge || 0;
     const perKmCharge = this.deliveryFee.perKmCharge || 0;
-    
+
     return Math.round((baseCharge + (distance * perKmCharge)) * 100) / 100; // Round to 2 decimal places
 }
 
@@ -318,23 +318,23 @@ locationZoneSchema.methods.isInServiceRadius = function (coordinates) {
     if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
         return false;
     }
-    
+
     if (!this.coordinates || !this.coordinates.center) {
         return false;
     }
-    
+
     const distance = this.calculateDistance(this.coordinates.center, coordinates);
     return distance <= (this.serviceRadius || 0);
 }
 
 locationZoneSchema.methods.calculateDistance = function (coord1, coord2) {
     // Validate input coordinates
-    if (!coord1 || !coord2 || 
+    if (!coord1 || !coord2 ||
         typeof coord1.lat !== 'number' || typeof coord1.lng !== 'number' ||
         typeof coord2.lat !== 'number' || typeof coord2.lng !== 'number') {
         return Infinity; // Return large distance for invalid coordinates
     }
-    
+
     const R = 6371; // Earth's radius in kilometers
     const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
     const dLon = (coord2.lng - coord1.lng) * Math.PI / 180;
@@ -343,7 +343,7 @@ locationZoneSchema.methods.calculateDistance = function (coord1, coord2) {
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    
+
     return Math.round(distance * 100) / 100; // Round to 2 decimal places
 }
 
@@ -357,12 +357,12 @@ locationZoneSchema.methods.getAvailableVendorTypes = function () {
 // Static methods
 locationZoneSchema.statics.findByPincode = function (pincode) {
     if (!pincode) return Promise.resolve([]);
-    
+
     const pincodeStr = String(pincode).trim();
     if (!/^[0-9]{6}$/.test(pincodeStr)) {
         return Promise.resolve([]);
     }
-    
+
     return this.find({
         pincodes: pincodeStr,
         isActive: true
@@ -373,12 +373,12 @@ locationZoneSchema.statics.findByCity = function (city) {
     if (!city || typeof city !== 'string') {
         return Promise.resolve([]);
     }
-    
+
     const cityStr = city.trim();
     if (cityStr.length === 0) {
         return Promise.resolve([]);
     }
-    
+
     return this.find({
         city: new RegExp(cityStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), // Escape special regex characters
         isActive: true
@@ -389,17 +389,17 @@ locationZoneSchema.statics.findByCoordinates = function (coordinates, radius = 5
     if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
         return Promise.resolve([]);
     }
-    
+
     // Validate coordinate ranges
     if (coordinates.lat < -90 || coordinates.lat > 90 || coordinates.lng < -180 || coordinates.lng > 180) {
         return Promise.resolve([]);
     }
-    
+
     const radiusNum = parseFloat(radius);
     if (isNaN(radiusNum) || radiusNum <= 0) {
         return Promise.resolve([]);
     }
-    
+
     return this.find({
         'coordinates.center': {
             $near: {
@@ -480,8 +480,7 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
 
         // Find zones by pincode
         const zones = await this.findByPincode(deliveryAddress.zipCode);
-        
-        console.log("Found zones:", zones.length);
+
 
         if (!Array.isArray(zones) || zones.length === 0) {
             return {
@@ -496,7 +495,7 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
         const validZones = zones.filter(zone => {
             const isServiceAvailable = zone.isServiceAvailable(null, true); // Skip operating hours check
             const isSubscriptionSupported = zone.isSubscriptionCategorySupported(subscriptionCategory);
-            
+
             console.log("Zone filtering for subscription:", {
                 zoneName: zone.zoneName,
                 isServiceAvailable,
@@ -505,7 +504,7 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
                 supportedVendorTypes: zone.supportedVendorTypes,
                 serviceType: zone.serviceType
             });
-            
+
             return isServiceAvailable && isSubscriptionSupported;
         });
 
@@ -541,15 +540,15 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
 
         // Calculate delivery fee
         let deliveryFee = 0;
-        if (deliveryAddress.coordinates && deliveryAddress.coordinates.coordinates && 
-            Array.isArray(deliveryAddress.coordinates.coordinates) && 
+        if (deliveryAddress.coordinates && deliveryAddress.coordinates.coordinates &&
+            Array.isArray(deliveryAddress.coordinates.coordinates) &&
             deliveryAddress.coordinates.coordinates.length >= 2) {
-            
+
             const coordinates = {
                 lat: deliveryAddress.coordinates.coordinates[1],
                 lng: deliveryAddress.coordinates.coordinates[0]
             };
-            
+
             if (typeof coordinates.lat === 'number' && typeof coordinates.lng === 'number') {
                 const distance = bestZone.calculateDistance(bestZone.coordinates.center, coordinates);
                 if (distance !== Infinity) {
@@ -572,7 +571,7 @@ locationZoneSchema.statics.validateDeliveryForSubscription = async function (del
             deliveryAddress,
             subscriptionCategory
         });
-        
+
         return {
             isValid: false,
             errors: ['Error validating delivery area'],
