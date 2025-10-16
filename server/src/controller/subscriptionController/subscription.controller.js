@@ -37,46 +37,46 @@ export default {
                 .skip(skip)
                 .limit(Number(limit));
 
-            const subscriptionIds = subscriptions.map(s => s._id);
-            const reviewStats = await Review.aggregate([
-                {
-                    $match: {
-                        subscriptionId: { $in: subscriptionIds },
-                        reviewType: EReviewType.SUBSCRIPTION,
-                        status: EReviewStatus.ACTIVE
-                    }
-                },
-                {
-                    $group: {
-                        _id: '$subscriptionId',
-                        avgRating: { $avg: '$rating' },
-                        totalReviews: { $sum: 1 }
-                    }
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        subscriptionId: '$_id',
-                        avgRating: { $round: ['$avgRating', 1] },
-                        totalReviews: 1
-                    }
-                }
-            ]);
+            // const subscriptionIds = subscriptions.map(s => s._id);
+            // const reviewStats = await Review.aggregate([
+            //     {
+            //         $match: {
+            //             subscriptionId: { $in: subscriptionIds },
+            //             reviewType: EReviewType.SUBSCRIPTION,
+            //             status: EReviewStatus.ACTIVE
+            //         }
+            //     },
+            //     {
+            //         $group: {
+            //             _id: '$subscriptionId',
+            //             avgRating: { $avg: '$rating' },
+            //             totalReviews: { $sum: 1 }
+            //         }
+            //     },
+            //     {
+            //         $project: {
+            //             _id: 0,
+            //             subscriptionId: '$_id',
+            //             avgRating: { $round: ['$avgRating', 1] },
+            //             totalReviews: 1
+            //         }
+            //     }
+            // ]);
 
-            const subscriptionsWithReviews = subscriptions.map(sub => {
-                const stats = reviewStats.find(r => r.subscriptionId.toString() === sub._id.toString());
-                return {
-                    ...sub.toObject(),
-                    avgRating: stats?.avgRating || 0,
-                    totalReviews: stats?.totalReviews || 0
-                };
-            });
+            // const subscriptionsWithReviews = subscriptions.map(sub => {
+            //     const stats = reviewStats.find(r => r.subscriptionId.toString() === sub._id.toString());
+            //     return {
+            //         ...sub.toObject(),
+            //         avgRating: stats?.avgRating || 0,
+            //         totalReviews: stats?.totalReviews || 0
+            //     };
+            // });
 
             const totalSubscriptions = await Subscription.countDocuments(query);
             const totalPages = Math.ceil(totalSubscriptions / limit);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                subscriptions: subscriptionsWithReviews,
+                subscriptions,
                 pagination: {
                     currentPage: Number(page),
                     totalPages,
