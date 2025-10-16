@@ -118,10 +118,10 @@ export default {
 
             // Calculate delivery fee
             let deliveryFee = 0;
-            if (!subscription.freeDelivery) {
-                deliveryFee = deliveryValidation.deliveryFee || 0;
-                finalPriceWithGST += deliveryFee;
-            }
+            // if (!subscription.freeDelivery) {
+            //     deliveryFee = deliveryValidation.deliveryFee || 0;
+            //     finalPriceWithGST += deliveryFee;
+            // }
 
             // Validate start date
             const subscriptionStartDate = startDate ? TimezoneUtil.toIST(startDate) : TimezoneUtil.now();
@@ -188,7 +188,8 @@ export default {
                 discountApplied: discountApplied,
                 promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
-                deliveryZone: deliveryValidation.zone?._id
+                // deliveryZone: deliveryValidation.zone?._id,
+                deliveryZone: "randomzoneid",
             });
 
             await userSubscription.save();
