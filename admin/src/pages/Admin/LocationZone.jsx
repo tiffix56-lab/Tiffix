@@ -9,6 +9,7 @@ import {
   checkServiceByPincodeApi
 } from '../../service/api.service';
 import toast from 'react-hot-toast';
+import MapPicker from '../../components/MapPicker';
 
 const LocationZone = () => {
   const [zones, setZones] = useState([]);
@@ -24,6 +25,7 @@ const LocationZone = () => {
   const [loading, setLoading] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   // Service check states
   const [serviceCheckPincode, setServiceCheckPincode] = useState('');
@@ -121,13 +123,27 @@ const LocationZone = () => {
     });
     setShowCreateForm(false);
     setEditingZone(null);
+    setShowMapPicker(false);
+  };
+
+  const handleMapLocationSelect = (location) => {
+    setFormData(prev => ({
+      ...prev,
+      coordinates: {
+        lat: location.lat,
+        lng: location.lng
+      }
+    }));
   };
 
   const handleSubmit = async(e) => {
     e.preventDefault();
 
     const submitData = {
-      ...formData,
+      zoneName: formData.zoneName,
+      city: formData.city,
+      state: formData.state,
+      country: formData.country,
       pincodes: formData.pincodes.filter(pc => pc.trim()),
       serviceRadius: Number(formData.serviceRadius),
       coordinates: {
@@ -138,22 +154,24 @@ const LocationZone = () => {
 
     try {
       setIsCreating(true);
-      
+
       if (editingZone) {
+        console.log("Data to be submitted for update:", submitData);
+
         await updateZoneApi(editingZone._id, submitData);
         toast.success("Zone updated successfully");
       } else {
         await createZoneApi(submitData);
         toast.success("Zone created successfully");
       }
-      
+
       resetForm();
       // Refresh zones list
       window.location.reload();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error in processing zone.');
     } finally {
-      setIsCreating(false);  
+      setIsCreating(false);
     }
   };
 
@@ -442,29 +460,50 @@ const LocationZone = () => {
 
                     {/* Coordinates */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Coordinates</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="number"
-                          step="any"
-                          name="coordinates.lat"
-                          value={formData.coordinates.lat}
-                          onChange={handleInputChange}
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          placeholder="Latitude"
-                          required
-                        />
-                        <input
-                          type="number"
-                          step="any"
-                          name="coordinates.lng"
-                          value={formData.coordinates.lng}
-                          onChange={handleInputChange}
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          placeholder="Longitude"
-                          required
-                        />
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Coordinates</label>
+
+                      {/* Toggle between manual input and map picker */}
+                      <div className="mb-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowMapPicker(!showMapPicker)}
+                          className="text-sm text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          {showMapPicker ? 'Enter manually' : 'Pick from map'}
+                        </button>
                       </div>
+
+                      {showMapPicker ? (
+                        <MapPicker
+                          onLocationSelect={handleMapLocationSelect}
+                          initialLat={formData.coordinates.lat || 20.5937}
+                          initialLng={formData.coordinates.lng || 78.9629}
+                        />
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="number"
+                            step="any"
+                            name="coordinates.lat"
+                            value={formData.coordinates.lat}
+                            onChange={handleInputChange}
+                            className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
+                            placeholder="Latitude"
+                            required
+                          />
+                          <input
+                            type="number"
+                            step="any"
+                            name="coordinates.lng"
+                            value={formData.coordinates.lng}
+                            onChange={handleInputChange}
+                            className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
+                            placeholder="Longitude"
+                            required
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

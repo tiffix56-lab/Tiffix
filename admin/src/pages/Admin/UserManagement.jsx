@@ -357,24 +357,12 @@ function UserManagement() {
                       </>
                     )}
                   </span>
-                  {user.hasSubscription && (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-900/50 text-orange-300">
-                      <Crown className="w-3 h-3" />
-                      Premium
-                    </span>
-                  )}
                 </div>
 
                 {/* User Info */}
                 <div className="text-sm text-gray-400 space-y-1">
-                  {/* {user.phoneNumber && (
-                    <p>📱 {user.phoneNumber}</p>
-                  )} */}
                   {user.createdAt && (
                     <p>📅 Joined {new Date(user.createdAt).toLocaleDateString()}</p>
-                  )}
-                  {user.lastLogin && (
-                    <p>🕒 Last seen {new Date(user.lastLogin).toLocaleDateString()}</p>
                   )}
                 </div>
               </div>
@@ -506,7 +494,9 @@ function UserManagement() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-400">Phone</p>
-                    {/* <p className="text-white">{selectedUser.phoneNumber || 'N/A'}</p> */}
+                    <p className="text-white">
+                      {selectedUser.phoneNumber?.internationalNumber || 'N/A'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-400">Role</p>
@@ -514,33 +504,10 @@ function UserManagement() {
                       {selectedUser.role || 'USER'}
                     </span>
                   </div>
-                </div>
-              </div>
-
-              {/* Status & Activity */}
-              <div>
-                <h3 className="text-lg font-medium text-white mb-4">Status & Activity</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-400">Status</p>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedUser.status, selectedUser.isBanned)}`}>
-                      {selectedUser.isBanned ? 'Banned' : selectedUser.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Subscription</p>
-                    <p className="text-white">{selectedUser.hasSubscription ? 'Premium' : 'Free'}</p>
-                  </div>
                   <div>
                     <p className="text-sm text-gray-400">Joined</p>
                     <p className="text-white">
                       {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Last Login</p>
-                    <p className="text-white">
-                      {selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleDateString() : 'Never'}
                     </p>
                   </div>
                 </div>

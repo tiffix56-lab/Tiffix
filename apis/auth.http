@@ -130,23 +130,36 @@ Authorization: Bearer {{accessToke}}
 }
 
 ### Update User Location - Bangalore Example
-PUT {{baseURL}}/auth/location
+POST {{baseURL}}/subscription-purchase/check-location
 Content-Type: application/json
 Authorization: Bearer {{accessToke}}
 
 {
-  "latitude": 12.9716,
-  "longitude": 77.5946,
-  "address": "Koramangala 4th Block",
-  "city": "Bangalore",
-  "state": "Karnataka",
-  "country": "India",
-  "pincode": "560034"
+  "lat" : "25.41202786554406",
+  "lng": "82.99833732354232",
+  "zonelng": "",
+  "pincode": "221002" 
 }
 
 
 
 ### Update Location - Minimal (Only Coordinates Required)
+
+
+### Get Current User Location (Requires Authentication)
+GET {{baseURL}}/auth/location
+Authorization: Bearer {{accessToke}}
+
+
+POST {{baseURL}}/subscription-purchase/check-location
+Content-Type: application/json
+Authorization: Bearer {{accessToke}}
+
+{
+  "phoneNumber": "919876543211"
+}
+
+
 PUT {{baseURL}}/auth/location
 Content-Type: application/json
 Authorization: Bearer {{accessToke}}
@@ -155,7 +168,3 @@ Authorization: Bearer {{accessToke}}
   "latitude": 22.5726,
   "longitude": 88.3639
 }
-
-### Get Current User Location (Requires Authentication)
-GET {{baseURL}}/auth/location
-Authorization: Bearer {{accessToke}}

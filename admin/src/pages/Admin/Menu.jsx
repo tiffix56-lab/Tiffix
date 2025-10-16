@@ -27,36 +27,38 @@ const Menu = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
 
+  const fetchMenus = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        ...(searchTerm && { search: searchTerm }),
+        ...(selectedCategory !== 'all' && { vendorCategory: selectedCategory }),
+        ...(selectedCuisine !== 'all' && { cuisine: selectedCuisine }),
+        ...(selectedDietaryOptions && { dietaryOptions: selectedDietaryOptions }),
+        ...(selectedTags && { tags: selectedTags }),
+        ...(isAvailable !== 'all' && { isAvailable: isAvailable === 'true' }),
+        ...(sortBy && { sortBy: sortBy }),
+        ...(sortBy && { sortOrder: sortOrder }),
+      };
+
+      const res = await getMenusApi(params);
+      setMenuItems(res.data.menus);
+      setFilteredItems(res.data.menus);
+      setTotalPages(res.data.pagination.totalPages);
+
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error fetching menus');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const params = {
-          page: currentPage,
-          limit: itemsPerPage,
-          ...(searchTerm && { search: searchTerm }),
-          ...(selectedCategory !== 'all' && { vendorCategory: selectedCategory }),
-          ...(selectedCuisine !== 'all' && { cuisine: selectedCuisine }),
-          ...(selectedDietaryOptions && { dietaryOptions: selectedDietaryOptions }),
-          ...(selectedTags && { tags: selectedTags }),
-          ...(isAvailable !== 'all' && { isAvailable: isAvailable === 'true' }),
-          ...(sortBy && { sortBy: sortBy }),
-          ...(sortBy && { sortOrder: sortOrder }),
-        };
-        
-        const res = await getMenusApi(params);
-        setMenuItems(res.data.menus);
-        setFilteredItems(res.data.menus);
-        setTotalPages(res.data.pagination.totalPages);
-        
-      } catch (error) {
-        toast.error(error.response?.data?.message || 'Error fetching menus');
-      } finally {
-        setLoading(false);
-      }
-    })()
+    fetchMenus();
   }, [
-    searchTerm, selectedCategory, selectedCuisine, currentPage, 
+    searchTerm, selectedCategory, selectedCuisine, currentPage,
     selectedDietaryOptions, selectedTags, isAvailable, sortBy, sortOrder
   ]);
 
@@ -143,7 +145,7 @@ const Menu = () => {
 
   const handleSubmit = async(e) => {
     e.preventDefault();
-    
+
     const newItem = {
       ...formData,
       price: Number(formData.price),
@@ -160,7 +162,7 @@ const Menu = () => {
 
     try {
       setIsCreating(true);
-      
+
       if (editingItem) {
         await updateMenuApi(editingItem._id, newItem);
         toast.success("Menu item updated successfully");
@@ -168,18 +170,29 @@ const Menu = () => {
         await createMenuApi(newItem);
         toast.success("Menu item created successfully");
       }
-      
+
       resetForm();
+      await fetchMenus();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error in processing menu item.');
     } finally {
-      setIsCreating(false);  
+      setIsCreating(false);
     }
   };
 
   const handleEdit = (item) => {
+    // Only extract the fields we need, excluding MongoDB metadata
     setFormData({
-      ...item,
+      foodImage: item.foodImage || '',
+      foodSubImages: item.foodSubImages || [''],
+      foodTitle: item.foodTitle || '',
+      price: item.price || '',
+      description: item.description || { short: '', long: '' },
+      detailedItemList: item.detailedItemList || '',
+      vendorCategory: item.vendorCategory || 'home_chef',
+      cuisine: item.cuisine || '',
+      prepTime: item.prepTime || '',
+      calories: item.calories || '',
       dietaryOptions: Array.isArray(item.dietaryOptions) ? item.dietaryOptions.join(', ') : (item.dietaryOptions || ''),
       tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || '')
     });
@@ -192,7 +205,7 @@ const Menu = () => {
       try {
         await deleteMenuApi(item._id);
         toast.success("Menu item deleted successfully");
-        window.location.reload();
+        await fetchMenus();
       } catch (error) {
         toast.error(error.response?.data?.message || 'Error deleting menu item');
       }
@@ -203,7 +216,7 @@ const Menu = () => {
     try {
       await toggleMenuAvailabilityApi(item._id);
       toast.success(`Menu item ${item.isAvailable ? 'disabled' : 'enabled'} successfully`);
-      window.location.reload();
+      await fetchMenus();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error toggling availability');
     }
@@ -367,14 +380,13 @@ const Menu = () => {
                     <h3 className="text-lg font-semibold text-white truncate">
                       {item.foodTitle}
                     </h3>
-                    {item.rating && item.rating.average && (
+                    
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="w-4 h-4 text-yellow-500 fill-current" />
                         <span className="text-sm text-white">
-                          {item.rating.average.toFixed(1)} ({item.rating.count})
+                          {item.rating.average.toFixed(1)} ({item.rating.totalReviews || 0})
                         </span>
                       </div>
-                    )}
                   </div>
                   
                   <div className="flex gap-1 ml-2">

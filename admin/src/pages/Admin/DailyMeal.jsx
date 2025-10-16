@@ -234,6 +234,11 @@ function DailyMeal() {
       return
     }
 
+    if (!mealForm.notes || !mealForm.notes.trim()) {
+      toast.error('Please add notes for today\'s meal')
+      return
+    }
+
     setSubmitting(true)
     try {
       await setTodayMealApi(mealForm)
@@ -1076,7 +1081,7 @@ function DailyMeal() {
               {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Notes (Optional)
+                  Notes *
                 </label>
                 <textarea
                   value={mealForm.notes}
@@ -1084,6 +1089,7 @@ function DailyMeal() {
                   rows={3}
                   placeholder="Add any special notes for today's meal..."
                   className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                  required
                 />
               </div>
 

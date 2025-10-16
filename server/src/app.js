@@ -13,15 +13,9 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: ["http://localhost:5173", config.security.corsOrigin],
-  credentials: true
+    origin: config.security.corsOrigin || '*',
+    credentials: true
 }));
-
-app.options('*', cors({
-  origin: ["http://localhost:5173", config.security.corsOrigin],
-  credentials: true
-}));
-
 app.use(express.json());
 
 // Session configuration for OAuth

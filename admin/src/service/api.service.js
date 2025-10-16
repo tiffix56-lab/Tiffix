@@ -732,3 +732,31 @@ export const getAdminZoneAnalyticsApi = async (params) => {
 }
 
 
+// MAPS & LOCATION SERVICES
+
+export const mapsAutocompleteApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/maps/autocomplete', body);
+    return response.data;
+}
+
+export const mapsReverseGeocodeApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/maps/reverse-geocode', body);
+    return response.data;
+}
+
+export const mapsPlaceDetailsApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/maps/place-details', body);
+    return response.data;
+}
+
+export const mapsGenerateSessionTokenApi = async () => {
+    const response = await servicesAxiosInstance.get('/maps/session-token');
+    return response.data;
+}
+
+export const mapsTestConnectionApi = async () => {
+    const response = await servicesAxiosInstance.get('/maps/test-connection');
+    return response.data;
+}
+
+

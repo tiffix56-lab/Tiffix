@@ -178,9 +178,32 @@ function Subscription() {
 
   const handleEdit = (subscription) => {
     setEditingSubscription(subscription)
+    // Only extract the fields we need, excluding MongoDB metadata
     setFormData({
-      ...subscription,
+      planName: subscription.planName || '',
+      duration: subscription.duration || 'monthly',
+      durationDays: subscription.durationDays || 30,
+      mealTimings: subscription.mealTimings || {
+        isLunchAvailable: true,
+        isDinnerAvailable: true,
+        lunchOrderWindow: {
+          startTime: '11:00',
+          endTime: '16:00'
+        },
+        dinnerOrderWindow: {
+          startTime: '19:00',
+          endTime: '23:00'
+        }
+      },
+      mealsPerPlan: subscription.mealsPerPlan || 60,
+      userSkipMealPerPlan: subscription.userSkipMealPerPlan || 6,
+      originalPrice: subscription.originalPrice || '',
+      discountedPrice: subscription.discountedPrice || '',
+      category: subscription.category || 'home_chef',
+      freeDelivery: subscription.freeDelivery !== undefined ? subscription.freeDelivery : true,
+      description: subscription.description || '',
       features: Array.isArray(subscription.features) ? subscription.features.join(', ') : (subscription.features || ''),
+      terms: subscription.terms || '',
       tags: Array.isArray(subscription.tags) ? subscription.tags.join(', ') : (subscription.tags || ''),
       planMenus: subscription.planMenus || []
     })
