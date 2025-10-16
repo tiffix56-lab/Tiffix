@@ -22,6 +22,76 @@ import { EPaymentStatus } from '../../constant/application.js'
 
 export default {
     // Initiate subscription purchase
+
+    checkLocation: async (req, res, next) => {
+        try {
+            const { lat, lng, pincode } = req.body;
+
+            const zones = await LocationZone.findByPincode(pincode);
+
+            console.log("ZONES FOUND: ", zones);
+            
+
+            if (!zones || zones.length === 0) {
+                return httpError(next, new Error('Service not available in your area. No service zones found for this pincode.'), req, 400);
+            }
+
+            // Check if any zone is serviceable (active and within radius)
+            let serviceableZone = null;
+            let closestZone = null;
+            let minDistance = Infinity;
+
+            for (const zone of zones) {
+                // Check if zone is active
+                if (!zone.isServiceAvailable()) {
+                    continue;
+                }
+
+                // Calculate distance from zone center to delivery address
+                const userCoords = { lat, lng };
+                const zoneCoords = { lat: zone.coordinates.lat, lng: zone.coordinates.lng};
+
+                const distance = zone.calculateDistance(zoneCoords, userCoords);
+
+                // Track closest zone for better error message
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestZone = zone;
+                }
+
+                // Check if within service radius
+                const serviceRadius = zone.serviceRadius || 10; // Default 10km if not set
+                if (distance <= serviceRadius) {
+                    serviceableZone = zone;
+                    break; // Found a serviceable zone
+                }
+            }
+
+            if (!serviceableZone) {
+                // Provide helpful error message
+                if (closestZone) {
+                    const distanceKm = minDistance.toFixed(2);
+                    const radiusKm = closestZone.serviceRadius || 10;
+                    return httpError(next, new Error(`Service not available in your area. The nearest service zone (${closestZone.zoneName}) is ${distanceKm}km away, but our service radius is ${radiusKm}km. Please choose a delivery address within our service area.`), req, 400);
+                } else {
+                    return httpError(next, new Error('Service not available in your area. No active service zones found for this pincode gg.'), req, 400);
+                }
+            }
+
+            return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                message: 'Service is available in your area',
+                zone: {
+                    zoneId: serviceableZone._id,
+                    zoneName: serviceableZone.zoneName,
+                    serviceRadius: serviceableZone.serviceRadius
+                }
+            });
+
+
+        } catch (error) {
+            return httpError(next, new Error('Internal server error while checking location'), req, 500);
+        }
+    },
     initiatePurchase: async (req, res, next) => {
         try {
             const { error } = validateJoiSchema(ValidateInitiatePurchase, req.body);
