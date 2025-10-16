@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, Filter, MapPin, Clock, Truck, Eye, EyeOff, Loader2, Calculator } from 'lucide-react';
-import { 
-  createZoneApi, 
-  getZonesApi, 
-  updateZoneApi, 
-  deleteZoneApi, 
+import { Plus, Edit, Trash2, Search, Filter, MapPin, Eye, EyeOff, Loader2 } from 'lucide-react';
+import {
+  createZoneApi,
+  getZonesApi,
+  updateZoneApi,
+  deleteZoneApi,
   toggleZoneStatusApi,
-  checkServiceByPincodeApi,
-  calculateDeliveryFeeApi 
+  checkServiceByPincodeApi
 } from '../../service/api.service';
 import toast from 'react-hot-toast';
 
@@ -20,23 +19,15 @@ const LocationZone = () => {
   const [itemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState('all');
-  const [selectedServiceType, setSelectedServiceType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [loading, setLoading] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
-  
+
   // Service check states
   const [serviceCheckPincode, setServiceCheckPincode] = useState('');
-  const [serviceCheckVendorType, setServiceCheckVendorType] = useState('vendor');
   const [serviceCheckResult, setServiceCheckResult] = useState(null);
-  
-  // Delivery fee calculator states
-  const [feeCalcZoneId, setFeeCalcZoneId] = useState('');
-  const [feeCalcDistance, setFeeCalcDistance] = useState('');
-  const [feeCalcOrderValue, setFeeCalcOrderValue] = useState('');
-  const [feeCalcResult, setFeeCalcResult] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -46,7 +37,6 @@ const LocationZone = () => {
           page: currentPage,
           limit: itemsPerPage,
           ...(selectedCity !== 'all' && { city: selectedCity }),
-          ...(selectedServiceType !== 'all' && { serviceType: selectedServiceType }),
           ...(selectedStatus !== 'all' && { isActive: selectedStatus === 'true' }),
         };
         
@@ -61,7 +51,7 @@ const LocationZone = () => {
         setLoading(false);
       }
     })()
-  }, [currentPage, selectedCity, selectedServiceType, selectedStatus]);
+  }, [currentPage, selectedCity, selectedStatus]);
 
   const [formData, setFormData] = useState({
     zoneName: '',
@@ -69,41 +59,12 @@ const LocationZone = () => {
     state: '',
     country: 'India',
     pincodes: [''],
-    serviceType: 'both_vendor_home_chef',
     serviceRadius: '',
     coordinates: {
-      center: {
-        lat: '',
-        lng: ''
-      },
-      boundaries: [
-        { lat: '', lng: '' }
-      ]
-    },
-    deliveryFee: {
-      baseCharge: '',
-      perKmCharge: '',
-      freeDeliveryAbove: ''
-    },
-    operatingHours: {
-      start: '08:00',
-      end: '22:00'
-    },
-    restrictions: {
-      maxOrdersPerDay: '',
-      minOrderValue: '',
-      maxOrderValue: ''
-    },
-    priority: 1,
-    notes: ''
+      lat: '',
+      lng: ''
+    }
   });
-
-  const serviceTypes = [
-    { value: 'all', label: 'All Service Types' },
-    { value: 'vendor', label: 'Vendor Only' },
-    { value: 'home_chef', label: 'Home Chef Only' },
-    { value: 'both_vendor_home_chef', label: 'Both Vendor & Home Chef' }
-  ];
 
   const cities = ['all', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata'];
 
@@ -145,39 +106,6 @@ const LocationZone = () => {
     setFormData(prev => ({ ...prev, pincodes: newPincodes }));
   };
 
-  const addBoundaryPoint = () => {
-    setFormData(prev => ({
-      ...prev,
-      coordinates: {
-        ...prev.coordinates,
-        boundaries: [...prev.coordinates.boundaries, { lat: '', lng: '' }]
-      }
-    }));
-  };
-
-  const removeBoundaryPoint = (index) => {
-    const newBoundaries = formData.coordinates.boundaries.filter((_, i) => i !== index);
-    setFormData(prev => ({
-      ...prev,
-      coordinates: {
-        ...prev.coordinates,
-        boundaries: newBoundaries
-      }
-    }));
-  };
-
-  const handleBoundaryChange = (index, field, value) => {
-    const newBoundaries = [...formData.coordinates.boundaries];
-    newBoundaries[index][field] = value;
-    setFormData(prev => ({
-      ...prev,
-      coordinates: {
-        ...prev.coordinates,
-        boundaries: newBoundaries
-      }
-    }));
-  };
-
   const resetForm = () => {
     setFormData({
       zoneName: '',
@@ -185,33 +113,11 @@ const LocationZone = () => {
       state: '',
       country: 'India',
       pincodes: [''],
-      serviceType: 'both_vendor_home_chef',
       serviceRadius: '',
       coordinates: {
-        center: {
-          lat: '',
-          lng: ''
-        },
-        boundaries: [
-          { lat: '', lng: '' }
-        ]
-      },
-      deliveryFee: {
-        baseCharge: '',
-        perKmCharge: '',
-        freeDeliveryAbove: ''
-      },
-      operatingHours: {
-        start: '08:00',
-        end: '22:00'
-      },
-      restrictions: {
-        maxOrdersPerDay: '',
-        minOrderValue: '',
-        maxOrderValue: ''
-      },
-      priority: 1,
-      notes: ''
+        lat: '',
+        lng: ''
+      }
     });
     setShowCreateForm(false);
     setEditingZone(null);
@@ -219,31 +125,15 @@ const LocationZone = () => {
 
   const handleSubmit = async(e) => {
     e.preventDefault();
-    
+
     const submitData = {
       ...formData,
       pincodes: formData.pincodes.filter(pc => pc.trim()),
       serviceRadius: Number(formData.serviceRadius),
       coordinates: {
-        center: {
-          lat: Number(formData.coordinates.center.lat),
-          lng: Number(formData.coordinates.center.lng)
-        },
-        boundaries: formData.coordinates.boundaries
-          .filter(b => b.lat && b.lng)
-          .map(b => ({ lat: Number(b.lat), lng: Number(b.lng) }))
-      },
-      deliveryFee: {
-        baseCharge: Number(formData.deliveryFee.baseCharge),
-        perKmCharge: Number(formData.deliveryFee.perKmCharge),
-        freeDeliveryAbove: Number(formData.deliveryFee.freeDeliveryAbove)
-      },
-      restrictions: {
-        maxOrdersPerDay: Number(formData.restrictions.maxOrdersPerDay),
-        minOrderValue: Number(formData.restrictions.minOrderValue),
-        maxOrderValue: Number(formData.restrictions.maxOrderValue)
-      },
-      priority: Number(formData.priority)
+        lat: Number(formData.coordinates.lat),
+        lng: Number(formData.coordinates.lng)
+      }
     };
 
     try {
@@ -271,13 +161,7 @@ const LocationZone = () => {
     setFormData({
       ...zone,
       pincodes: zone.pincodes || [''],
-      coordinates: {
-        center: zone.coordinates?.center || { lat: '', lng: '' },
-        boundaries: zone.coordinates?.boundaries || [{ lat: '', lng: '' }]
-      },
-      deliveryFee: zone.deliveryFee || { baseCharge: '', perKmCharge: '', freeDeliveryAbove: '' },
-      operatingHours: zone.operatingHours || { start: '08:00', end: '22:00' },
-      restrictions: zone.restrictions || { maxOrdersPerDay: '', minOrderValue: '', maxOrderValue: '' }
+      coordinates: zone.coordinates || { lat: '', lng: '' }
     });
     setEditingZone(zone);
     setShowCreateForm(true);
@@ -311,7 +195,7 @@ const LocationZone = () => {
       return;
     }
     try {
-      const result = await checkServiceByPincodeApi(serviceCheckPincode, serviceCheckVendorType);
+      const result = await checkServiceByPincodeApi(serviceCheckPincode);
       setServiceCheckResult(result);
       toast.success('Service check completed');
     } catch (error) {
@@ -320,25 +204,9 @@ const LocationZone = () => {
     }
   };
 
-  const handleDeliveryFeeCalculation = async () => {
-    if (!feeCalcZoneId || !feeCalcDistance || !feeCalcOrderValue) {
-      toast.error('Please fill all fields');
-      return;
-    }
-    try {
-      const result = await calculateDeliveryFeeApi(feeCalcZoneId, feeCalcDistance, feeCalcOrderValue);
-      setFeeCalcResult(result);
-      toast.success('Delivery fee calculated');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Error calculating fee');
-      setFeeCalcResult(null);
-    }
-  };
-
   const clearAllFilters = () => {
     setSearchTerm('');
     setSelectedCity('all');
-    setSelectedServiceType('all');
     setSelectedStatus('all');
     setCurrentPage(1);
   };
@@ -385,19 +253,6 @@ const LocationZone = () => {
                   </select>
                 </div>
 
-                {/* Service Type Filter */}
-                <select
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 text-black"
-                  value={selectedServiceType}
-                  onChange={(e) => setSelectedServiceType(e.target.value)}
-                >
-                  {serviceTypes.map(type => (
-                    <option key={type.value} value={type.value} className="bg-gray-800">
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-
                 {/* Status Filter */}
                 <select
                   className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 text-black"
@@ -415,7 +270,7 @@ const LocationZone = () => {
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                   className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 border border-gray-600 hover:border-gray-500"
                 >
-                  <Calculator className="w-4 h-4" />
+                  <Search className="w-4 h-4" />
                   {showAdvancedFilters ? 'Hide' : 'Show'} Tools
                 </button>
                 <button
@@ -431,86 +286,30 @@ const LocationZone = () => {
             {/* Advanced Tools */}
             {showAdvancedFilters && (
               <div className="border-t border-gray-600 pt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Service Availability Checker */}
-                  <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                    <h3 className="text-white font-medium mb-3">Check Service Availability</h3>
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Enter pincode"
-                          className="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          value={serviceCheckPincode}
-                          onChange={(e) => setServiceCheckPincode(e.target.value)}
-                        />
-                        <select
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          value={serviceCheckVendorType}
-                          onChange={(e) => setServiceCheckVendorType(e.target.value)}
-                        >
-                          <option value="vendor" className="bg-gray-800">Vendor</option>
-                          <option value="home_chef" className="bg-gray-800">Home Chef</option>
-                        </select>
-                        <button
-                          onClick={handleServiceCheck}
-                          className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-green-500/25"
-                        >
-                          Check
-                        </button>
-                      </div>
-                      {serviceCheckResult && (
-                        <div className="text-white text-sm bg-gray-800 p-2 rounded">
-                          <pre>{JSON.stringify(serviceCheckResult, null, 2)}</pre>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Delivery Fee Calculator */}
-                  <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                    <h3 className="text-white font-medium mb-3">Calculate Delivery Fee</h3>
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-3 gap-2">
-                        <select
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          value={feeCalcZoneId}
-                          onChange={(e) => setFeeCalcZoneId(e.target.value)}
-                        >
-                          <option value="" className="bg-gray-800">Select Zone</option>
-                          {zones.map(zone => (
-                            <option key={zone._id} value={zone._id} className="bg-gray-800">
-                              {zone.zoneName}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="number"
-                          placeholder="Distance (km)"
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          value={feeCalcDistance}
-                          onChange={(e) => setFeeCalcDistance(e.target.value)}
-                        />
-                        <input
-                          type="number"
-                          placeholder="Order Value (₹)"
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          value={feeCalcOrderValue}
-                          onChange={(e) => setFeeCalcOrderValue(e.target.value)}
-                        />
-                      </div>
+                {/* Service Availability Checker */}
+                <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                  <h3 className="text-white font-medium mb-3">Check Service Availability</h3>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Enter pincode"
+                        className="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
+                        value={serviceCheckPincode}
+                        onChange={(e) => setServiceCheckPincode(e.target.value)}
+                      />
                       <button
-                        onClick={handleDeliveryFeeCalculation}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg w-full transition-all duration-200 shadow-lg shadow-blue-500/25"
+                        onClick={handleServiceCheck}
+                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-green-500/25"
                       >
-                        Calculate Fee
+                        Check
                       </button>
-                      {feeCalcResult && (
-                        <div className="text-white text-sm bg-gray-800 p-2 rounded">
-                          <pre>{JSON.stringify(feeCalcResult, null, 2)}</pre>
-                        </div>
-                      )}
                     </div>
+                    {serviceCheckResult && (
+                      <div className="text-white text-sm bg-gray-800 p-2 rounded">
+                        <pre>{JSON.stringify(serviceCheckResult, null, 2)}</pre>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -581,32 +380,16 @@ const LocationZone = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Country</label>
-                        <input
-                          type="text"
-                          name="country"
-                          value={formData.country}
-                          onChange={handleInputChange}
-                          className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Service Type</label>
-                        <select
-                          name="serviceType"
-                          value={formData.serviceType}
-                          onChange={handleInputChange}
-                          className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                          required
-                        >
-                          <option value="vendor">Vendor Only</option>
-                          <option value="home_chef">Home Chef Only</option>
-                          <option value="both_vendor_home_chef">Both Vendor & Home Chef</option>
-                        </select>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Country</label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
+                        required
+                      />
                     </div>
 
                     <div>
@@ -620,36 +403,12 @@ const LocationZone = () => {
                         required
                       />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Priority</label>
-                      <input
-                        type="number"
-                        name="priority"
-                        value={formData.priority}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        min="1"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
-                      <textarea
-                        name="notes"
-                        value={formData.notes}
-                        onChange={handleInputChange}
-                        rows="3"
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                      />
-                    </div>
                   </div>
 
                   {/* Pincodes and Coordinates */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Location Details</h3>
-                    
+                    <h3 className="text-lg font-medium text-white mb-4">Location Details</h3>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">Pincodes</label>
                       {formData.pincodes.map((pincode, index) => (
@@ -658,14 +417,14 @@ const LocationZone = () => {
                             type="text"
                             value={pincode}
                             onChange={(e) => handlePincodesChange(index, e.target.value)}
-                            className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
                             placeholder="Enter pincode"
                           />
                           {formData.pincodes.length > 1 && (
                             <button
                               type="button"
                               onClick={() => removePincodeField(index)}
-                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
+                              className="px-3 py-2 text-red-400 hover:bg-red-900/50 rounded-lg transition-colors"
                             >
                               Remove
                             </button>
@@ -675,192 +434,37 @@ const LocationZone = () => {
                       <button
                         type="button"
                         onClick={addPincodeField}
-                        className="text-white text-sm hover:cursor-pointer"
+                        className="text-orange-400 text-sm hover:text-orange-300 hover:cursor-pointer"
                       >
                         + Add another pincode
                       </button>
                     </div>
 
-                    {/* Center Coordinates */}
+                    {/* Coordinates */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Center Coordinates</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Coordinates</label>
                       <div className="grid grid-cols-2 gap-2">
                         <input
                           type="number"
                           step="any"
-                          name="coordinates.center.lat"
-                          value={formData.coordinates.center.lat}
+                          name="coordinates.lat"
+                          value={formData.coordinates.lat}
                           onChange={handleInputChange}
-                          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
                           placeholder="Latitude"
                           required
                         />
                         <input
                           type="number"
                           step="any"
-                          name="coordinates.center.lng"
-                          value={formData.coordinates.center.lng}
+                          name="coordinates.lng"
+                          value={formData.coordinates.lng}
                           onChange={handleInputChange}
-                          className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
                           placeholder="Longitude"
                           required
                         />
                       </div>
-                    </div>
-
-                    {/* Boundary Points */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Boundary Points</label>
-                      {formData.coordinates.boundaries.map((boundary, index) => (
-                        <div key={index} className="flex gap-2 mb-2">
-                          <input
-                            type="number"
-                            step="any"
-                            value={boundary.lat}
-                            onChange={(e) => handleBoundaryChange(index, 'lat', e.target.value)}
-                            className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                            placeholder="Latitude"
-                          />
-                          <input
-                            type="number"
-                            step="any"
-                            value={boundary.lng}
-                            onChange={(e) => handleBoundaryChange(index, 'lng', e.target.value)}
-                            className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                            placeholder="Longitude"
-                          />
-                          {formData.coordinates.boundaries.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeBoundaryPoint(index)}
-                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={addBoundaryPoint}
-                        className="text-white text-sm hover:cursor-pointer"
-                      >
-                        + Add boundary point
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Details */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Delivery Fee */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Delivery Fee</h3>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Base Charge (₹)</label>
-                      <input
-                        type="number"
-                        name="deliveryFee.baseCharge"
-                        value={formData.deliveryFee.baseCharge}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Per Km Charge (₹)</label>
-                      <input
-                        type="number"
-                        name="deliveryFee.perKmCharge"
-                        value={formData.deliveryFee.perKmCharge}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Free Delivery Above (₹)</label>
-                      <input
-                        type="number"
-                        name="deliveryFee.freeDeliveryAbove"
-                        value={formData.deliveryFee.freeDeliveryAbove}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Operating Hours */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Operating Hours</h3>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Start Time</label>
-                      <input
-                        type="time"
-                        name="operatingHours.start"
-                        value={formData.operatingHours.start}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">End Time</label>
-                      <input
-                        type="time"
-                        name="operatingHours.end"
-                        value={formData.operatingHours.end}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Restrictions */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Order Restrictions</h3>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Max Orders/Day</label>
-                      <input
-                        type="number"
-                        name="restrictions.maxOrdersPerDay"
-                        value={formData.restrictions.maxOrdersPerDay}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Min Order Value (₹)</label>
-                      <input
-                        type="number"
-                        name="restrictions.minOrderValue"
-                        value={formData.restrictions.minOrderValue}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Max Order Value (₹)</label>
-                      <input
-                        type="number"
-                        name="restrictions.maxOrderValue"
-                        value={formData.restrictions.maxOrderValue}
-                        onChange={handleInputChange}
-                        className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                        required
-                      />
                     </div>
                   </div>
                 </div>
@@ -941,9 +545,6 @@ const LocationZone = () => {
                   }`}>
                     {zone.isActive ? 'Active' : 'Inactive'}
                   </div>
-                  <div className="bg-blue-900/50 text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
-                    Priority: {zone.priority}
-                  </div>
                 </div>
               </div>
 
@@ -955,17 +556,6 @@ const LocationZone = () => {
                     <MapPin className="w-4 h-4" />
                     {zone.serviceRadius}km radius
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {zone.operatingHours?.start} - {zone.operatingHours?.end}
-                  </div>
-                </div>
-
-                {/* Service Type */}
-                <div>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200">
-                    {zone.serviceType.replace('_', ' ').replace('both ', '').toUpperCase()}
-                  </span>
                 </div>
 
                 {/* Pincodes */}
@@ -986,33 +576,13 @@ const LocationZone = () => {
                   </div>
                 </div>
 
-                {/* Delivery Fee */}
+                {/* Coordinates */}
                 <div className="pt-3 border-t border-gray-700">
-                  <div className="flex items-center gap-1 mb-2">
-                    <Truck className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium text-white">Delivery Fee</span>
-                  </div>
-                  <div className="text-xs text-gray-300 space-y-1">
-                    <div>Base: ₹{zone.deliveryFee?.baseCharge}</div>
-                    <div>Per km: ₹{zone.deliveryFee?.perKmCharge}</div>
-                    <div>Free above: ₹{zone.deliveryFee?.freeDeliveryAbove}</div>
+                  <p className="text-xs text-gray-400 mb-1">Coordinates:</p>
+                  <div className="text-xs text-gray-300">
+                    Lat: {zone.coordinates?.lat?.toFixed(6)}, Lng: {zone.coordinates?.lng?.toFixed(6)}
                   </div>
                 </div>
-
-                {/* Order Restrictions */}
-                <div className="pt-3 border-t border-gray-700">
-                  <div className="text-xs text-gray-300 space-y-1">
-                    <div>Max orders/day: {zone.restrictions?.maxOrdersPerDay}</div>
-                    <div>Order value: ₹{zone.restrictions?.minOrderValue} - ₹{zone.restrictions?.maxOrderValue}</div>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                {zone.notes && (
-                  <div className="pt-3 border-t border-gray-700">
-                    <p className="text-xs text-gray-300 italic">{zone.notes}</p>
-                  </div>
-                )}
               </div>
             </div>
           ))}
@@ -1026,12 +596,12 @@ const LocationZone = () => {
             </div>
             <h3 className="text-lg font-medium text-white mb-2">No zones found</h3>
             <p className="text-gray-400 mb-4">
-              {selectedCity !== 'all' || selectedServiceType !== 'all' || selectedStatus !== 'all'
+              {selectedCity !== 'all' || selectedStatus !== 'all'
                 ? 'Try adjusting your filters'
                 : 'Create your first delivery zone to get started'
               }
             </p>
-            {selectedCity === 'all' && selectedServiceType === 'all' && selectedStatus === 'all' && (
+            {selectedCity === 'all' && selectedStatus === 'all' && (
               <button
                 onClick={() => setShowCreateForm(true)}
                 className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-orange-500/25"

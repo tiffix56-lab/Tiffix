@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 
-const baseURL = import.meta.env.VITE_SERVER_URL || "https://tiffix.in/api/v1";
+const baseURL = import.meta.env.VITE_SERVER_URL;
 if (!baseURL) {
   throw new Error(`VITE_SERVER_URL environment variable is not defined ${baseURL}`);
 }
