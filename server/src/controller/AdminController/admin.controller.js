@@ -5,11 +5,7 @@ import Order from '../../models/order.model.js'
 import UserSubscription from '../../models/userSubscription.model.js'
 import Transaction from '../../models/transaction.model.js'
 import VendorProfile from '../../models/vendorProfile.model.js'
-import Subscription from '../../models/subscription.model.js'
-import Menu from '../../models/menu.model.js'
-import PromoCode from '../../models/promoCode.model.js'
 import Review from '../../models/review.model.js'
-import LocationZone from '../../models/locationZone.model.js'
 import TimezoneUtil from '../../util/timezone.js'
 
 const adminController = {

@@ -43,15 +43,84 @@ export default {
                 return httpError(next, new Error('Subscription plan not found or inactive'), req, 404);
             }
 
-            // Reactivated delivery validation
-            // const deliveryValidation = await LocationZone.validateDeliveryForSubscription(
-            //     deliveryAddress,
-            //     subscription.category
-            // );
+            // Verify service availability based on delivery address
+            const { zipCode, coordinates } = deliveryAddress;
 
-            // if (!deliveryValidation.isValid) {
-            //     return httpError(next, new Error(`Delivery not available: ${deliveryValidation.errors.join(', ')}`), req, 400);
-            // }
+            // Validate coordinates format
+            if (!coordinates || !coordinates.coordinates || !Array.isArray(coordinates.coordinates) || coordinates.coordinates.length !== 2) {
+                return httpError(next, new Error('Invalid delivery address coordinates format'), req, 400);
+            }
+
+            const [longitude, latitude] = coordinates.coordinates;
+
+            // Validate coordinate values
+            if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+                return httpError(next, new Error('Invalid coordinate values'), req, 400);
+            }
+
+            if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+                return httpError(next, new Error('Coordinates out of valid range'), req, 400);
+            }
+
+            // Validate pincode format
+            if (!zipCode || !/^[0-9]{6}$/.test(zipCode)) {
+                return httpError(next, new Error('Valid 6-digit pincode is required'), req, 400);
+            }
+
+            // Find zones by pincode
+            const zones = await LocationZone.findByPincode(zipCode);
+
+            if (!zones || zones.length === 0) {
+                return httpError(next, new Error('Service not available in your area. No service zones found for this pincode.'), req, 400);
+            }
+
+            // Check if any zone is serviceable (active and within radius)
+            let serviceableZone = null;
+            let closestZone = null;
+            let minDistance = Infinity;
+
+            for (const zone of zones) {
+                // Check if zone is active
+                if (!zone.isServiceAvailable()) {
+                    continue;
+                }
+
+                // Validate zone coordinates
+                if (!zone.coordinates || typeof zone.coordinates.lat !== 'number' || typeof zone.coordinates.lng !== 'number') {
+                    console.warn(`Zone ${zone._id} has invalid coordinates, skipping`);
+                    continue;
+                }
+
+                // Calculate distance from zone center to delivery address
+                const userCoords = { lat: latitude, lng: longitude };
+                const zoneCoords = { lat: zone.coordinates.lat, lng: zone.coordinates.lng };
+
+                const distance = zone.calculateDistance(zoneCoords, userCoords);
+
+                // Track closest zone for better error message
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestZone = zone;
+                }
+
+                // Check if within service radius
+                const serviceRadius = zone.serviceRadius || 10; // Default 10km if not set
+                if (distance <= serviceRadius) {
+                    serviceableZone = zone;
+                    break; // Found a serviceable zone
+                }
+            }
+
+            if (!serviceableZone) {
+                // Provide helpful error message
+                if (closestZone) {
+                    const distanceKm = minDistance.toFixed(2);
+                    const radiusKm = closestZone.serviceRadius || 10;
+                    return httpError(next, new Error(`Service not available in your area. The nearest service zone (${closestZone.zoneName}) is ${distanceKm}km away, but our service radius is ${radiusKm}km. Please choose a delivery address within our service area.`), req, 400);
+                } else {
+                    return httpError(next, new Error('Service not available in your area. No active service zones found for this pincode.'), req, 400);
+                }
+            }
 
             // Check existing active subscription
             const currentIST = TimezoneUtil.now();
@@ -188,8 +257,7 @@ export default {
                 discountApplied: discountApplied,
                 promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
-                // deliveryZone: deliveryValidation.zone?._id,
-                deliveryZone: "randomzoneid",
+                deliveryZone: serviceableZone._id,
             });
 
             await userSubscription.save();

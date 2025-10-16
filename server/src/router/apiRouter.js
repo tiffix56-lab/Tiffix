@@ -126,7 +126,6 @@ router.route('/admin/subscriptions/stats').get(authentication, authorization([EU
 router.route('/zones').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.getAllLocationZones)
 router.route('/zones/:id').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.getLocationZoneById)
 router.route('/zones/check-service/:pincode').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.checkServiceAvailability)
-router.route('/zones/:zoneId/delivery-fee').get(authentication, authorization([EUserRole.ADMIN]), locationZoneController.calculateDeliveryFee)
 
 
 router.route('/admin/zones').post(authentication, authorization([EUserRole.ADMIN]), locationZoneController.createLocationZone)

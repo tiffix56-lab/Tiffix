@@ -471,36 +471,12 @@ export const ValidateCreateLocationZone = Joi.object({
     state: Joi.string().max(50).trim().optional(),
     country: Joi.string().max(50).trim().optional(),
     pincodes: Joi.array().items(Joi.string().pattern(/^[0-9]{6}$/)).min(1).required(),
-    serviceType: Joi.string().valid('vendor_only', 'home_chef_only', 'both_vendor_home_chef').required(),
     serviceRadius: Joi.number().min(1).max(50).optional(),
     coordinates: Joi.object({
-        center: Joi.object({
-            lat: Joi.number().min(-90).max(90).required(),
-            lng: Joi.number().min(-180).max(180).required()
-        }).required(),
-        boundaries: Joi.array().items(
-            Joi.object({
-                lat: Joi.number().required(),
-                lng: Joi.number().required()
-            })
-        ).optional()
+        lat: Joi.number().min(-90).max(90).required(),
+        lng: Joi.number().min(-180).max(180).required()
     }).required(),
-    deliveryFee: Joi.object({
-        baseCharge: Joi.number().min(0).optional(),
-        perKmCharge: Joi.number().min(0).optional(),
-        freeDeliveryAbove: Joi.number().min(0).optional()
-    }).optional(),
-    operatingHours: Joi.object({
-        start: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
-        end: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional()
-    }).optional(),
-    restrictions: Joi.object({
-        maxOrdersPerDay: Joi.number().positive().optional(),
-        minOrderValue: Joi.number().min(0).optional(),
-        maxOrderValue: Joi.number().positive().optional()
-    }).optional(),
-    priority: Joi.number().optional(),
-    notes: Joi.string().max(500).optional()
+    isActive: Joi.boolean().optional()
 });
 
 export const ValidateUpdateLocationZone = Joi.object({
@@ -509,36 +485,11 @@ export const ValidateUpdateLocationZone = Joi.object({
     state: Joi.string().max(50).trim().optional(),
     country: Joi.string().max(50).trim().optional(),
     pincodes: Joi.array().items(Joi.string().pattern(/^[0-9]{6}$/)).min(1).optional(),
-    serviceType: Joi.string().valid('vendor_only', 'home_chef_only', 'both_vendor_home_chef').optional(),
     serviceRadius: Joi.number().min(1).max(50).optional(),
     coordinates: Joi.object({
-        center: Joi.object({
-            lat: Joi.number().min(-90).max(90).optional(),
-            lng: Joi.number().min(-180).max(180).optional()
-        }).optional(),
-        boundaries: Joi.array().items(
-            Joi.object({
-                lat: Joi.number().required(),
-                lng: Joi.number().required()
-            })
-        ).optional()
+        lat: Joi.number().min(-90).max(90).optional(),
+        lng: Joi.number().min(-180).max(180).optional()
     }).optional(),
-    deliveryFee: Joi.object({
-        baseCharge: Joi.number().min(0).optional(),
-        perKmCharge: Joi.number().min(0).optional(),
-        freeDeliveryAbove: Joi.number().min(0).optional()
-    }).optional(),
-    operatingHours: Joi.object({
-        start: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
-        end: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional()
-    }).optional(),
-    restrictions: Joi.object({
-        maxOrdersPerDay: Joi.number().positive().optional(),
-        minOrderValue: Joi.number().min(0).optional(),
-        maxOrderValue: Joi.number().positive().optional()
-    }).optional(),
-    priority: Joi.number().optional(),
-    notes: Joi.string().max(500).optional(),
     isActive: Joi.boolean().optional()
 });
 
@@ -548,16 +499,14 @@ export const ValidateLocationZoneQuery = Joi.object({
     city: Joi.string().trim().optional(),
     state: Joi.string().trim().optional(),
     country: Joi.string().trim().optional(),
-    serviceType: Joi.string().valid('vendor_only', 'home_chef_only', 'both_vendor_home_chef').optional(),
     isActive: Joi.string().valid('true', 'false').optional(),
     pincode: Joi.string().pattern(/^[0-9]{6}$/).optional(),
     lat: Joi.number().min(-90).max(90).optional(),
     lng: Joi.number().min(-180).max(180).optional(),
     radius: Joi.number().positive().max(100).optional(),
-    sortBy: Joi.string().valid('zoneName', 'city', 'priority', 'createdAt', 'serviceRadius').optional(),
+    sortBy: Joi.string().valid('zoneName', 'city', 'createdAt', 'serviceRadius').optional(),
     sortOrder: Joi.string().valid('asc', 'desc').optional(),
-    search: Joi.string().trim().optional(),
-    vendorType: Joi.string().valid('vendor', 'home_chef').optional()
+    search: Joi.string().trim().optional()
 });
 
 

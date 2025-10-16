@@ -48,16 +48,14 @@ export default {
                 city,
                 state,
                 country,
-                serviceType,
                 isActive,
                 pincode,
                 lat,
                 lng,
                 radius = 50,
-                sortBy = 'priority',
+                sortBy = 'createdAt',
                 sortOrder = 'desc',
-                search,
-                vendorType
+                search
             } = value;
 
             const skip = (page - 1) * limit;
@@ -67,28 +65,17 @@ export default {
             if (city) filter.city = new RegExp(city, 'i');
             if (state) filter.state = new RegExp(state, 'i');
             if (country) filter.country = new RegExp(country, 'i');
-            if (serviceType) filter.serviceType = serviceType;
             if (isActive !== undefined) filter.isActive = isActive === 'true';
 
             if (pincode) {
                 filter.pincodes = { $in: [pincode] };
             }
 
-            // Service type based on vendor type
-            if (vendorType) {
-                if (vendorType === 'vendor') {
-                    filter.serviceType = { $in: ['vendor_only', 'both_vendor_home_chef'] };
-                } else if (vendorType === 'home_chef') {
-                    filter.serviceType = { $in: ['home_chef_only', 'both_vendor_home_chef'] };
-                }
-            }
-
             if (search) {
                 filter.$or = [
                     { zoneName: new RegExp(search, 'i') },
                     { city: new RegExp(search, 'i') },
-                    { state: new RegExp(search, 'i') },
-                    { notes: new RegExp(search, 'i') }
+                    { state: new RegExp(search, 'i') }
                 ];
             }
 
@@ -100,10 +87,10 @@ export default {
 
                 const allZones = await LocationZone.find(filter);
                 zones = allZones.filter(zone => {
-                    if (zone.coordinates && zone.coordinates.center) {
+                    if (zone.coordinates && zone.coordinates.lat && zone.coordinates.lng) {
                         const distance = quicker.calculateDistance(
                             coordinates,
-                            zone.coordinates.center
+                            { lat: zone.coordinates.lat, lng: zone.coordinates.lng }
                         );
                         return distance <= parseFloat(radius);
                     }
@@ -128,10 +115,10 @@ export default {
             if (lat && lng) {
                 zones = zones.map(zone => {
                     const zoneObj = zone.toObject ? zone.toObject() : zone;
-                    if (zone.coordinates && zone.coordinates.center) {
+                    if (zone.coordinates && zone.coordinates.lat && zone.coordinates.lng) {
                         zoneObj.distance = quicker.calculateDistance(
                             { lat: parseFloat(lat), lng: parseFloat(lng) },
-                            zone.coordinates.center
+                            { lat: zone.coordinates.lat, lng: zone.coordinates.lng }
                         );
                     }
                     return zoneObj;
@@ -338,12 +325,10 @@ export default {
                     city,
                     state,
                     country,
-                    serviceType,
                     isActive,
                     pincode,
                     coordinates: lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng), radius: parseFloat(radius) } : null,
-                    search,
-                    vendorType
+                    search
                 }
             });
         } catch (err) {
@@ -510,7 +495,6 @@ export default {
     checkServiceAvailability: async (req, res, next) => {
         try {
             const { pincode } = req.params;
-            const { vendorType } = req.query;
 
             if (!pincode || !/^[0-9]{6}$/.test(pincode)) {
                 return httpError(next, new Error('Valid 6-digit pincode is required'), req, 400);
@@ -526,16 +510,15 @@ export default {
                 });
             }
 
-            const availableZones = zones.filter(zone => zone.isServiceAvailable(vendorType));
+            const availableZones = zones.filter(zone => zone.isServiceAvailable());
 
             const zoneDetails = availableZones.map(zone => ({
                 _id: zone._id,
                 zoneName: zone.zoneName,
                 city: zone.city,
-                serviceType: zone.serviceType,
-                supportedVendorTypes: zone.supportedVendorTypes,
-                operatingHours: zone.operatingHours,
-                deliveryFee: zone.deliveryFee,
+                state: zone.state,
+                country: zone.country,
+                serviceRadius: zone.serviceRadius,
                 isActive: zone.isActive
             }));
 
@@ -545,91 +528,16 @@ export default {
                 totalZones: zones.length,
                 availableZones: availableZones.length,
                 pincode,
-                vendorType: vendorType || 'all',
                 message: availableZones.length > 0 ? 'Service available' : 'Service temporarily unavailable'
             });
         } catch (err) {
             console.error("Check Service Availability Error:", {
                 message: err.message,
                 stack: err.stack,
-                pincode: req.params.pincode,
-                vendorType: req.query.vendorType
+                pincode: req.params.pincode
             });
 
             const errorMessage = err.message || 'Internal server error while checking service availability';
-            return httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    // New method to validate delivery for subscription
-    validateDeliveryForSubscription: async (req, res, next) => {
-        try {
-            const { body } = req;
-            const { deliveryAddress, subscriptionCategory } = body;
-
-            if (!deliveryAddress || !subscriptionCategory) {
-                return httpError(next, new Error('Delivery address and subscription category are required'), req, 400);
-            }
-
-            const validation = await LocationZone.validateDeliveryForSubscription(deliveryAddress, subscriptionCategory);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                ...validation,
-                requestData: {
-                    deliveryAddress,
-                    subscriptionCategory
-                }
-            });
-        } catch (err) {
-            console.error("Validate Delivery For Subscription Error:", {
-                message: err.message,
-                stack: err.stack,
-                body: req.body
-            });
-
-            const errorMessage = err.message || 'Internal server error while validating delivery for subscription';
-            return httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-
-    // Calculate delivery fee
-    calculateDeliveryFee: async (req, res, next) => {
-        try {
-            const { zoneId } = req.params;
-            const { distance, orderValue } = req.query;
-
-            if (!distance || !orderValue) {
-                return httpError(next, new Error('Distance and order value are required'), req, 400);
-            }
-
-            const zone = await LocationZone.findById(zoneId);
-            if (!zone) {
-                return httpError(next, new Error('Location zone not found'), req, 404);
-            }
-
-            const deliveryFee = zone.calculateDeliveryFee(parseFloat(distance), parseFloat(orderValue));
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                deliveryFee,
-                distance: parseFloat(distance),
-                orderValue: parseFloat(orderValue),
-                zone: {
-                    _id: zone._id,
-                    zoneName: zone.zoneName,
-                    city: zone.city
-                }
-            });
-        } catch (err) {
-            console.error("Calculate Delivery Fee Error:", {
-                message: err.message,
-                stack: err.stack,
-                zoneId: req.params.zoneId,
-                distance: req.query.distance,
-                orderValue: req.query.orderValue
-            });
-
-            const errorMessage = err.message || 'Internal server error while calculating delivery fee';
             return httpError(next, new Error(errorMessage), req, 500);
         }
     },

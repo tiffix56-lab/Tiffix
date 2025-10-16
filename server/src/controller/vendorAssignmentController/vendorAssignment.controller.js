@@ -11,9 +11,7 @@ import {
     ValidateUpdatePriority
 } from '../../service/validationService.js'
 import VendorAssignmentRequest from '../../models/vendorSwitchRequest.model.js'
-import UserSubscription from '../../models/userSubscription.model.js'
 import VendorProfile from '../../models/vendorProfile.model.js'
-import LocationZone from '../../models/locationZone.model.js'
 import TimezoneUtil from '../../util/timezone.js'
 import { ESubscriptionStatus } from '../../constant/application.js'
 
