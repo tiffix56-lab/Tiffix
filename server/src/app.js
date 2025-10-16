@@ -17,6 +17,11 @@ app.use(cors({
   credentials: true
 }));
 
+app.options('*', cors({
+  origin: ["http://localhost:5173", config.security.corsOrigin],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Session configuration for OAuth

@@ -169,7 +169,6 @@ router.route('/admin/promo-codes/:id/stats').get(authentication, authorization([
 
 // ############### SUBSCRIPTION PURCHASE ROUTES ####################
 // User subscription purchase routes
-router.route('/subscription-purchase/check-location').post(subscriptionPurchaseController.checkLocation)
 router.route('/subscription-purchase/initiate').post(authentication, subscriptionPurchaseController.initiatePurchase)
 router.route('/subscription-purchase/verify-payment').post(authentication, subscriptionPurchaseController.verifyPayment)
 router.route('/subscription-purchase/check-payment-status/:orderId').get(authentication, subscriptionPurchaseController.checkPaymentStatus)
