@@ -13,7 +13,7 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-    origin: config.security.corsOrigin,
+    origin: "*",
     credentials: true
 }));
 app.use(express.json());
