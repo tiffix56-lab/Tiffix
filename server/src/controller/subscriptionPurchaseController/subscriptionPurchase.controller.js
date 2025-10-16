@@ -44,14 +44,14 @@ export default {
             }
 
             // Reactivated delivery validation
-            const deliveryValidation = await LocationZone.validateDeliveryForSubscription(
-                deliveryAddress,
-                subscription.category
-            );
+            // const deliveryValidation = await LocationZone.validateDeliveryForSubscription(
+            //     deliveryAddress,
+            //     subscription.category
+            // );
 
-            if (!deliveryValidation.isValid) {
-                return httpError(next, new Error(`Delivery not available: ${deliveryValidation.errors.join(', ')}`), req, 400);
-            }
+            // if (!deliveryValidation.isValid) {
+            //     return httpError(next, new Error(`Delivery not available: ${deliveryValidation.errors.join(', ')}`), req, 400);
+            // }
 
             // Check existing active subscription
             const currentIST = TimezoneUtil.now();
