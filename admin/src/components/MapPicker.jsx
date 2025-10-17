@@ -34,11 +34,12 @@ const MapPicker = ({ onLocationSelect, initialLat = 20.5937, initialLng = 78.962
   useEffect(() => {
     if (map.current) return; // Initialize map only once
 
-    // Note: OlaMaps SDK still needs API key for map rendering only
-    // This is safe as it's only used for displaying the map, not for API calls
+    // OlaMaps SDK needs API key for map rendering (tiles, sprites, glyphs)
+    // This is acceptable as it's only used for displaying map visuals
+    // All sensitive API calls (search, geocoding, etc.) go through backend
     const OLA_MAPS_API_KEY = import.meta.env.VITE_OLA_MAPS_API_KEY || '';
 
-    // Initialize OlaMaps instance
+    // Initialize OlaMaps instance with API key for map rendering
     const olaMaps = new OlaMaps({
       apiKey: OLA_MAPS_API_KEY
     });
@@ -48,7 +49,8 @@ const MapPicker = ({ onLocationSelect, initialLat = 20.5937, initialLng = 78.962
     let isMapLoaded = false;
 
     try {
-      // Initialize the map with OLA Maps native style (not OpenStreetMap)
+      // Initialize the map with OLA Maps native style
+      // The SDK will automatically append the API key to style and tile requests
       mapInstance = olaMaps.init({
         container: mapContainer.current,
         center: [initialLng, initialLat],

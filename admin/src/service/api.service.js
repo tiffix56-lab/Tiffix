@@ -759,4 +759,9 @@ export const mapsTestConnectionApi = async () => {
     return response.data;
 }
 
+export const mapsGetStyleApi = async (styleName = 'default-light-standard-mr') => {
+    const response = await servicesAxiosInstance.get(`/maps/style/${styleName}`);
+    return response.data;
+}
+
 
