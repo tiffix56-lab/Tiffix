@@ -63,6 +63,19 @@ class StorageService {
       STORAGE_KEYS.USER_DATA,
     ]);
   }
+
+  // Generic storage methods
+  async setItem(key: string, value: string): Promise<void> {
+    await AsyncStorage.setItem(key, value);
+  }
+
+  async getItem(key: string): Promise<string | null> {
+    return await AsyncStorage.getItem(key);
+  }
+
+  async removeItem(key: string): Promise<void> {
+    await AsyncStorage.removeItem(key);
+  }
 }
 
 export const storageService = new StorageService();

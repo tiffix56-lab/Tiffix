@@ -196,7 +196,8 @@ const Payment = () => {
             {
               text: 'Select Different Address',
               onPress: () => {
-                router.back(); // Go back to delivery information screen
+               router.back();
+                setTimeout(() => router.back(), 50);
               }
             },
             {

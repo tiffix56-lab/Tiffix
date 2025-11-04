@@ -26,7 +26,12 @@ const Information = () => {
   const { colorScheme } = useColorScheme();
   const { subscriptionId, menuId } = useLocalSearchParams();
   const { savedAddresses, selectedAddress, setSelectedAddress, refreshAddresses } = useAddress();
-  
+
+  // Log when component mounts and when selectedAddress changes
+  useEffect(() => {
+    console.log('📄 [INFORMATION_PAGE] Mounted/Updated with selectedAddress:', selectedAddress?.label || 'none');
+  }, [selectedAddress]);
+
   // Data states
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
@@ -56,23 +61,23 @@ const Information = () => {
   const fetchOrderData = async () => {
     try {
       setLoading(true);
-      
+
       // Refresh addresses from context (this will update savedAddresses and selectedAddress)
       await refreshAddresses();
-      
+
       // Initialize other responses as null
       let subscriptionResponse: any = null;
       let menuResponse: any = null;
-      
+
       // Fetch subscription and menu data separately
       if (subscriptionId) {
         subscriptionResponse = await subscriptionService.getSubscriptionById(subscriptionId as string);
       }
-      
+
       if (menuId) {
         menuResponse = await menuService.getMenuById(menuId as string);
       }
-      
+
       // Handle subscription
       if (subscriptionResponse && subscriptionResponse.success && subscriptionResponse.data) {
         console.log('Subscription data:', JSON.stringify(subscriptionResponse.data.subscription, null, 2));
@@ -83,12 +88,12 @@ const Information = () => {
       } else {
         console.log('No subscription data or failed to load subscription');
       }
-      
+
       // Handle menu
       if (menuResponse && menuResponse.success && menuResponse.data) {
         setSelectedMenu(menuResponse.data.menu);
       }
-      
+
     } catch (err) {
       console.error('Error fetching order data:', err);
     } finally {
@@ -96,9 +101,37 @@ const Information = () => {
     }
   };
 
+  // Auto-select default address when addresses are loaded (only if no address is selected)
+  useEffect(() => {
+    console.log('🔍 Auto-select effect running:', {
+      loading,
+      savedAddressesCount: savedAddresses.length,
+      hasSelectedAddress: !!selectedAddress,
+      selectedAddressLabel: selectedAddress?.label || 'none',
+      savedAddresses: savedAddresses.map(a => ({ label: a.label, isDefault: a.isDefault }))
+    });
+
+    // Only auto-select if no address is currently selected
+    if (!loading && savedAddresses.length > 0 && !selectedAddress) {
+      const defaultAddr = savedAddresses.find(addr => addr.isDefault);
+      console.log('🎯 Default address found:', defaultAddr?.label || 'none');
+
+      if (defaultAddr) {
+        console.log('✅ Auto-selecting default address:', defaultAddr.label);
+        setSelectedAddress(defaultAddr);
+      } else {
+        // If no default and nothing selected, select the first address
+        console.log('✅ Auto-selecting first address:', savedAddresses[0].label);
+        setSelectedAddress(savedAddresses[0]);
+      }
+    } else if (selectedAddress) {
+      console.log('ℹ️ Keeping user-selected address:', selectedAddress.label);
+    }
+  }, [loading, savedAddresses]);
+
 
   // Date picker handlers
-  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+  const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
       setDate(selectedDate);
@@ -111,10 +144,55 @@ const Information = () => {
     }
   };
 
+  // Helper function to parse time string (e.g., "12:00 PM") to Date object
+  const parseTimeString = (timeString: string): Date => {
+    const date = new Date();
+    const [time, period] = timeString.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  // Helper function to check if a time is within a window
+  const isTimeInWindow = (selectedTime: Date, startTimeStr: string, endTimeStr: string): boolean => {
+    const startTime = parseTimeString(startTimeStr);
+    const endTime = parseTimeString(endTimeStr);
+
+    const selectedHours = selectedTime.getHours();
+    const selectedMinutes = selectedTime.getMinutes();
+    const startHours = startTime.getHours();
+    const startMinutes = startTime.getMinutes();
+    const endHours = endTime.getHours();
+    const endMinutes = endTime.getMinutes();
+
+    const selectedTotalMinutes = selectedHours * 60 + selectedMinutes;
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
+
+    return selectedTotalMinutes >= startTotalMinutes && selectedTotalMinutes <= endTotalMinutes;
+  };
+
   // Time picker handlers
-  const onLunchTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+  const onLunchTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
     setShowLunchTimePicker(false);
-    if (selectedTime) {
+    if (selectedTime && selectedSubscription?.mealTimings.lunchOrderWindow) {
+      const { startTime, endTime } = selectedSubscription.mealTimings.lunchOrderWindow;
+
+      if (!isTimeInWindow(selectedTime, startTime, endTime)) {
+        Alert.alert(
+          'Invalid Time',
+          `Please select a time between ${startTime} and ${endTime} for lunch delivery.`
+        );
+        return;
+      }
+
       setLunchDateTime(selectedTime);
       const formattedTime = selectedTime.toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -125,9 +203,19 @@ const Information = () => {
     }
   };
 
-  const onDinnerTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+  const onDinnerTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
     setShowDinnerTimePicker(false);
-    if (selectedTime) {
+    if (selectedTime && selectedSubscription?.mealTimings.dinnerOrderWindow) {
+      const { startTime, endTime } = selectedSubscription.mealTimings.dinnerOrderWindow;
+
+      if (!isTimeInWindow(selectedTime, startTime, endTime)) {
+        Alert.alert(
+          'Invalid Time',
+          `Please select a time between ${startTime} and ${endTime} for dinner delivery.`
+        );
+        return;
+      }
+
       setDinnerDateTime(selectedTime);
       const formattedTime = selectedTime.toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -194,11 +282,12 @@ const Information = () => {
                     <TouchableOpacity
                       key={index}
                       onPress={() => {
+                        console.log('📍 [INFORMATION] User clicked address:', address.label);
                         setSelectedAddress(address);
-                        console.log('Selected address updated in context:', address);
+                        console.log('✅ [INFORMATION] Selected address updated in context:', address.label);
                       }}
                       className={`mb-3 rounded-xl border p-4 ${
-                        selectedAddress === address
+                        selectedAddress?.label === address.label
                           ? 'border-black bg-black dark:border-white dark:bg-white'
                           : 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'
                       }`}>
@@ -207,7 +296,7 @@ const Information = () => {
                           <View className="flex-row items-center">
                             <Text
                               className={`text-sm font-medium ${
-                                selectedAddress === address
+                                selectedAddress?.label === address.label
                                   ? 'text-white dark:text-black'
                                   : 'text-zinc-700 dark:text-zinc-300'
                               }`}
@@ -226,7 +315,7 @@ const Information = () => {
                           </View>
                           <Text
                             className={`mt-1 text-sm ${
-                              selectedAddress === address
+                              selectedAddress?.label === address.label
                                 ? 'text-zinc-300 dark:text-zinc-700'
                                 : 'text-zinc-500 dark:text-zinc-400'
                             }`}
@@ -235,11 +324,11 @@ const Information = () => {
                           </Text>
                         </View>
                         <View className={`h-5 w-5 rounded-full border-2 ${
-                          selectedAddress === address
+                          selectedAddress?.label === address.label
                             ? 'border-white bg-white dark:border-black dark:bg-black'
                             : 'border-zinc-300 dark:border-zinc-600'
                         }`}>
-                          {selectedAddress === address && (
+                          {selectedAddress?.label === address.label && (
                             <View className="h-full w-full rounded-full bg-green-500" />
                           )}
                         </View>
@@ -449,7 +538,7 @@ const Information = () => {
           mode="date"
           display="default"
           onChange={onDateChange}
-          minimumDate={new Date()}
+          minimumDate={new Date(new Date().setDate(new Date().getDate() + 1))}
         />
       )}
 

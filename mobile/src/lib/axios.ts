@@ -22,19 +22,15 @@ api.interceptors.request.use(
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 [AXIOS] Authorization header set');
     } else {
-      console.log('⚠️ [AXIOS] No authorization token - request will be unauthenticated');
+      console.error('⚠️ [AXIOS] No authorization token - request will be unauthenticated');
     }
     
-    // Handle FormData uploads - let browser/React Native set Content-Type
     if (config.data instanceof FormData) {
-      console.log('📤 [AXIOS] FormData detected - removing Content-Type header');
+
       delete config.headers['Content-Type'];
     }
     
-    console.log('📋 [AXIOS] Final request headers:', config.headers);
-    console.log('📦 [AXIOS] Request data:', config.data instanceof FormData ? 'FormData (not logged)' : config.data);
     
     return config;
   },
@@ -46,11 +42,7 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('✅ [AXIOS] Response interceptor - success');
-    console.log('✅ [AXIOS] Response URL:', `${response.config.baseURL}${response.config.url}`);
-    console.log('✅ [AXIOS] Response status:', response.status);
-    console.log('✅ [AXIOS] Response headers:', response.headers);
-    console.log('✅ [AXIOS] Response data:', response.data);
+
     
     return response;
   },

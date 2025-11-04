@@ -17,12 +17,42 @@ const ContactUs = () => {
   const handleSubmitContact = async () => {
     if (!name || !email || !mobileNumber || !message) return;
 
+    // Validate email format
+    if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address',
+      });
+      return;
+    }
+
+    // Validate mobile number is exactly 10 digits
+    if (!/^[0-9]{10}$/.test(mobileNumber)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Mobile Number',
+        text2: 'Mobile number must be exactly 10 digits',
+      });
+      return;
+    }
+
+    // Validate message minimum length
+    if (message.trim().length < 10) {
+      Toast.show({
+        type: 'error',
+        text1: 'Message Too Short',
+        text2: 'Message must be at least 10 characters long',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const result = await supportService.submitContact({
         name,
         email,
-        mobileNumber,
+        mobileNumber: mobileNumber,
         message,
       });
 
@@ -55,7 +85,12 @@ const ContactUs = () => {
     }
   };
 
-  const isFormValid = name && email && mobileNumber && message;
+  const isFormValid =
+    name &&
+    email &&
+    /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email) &&
+    mobileNumber.length === 10 &&
+    message.trim().length >= 10;
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -142,16 +177,31 @@ const ContactUs = () => {
               </View>
 
               {/* Email Field */}
-              <View className="rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Email"
-                  placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                  keyboardType="email-address"
-                  className="min-h-14 px-4 py-4 text-base text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_400Regular' }}
-                />
+              <View>
+                <View
+                  className={`rounded-md border px-4 ${
+                    email && !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)
+                      ? 'border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-950'
+                      : 'border-zinc-100 bg-zinc-50 dark:border-zinc-400 dark:bg-black'
+                  }`}>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Email"
+                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    className="min-h-14 px-4 py-4 text-base text-black dark:text-white"
+                    style={{ fontFamily: 'Poppins_400Regular' }}
+                  />
+                </View>
+                {email && !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email) && (
+                  <Text
+                    className="mt-1 text-xs text-red-600 dark:text-red-400"
+                    style={{ fontFamily: 'Poppins_400Regular' }}>
+                    Please enter a valid email address
+                  </Text>
+                )}
               </View>
 
               {/* Mobile Number Field */}
@@ -171,30 +221,49 @@ const ContactUs = () => {
                 </Text>
                 <TextInput
                   value={mobileNumber}
-                  onChangeText={setMobileNumber}
+                  onChangeText={(text) => {
+                    // Only allow numbers and max 10 digits
+                    const cleaned = text.replace(/[^0-9]/g, '');
+                    if (cleaned.length <= 10) {
+                      setMobileNumber(cleaned);
+                    }
+                  }}
                   placeholder="Your mobile number"
                   placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
                   className="flex-1 text-base text-black dark:text-white"
                   style={{ fontFamily: 'Poppins_400Regular' }}
                   keyboardType="phone-pad"
+                  maxLength={10}
                 />
               </View>
 
               {/* Message Field */}
-              <View className="rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
-                <TextInput
-                  value={message}
-                  onChangeText={setMessage}
-                  placeholder="Write your message"
-                  placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                  className="min-h-32 px-4 py-4 text-base text-black dark:text-white"
-                  style={{
-                    fontFamily: 'Poppins_400Regular',
-                  }}
-                />
+              <View>
+                <View className="rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
+                  <TextInput
+                    value={message}
+                    onChangeText={setMessage}
+                    placeholder="Write your message (minimum 10 characters)"
+                    placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                    className="min-h-32 px-4 py-4 text-base text-black dark:text-white"
+                    style={{
+                      fontFamily: 'Poppins_400Regular',
+                    }}
+                    maxLength={1000}
+                  />
+                </View>
+                <Text
+                  className={`mt-1 text-xs ${
+                    message.trim().length >= 10
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                  style={{ fontFamily: 'Poppins_400Regular' }}>
+                  {message.trim().length}/1000 characters (minimum 10)
+                </Text>
               </View>
             </View>
 

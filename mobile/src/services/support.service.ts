@@ -3,8 +3,10 @@ import { API_ENDPOINTS } from '../constants/api';
 import { ApiResponse } from '../types/auth.types';
 
 export interface ComplaintData {
-  complaintType: string;
-  description: string;
+  title: string;
+  reason: string;
+  name: string;
+  phoneNumber: string;
 }
 
 export interface ContactData {
@@ -16,11 +18,18 @@ export interface ContactData {
 
 class SupportService {
   async submitComplaint(data: ComplaintData): Promise<ApiResponse> {
-    return await apiService.post('/support/complaint', data);
+    return await apiService.post('/complains', data);
   }
 
   async submitContact(data: ContactData): Promise<ApiResponse> {
-    return await apiService.post('/support/contact', data);
+    // Map mobileNumber to phoneNumber for backend compatibility
+    const payload = {
+      name: data.name,
+      email: data.email,
+      phoneNumber: data.mobileNumber,
+      message: data.message
+    };
+    return await apiService.post('/contacts', payload);
   }
 }
 

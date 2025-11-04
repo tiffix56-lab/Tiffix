@@ -30,13 +30,17 @@ const Subscription = () => {
     try {
       setLoading(true);
       const response = await subscriptionService.getActiveSubscriptions({ limit: 50 });
-      
+
       if (response.success && response.data) {
         const subscriptions = response.data.subscriptions;
         console.log('Fetched subscriptions:', subscriptions);
         setSubscriptions(subscriptions);
-        // Auto-select first subscription
-        if (subscriptions.length > 0) {
+
+        // If menuId is provided, auto-select that plan, otherwise select first subscription
+        if (menuId && typeof menuId === 'string') {
+          console.log('Auto-selecting plan from menuId:', menuId);
+          setSelectedPlan(menuId);
+        } else if (subscriptions.length > 0) {
           setSelectedPlan(subscriptions[0]._id);
         } else {
           console.log('No subscriptions found');
@@ -120,67 +124,158 @@ const Subscription = () => {
           </View>
         ) : (
           <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
-            {/* Choose Your Plan */}
-            <Text
-              className="mb-6 text-2xl font-semibold text-black dark:text-white"
-              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Choose Your Plan
-            </Text>
+            {/* Only show "Choose Your Plan" section if menuId is NOT provided */}
+            {!menuId ? (
+              <>
+                {/* Choose Your Plan */}
+                <Text
+                  className="mb-6 text-2xl font-semibold text-black dark:text-white"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  Choose Your Plan
+                </Text>
 
-            {/* Plan Cards */}
-            {subscriptions.map((plan) => {
-              const savings = getSavings(plan.originalPrice, plan.discountedPrice);
-              const isSelected = selectedPlan === plan._id;
-              
-              return (
-                <TouchableOpacity
-                  key={plan._id}
-                  onPress={() => setSelectedPlan(plan._id)}
-                  className={`mb-4 rounded-xl p-4 ${
-                    isSelected
-                      ? 'border border-zinc-200 bg-neutral-900 dark:border-zinc-700 dark:bg-neutral-900'
-                      : 'border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-black'
-                  }`}>
+                {/* Plan Cards */}
+                {subscriptions.map((plan) => {
+                  const savings = getSavings(plan.originalPrice, plan.discountedPrice);
+                  const isSelected = selectedPlan === plan._id;
+
+                  return (
+                    <TouchableOpacity
+                      key={plan._id}
+                      onPress={() => setSelectedPlan(plan._id)}
+                      className={`mb-4 rounded-xl p-4 ${
+                        isSelected
+                          ? 'border border-zinc-200 bg-neutral-900 dark:border-zinc-700 dark:bg-neutral-900'
+                          : 'border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-black'
+                      }`}>
+                      <View className="flex-row items-start justify-between">
+                        <View className="flex-1 mr-4">
+                          <View className="mb-2 flex-row items-center flex-wrap">
+                            <Text
+                              className={`text-xl font-semibold ${
+                                isSelected
+                                  ? 'text-zinc-50 dark:text-zinc-50'
+                                  : 'text-zinc-500 dark:text-zinc-400'
+                              }`}
+                              style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                              {plan.planName}
+                            </Text>
+                          </View>
+                          {(plan.duration === 'yearly' || plan.duration === 'monthly') && (
+                            <View className="mb-2">
+                              <View className="rounded-full bg-blue-500 px-3 py-1 self-start">
+                                <Text
+                                  className="text-xs font-medium text-zinc-50"
+                                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                                  {plan.duration === 'yearly' ? 'BEST VALUE' : 'POPULAR'}
+                                </Text>
+                              </View>
+                            </View>
+                          )}
+                          <Text
+                            className={`text-base ${
+                              isSelected
+                                ? 'text-zinc-50 dark:text-zinc-50'
+                                : 'text-zinc-500 dark:text-zinc-400'
+                            }`}
+                            style={{ fontFamily: 'Poppins_500Medium' }}>
+                            No. of meals: {plan.mealsPerPlan} meals
+                          </Text>
+                          {plan.freeDelivery && (
+                            <Text
+                              className={`text-base ${
+                                isSelected
+                                  ? 'text-green-400 dark:text-green-600'
+                                  : 'text-green-600 dark:text-green-400'
+                              }`}
+                              style={{ fontFamily: 'Poppins_500Medium' }}>
+                              Delivery Free
+                            </Text>
+                          )}
+                        </View>
+                        <View className="items-end">
+                          <Text
+                            className={`text-lg line-through ${
+                              isSelected
+                                ? 'text-zinc-500 dark:text-zinc-400'
+                                : 'text-zinc-500 dark:text-zinc-400'
+                            }`}
+                            style={{ fontFamily: 'Poppins_500Medium' }}>
+                            {formatCurrency(plan.originalPrice)}
+                          </Text>
+                          <Text
+                            className={`text-2xl font-semibold ${
+                              isSelected
+                                ? 'text-green-400 dark:text-green-400'
+                                : 'text-green-600 dark:text-green-400'
+                            }`}
+                            style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                            {formatCurrency(plan.discountedPrice)}
+                          </Text>
+                          <Text
+                            className={`text-sm capitalize ${
+                              isSelected
+                                ? 'text-zinc-500 dark:text-zinc-400'
+                                : 'text-zinc-500 dark:text-zinc-400'
+                            }`}
+                            style={{ fontFamily: 'Poppins_500Medium' }}>
+                            {plan.duration === 'yearly' ? 'Yearly' : plan.duration === 'monthly' ? 'Monthly' : 'Quarterly'}
+                          </Text>
+                        </View>
+                      </View>
+                      {savings > 0 && (
+                        <Text
+                          className={`mt-2 text-sm ${
+                            isSelected
+                              ? 'text-green-400 dark:text-green-600'
+                              : 'text-green-600 dark:text-green-400'
+                          }`}
+                          style={{ fontFamily: 'Poppins_500Medium' }}>
+                          You Save: {formatCurrency(savings)}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            ) : selectedPlanData ? (
+              /* Show selected plan details when menuId is provided */
+              <>
+                <Text
+                  className="mb-6 text-2xl font-semibold text-black dark:text-white"
+                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                  Your Selected Plan
+                </Text>
+
+                <View className="mb-4 rounded-xl border-2 border-green-500 bg-neutral-900 p-4 dark:border-green-400 dark:bg-neutral-900">
                   <View className="flex-row items-start justify-between">
                     <View className="flex-1 mr-4">
                       <View className="mb-2 flex-row items-center flex-wrap">
                         <Text
-                          className={`text-xl font-semibold ${
-                            isSelected
-                              ? 'text-zinc-50 dark:text-zinc-50'
-                              : 'text-zinc-500 dark:text-zinc-400'
-                          }`}
+                          className="text-xl font-semibold text-zinc-50"
                           style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                          {plan.planName}
+                          {selectedPlanData.planName}
                         </Text>
                       </View>
-                      {(plan.duration === 'yearly' || plan.duration === 'monthly') && (
+                      {(selectedPlanData.duration === 'yearly' || selectedPlanData.duration === 'monthly') && (
                         <View className="mb-2">
                           <View className="rounded-full bg-blue-500 px-3 py-1 self-start">
                             <Text
                               className="text-xs font-medium text-zinc-50"
                               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                              {plan.duration === 'yearly' ? 'BEST VALUE' : 'POPULAR'}
+                              {selectedPlanData.duration === 'yearly' ? 'BEST VALUE' : 'POPULAR'}
                             </Text>
                           </View>
                         </View>
                       )}
                       <Text
-                        className={`text-base ${
-                          isSelected
-                            ? 'text-zinc-50 dark:text-zinc-50'
-                            : 'text-zinc-500 dark:text-zinc-400'
-                        }`}
+                        className="text-base text-zinc-50"
                         style={{ fontFamily: 'Poppins_500Medium' }}>
-                        No. of meals: {plan.mealsPerPlan} meals
+                        No. of meals: {selectedPlanData.mealsPerPlan} meals
                       </Text>
-                      {plan.freeDelivery && (
+                      {selectedPlanData.freeDelivery && (
                         <Text
-                          className={`text-base ${
-                            isSelected
-                              ? 'text-green-400 dark:text-green-600'
-                              : 'text-green-600 dark:text-green-400'
-                          }`}
+                          className="text-base text-green-400"
                           style={{ fontFamily: 'Poppins_500Medium' }}>
                           Delivery Free
                         </Text>
@@ -188,48 +283,32 @@ const Subscription = () => {
                     </View>
                     <View className="items-end">
                       <Text
-                        className={`text-lg line-through ${
-                          isSelected
-                            ? 'text-zinc-500 dark:text-zinc-400'
-                            : 'text-zinc-500 dark:text-zinc-400'
-                        }`}
+                        className="text-lg text-zinc-500 line-through"
                         style={{ fontFamily: 'Poppins_500Medium' }}>
-                        {formatCurrency(plan.originalPrice)}
+                        {formatCurrency(selectedPlanData.originalPrice)}
                       </Text>
                       <Text
-                        className={`text-2xl font-semibold ${
-                          isSelected
-                            ? 'text-green-400 dark:text-green-400'
-                            : 'text-green-600 dark:text-green-400'
-                        }`}
+                        className="text-2xl font-semibold text-green-400"
                         style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                        {formatCurrency(plan.discountedPrice)}
+                        {formatCurrency(selectedPlanData.discountedPrice)}
                       </Text>
                       <Text
-                        className={`text-sm capitalize ${
-                          isSelected
-                            ? 'text-zinc-500 dark:text-zinc-400'
-                            : 'text-zinc-500 dark:text-zinc-400'
-                        }`}
+                        className="text-sm capitalize text-zinc-500"
                         style={{ fontFamily: 'Poppins_500Medium' }}>
-                        {plan.duration === 'yearly' ? 'Yearly' : plan.duration === 'monthly' ? 'Monthly' : 'Quarterly'}
+                        {selectedPlanData.duration === 'yearly' ? 'Yearly' : selectedPlanData.duration === 'monthly' ? 'Monthly' : 'Quarterly'}
                       </Text>
                     </View>
                   </View>
-                  {savings > 0 && (
+                  {getSavings(selectedPlanData.originalPrice, selectedPlanData.discountedPrice) > 0 && (
                     <Text
-                      className={`mt-2 text-sm ${
-                        isSelected
-                          ? 'text-green-400 dark:text-green-600'
-                          : 'text-green-600 dark:text-green-400'
-                      }`}
+                      className="mt-2 text-sm text-green-400"
                       style={{ fontFamily: 'Poppins_500Medium' }}>
-                      You Save: {formatCurrency(savings)}
+                      You Save: {formatCurrency(getSavings(selectedPlanData.originalPrice, selectedPlanData.discountedPrice))}
                     </Text>
                   )}
-                </TouchableOpacity>
-              );
-            })}
+                </View>
+              </>
+            ) : null}
 
             {/* Price Summary */}
             {selectedPlanData && (

@@ -22,18 +22,12 @@ const Header = () => {
   } = useDefaultAddress();
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  // Debug logging
-  console.log('🏠 [HEADER] Address state:', {
-    selectedAddress: selectedAddress?.label || 'null',
-    defaultAddress: defaultAddress?.label || 'null',
-    savedAddressesCount: savedAddresses.length,
-    hasAddresses: hasAddresses(),
-    loading
-  });
 
-  const currentLocation = getFormattedAddress() === 'No address selected' 
-    ? (hasAddresses() ? 'Select Address' : 'Add Address')
-    : getFormattedAddress();
+  const currentLocation = loading && !selectedAddress
+    ? 'Loading...'
+    : getFormattedAddress() === 'No address selected'
+      ? (hasAddresses() ? 'Select Address' : 'Add Address')
+      : getFormattedAddress();
 
   const truncateLocation = (location: string, maxLength: number = 25) => {
     if (location.length <= maxLength) return location;
@@ -67,9 +61,9 @@ const Header = () => {
         </TouchableOpacity>
 
         <View className="flex-row items-center space-x-3">
-          <TouchableOpacity className="p-2">
+          {/* <TouchableOpacity className="p-2">
             <Feather name="bell" size={22} color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <ThemeToggle />
         </View>
       </View>
@@ -106,7 +100,7 @@ const Header = () => {
           ) : (
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
               {/* Current Location Button */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={() => {
                   setShowAddressModal(false);
                   // TODO: Get current location and add to addresses
@@ -118,7 +112,7 @@ const Header = () => {
                   style={{ fontFamily: 'Poppins_500Medium' }}>
                   Use Current Location
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Saved Addresses */}
               {savedAddresses.length > 0 ? (

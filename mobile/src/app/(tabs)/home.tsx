@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
+import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '@/context/AuthContext';
 
 // Import all components
 import Header from '@/components/home/Header';
@@ -15,6 +17,19 @@ import ReferEarn from '@/components/home/ReferEarn';
 
 const Home = () => {
   const { colorScheme } = useColorScheme();
+  const { user } = useAuth();
+
+  // Log when home screen renders
+  useEffect(() => {
+    console.log('🏠 [HOME_SCREEN] Rendered with user:', user?.name || 'null');
+  }, [user]);
+
+  // Log when home screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🏠 [HOME_SCREEN] Focused with user:', user?.name || 'null');
+    }, [user])
+  );
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-black">
@@ -25,7 +40,7 @@ const Home = () => {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}>
         <Header />
-        <Welcome />
+        <Welcome key={user?.id || 'no-user'} />
         <BannerCarousel />
         <Categories />
         <MealSubscriptions />

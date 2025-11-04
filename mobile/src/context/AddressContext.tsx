@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Address } from '@/types/address.types';
 import { addressService } from '@/services/address.service';
 import { storageService } from '@/services/storage.service';
+import { useAuth } from './AuthContext';
 
 interface AddressContextType {
   selectedAddress: Address | null;
@@ -22,6 +23,7 @@ interface AddressProviderProps {
 }
 
 export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
   const [defaultAddress, setDefaultAddress] = useState<Address | null>(null);
@@ -168,12 +170,29 @@ export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) =>
 
   useEffect(() => {
     const initializeAddresses = async () => {
+      // Load persisted address first (synchronous from local storage)
       await loadPersistedAddress();
+      // Then fetch fresh addresses from API
       await refreshAddresses();
     };
-    
+
     initializeAddresses();
   }, []);
+
+  // Refresh addresses when user logs in
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('🔐 [ADDRESS_CONTEXT] User authenticated, refreshing addresses...');
+      refreshAddresses();
+    } else {
+      console.log('🔓 [ADDRESS_CONTEXT] User logged out, clearing addresses...');
+      // Clear addresses when user logs out
+      setSavedAddresses([]);
+      setDefaultAddress(null);
+      setSelectedAddress(null);
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const value: AddressContextType = {
     selectedAddress,

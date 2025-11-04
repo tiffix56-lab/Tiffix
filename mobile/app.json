@@ -14,7 +14,7 @@
       "expo-router"
     ],
     "orientation": "portrait",
-    "icon": "./src/assets/icon.png",
+    "icon": "./src/assets/splash.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./src/assets/splash.png",
@@ -26,17 +26,24 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "",
+      "bundleIdentifier": "com.rutwik187.tiffix",
       "config": {
         "googleMapsApiKey": ""
       },
       "associatedDomains": [
+        "applinks:tiffix.in",
         "applinks:tiffix.in"
       ],
       "infoPlist": {
         "CFBundleURLTypes": [
           {
-            "CFBundleURLName": "tiffix.mobile.deeplink",
+            "CFBundleURLName": "com.rutwik187.tiffix",
+            "CFBundleURLSchemes": [
+              "tiffix"
+            ]
+          },
+          {
+            "CFBundleURLName": "com.rutwik187.tiffix",
             "CFBundleURLSchemes": [
               "tiffix"
             ]
@@ -46,10 +53,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "foregroundImage": "./src/assets/splash.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tiffix.tiffixmobile",
+      "package": "com.rutwik187.tiffix",
+      "versionCode": 2,
       "config": {
         "googleMaps": {
           "apiKey": ""
@@ -60,7 +68,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "12862b1b-d529-4628-bfb2-2bae511fe1dc"
+        "projectId": "c1fb3ddb-7aa1-491f-bcfa-c4669d218b27"
       }
     },
     "updates": {
@@ -68,7 +76,6 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "owner": ""
+    }
   }
 }

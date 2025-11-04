@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
@@ -17,9 +17,10 @@ import { LoginCredentials } from '@/types/auth.types';
 
 const Login = () => {
   const { colorScheme } = useColorScheme();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, user } = useAuth();
   const [error, setError] = useState<string>('');
   const [, setSocialLoading] = useState(false);
+  const shouldNavigateRef = useRef(false);
 
   const {
     control,
@@ -33,14 +34,27 @@ const Login = () => {
     },
   });
 
+  // Navigate to home when user data becomes available after login
+  useEffect(() => {
+    if (shouldNavigateRef.current && user) {
+      console.log('🚀 [LOGIN] User data is now available, navigating to home:', user.name);
+      shouldNavigateRef.current = false;
+      router.replace('/(tabs)/home');
+    }
+  }, [user]);
+
   const onSubmit = async (data: LoginCredentials) => {
     setError('');
-    
+
     const result = await login(data);
 
     if (result.success) {
-      router.replace('/(tabs)/home');
+      // Set flag to navigate once user data is available in context
+      console.log('✅ [LOGIN] Login successful, waiting for user data in context...');
+      shouldNavigateRef.current = true;
     } else {
+      console.log(result, "fsdf");
+
       setError(result.message);
     }
   };

@@ -45,11 +45,16 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
-    
+
     case 'SET_INITIALIZED':
       return { ...state, isInitialized: action.payload };
-    
+
     case 'LOGIN_SUCCESS':
+      console.log('🔐 [AUTH_REDUCER] LOGIN_SUCCESS dispatched:', {
+        userName: action.payload.user.name,
+        userEmail: action.payload.user.email,
+        wasAuthenticated: state.isAuthenticated
+      });
       return {
         ...state,
         user: action.payload.user,
@@ -57,7 +62,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: true,
         isLoading: false,
       };
-    
+
     case 'LOGOUT':
       return {
         ...state,
@@ -66,13 +71,17 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         isLoading: false,
       };
-    
+
     case 'UPDATE_USER':
+      console.log('🔄 [AUTH_REDUCER] UPDATE_USER dispatched:', {
+        userName: action.payload.name,
+        userEmail: action.payload.email
+      });
       return {
         ...state,
         user: action.payload,
       };
-    
+
     default:
       return state;
   }
@@ -94,6 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (token && user) {
         const profileResponse = await authService.getProfile();
+        
         if (profileResponse.success && profileResponse.data) {
           dispatch({
             type: 'LOGIN_SUCCESS',
@@ -127,11 +137,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (credentials.rememberMe) {
           await storageService.setRememberMe(true);
         }
-        
-        dispatch({
-          type: 'LOGIN_SUCCESS',
-          payload: { user: response.data.user, token: response.data.accessToken },
-        });
+
+        initializeAuth();
         
         Toast.show({
           type: 'success',

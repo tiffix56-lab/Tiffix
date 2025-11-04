@@ -1,19 +1,21 @@
-import { View, Text, Image } from 'react-native';
-import React, { useEffect } from 'react';
+import { View, Text } from 'react-native';
+import React, { useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
+import { Video, ResizeMode } from 'expo-av';
 import { useAuth } from '@/context/AuthContext';
 import { storageService } from '@/services/storage.service';
 
 const SplashScreen = () => {
   const { colorScheme } = useColorScheme();
   const { isAuthenticated, isInitialized } = useAuth();
+  const videoRef = useRef<Video>(null);
 
   useEffect(() => {
     const handleNavigation = async () => {
       if (!isInitialized) return;
-      
+
       const timer = setTimeout(async () => {
         if (isAuthenticated) {
           router.replace('/(tabs)/home');
@@ -33,19 +35,28 @@ const SplashScreen = () => {
     handleNavigation();
   }, [isAuthenticated, isInitialized]);
 
+  // Play video when component mounts
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playAsync();
+    }
+  }, []);
+
   return (
-    <View className="flex-1 items-center justify-center bg-zinc-50 dark:bg-black">
+    <View className="flex-1 items-center justify-center bg-black dark:bg-black">
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <Image
-        source={
-          colorScheme === 'dark' ? require('@/assets/logo-dark.png') : require('@/assets/logo.png')
-        }
-        className="h-96 w-96"
-        resizeMode="contain"
+      <Video
+        ref={videoRef}
+        source={require('@/assets/tiffix_sc.mp4')}
+        style={{ width: 384, height: 384 }}
+        resizeMode={ResizeMode.CONTAIN}
+        shouldPlay
+        isLooping
+        isMuted
       />
-      <Text className="absolute bottom-20 text-2xl font-normal text-black dark:text-white">
+      {/* <Text className="absolute bottom-20 text-2xl font-normal text-black dark:text-white">
         Your Daily Tiffin, Delivered with Care
-      </Text>
+      </Text> */}
     </View>
   );
 };

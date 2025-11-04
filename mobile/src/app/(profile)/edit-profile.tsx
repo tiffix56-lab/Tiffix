@@ -50,20 +50,40 @@ const EditProfile = () => {
       if (authResponse.success && authResponse.data) {
         const authUser = authResponse.data.user;
         let userData = authUser;
-        
+
+        console.log('📞 Auth user phone number:', authUser.phoneNumber);
+
         // Merge profile data if available (includes avatar)
         if (profileResponse.success && profileResponse.data?.userProfile?.userId) {
           const profile = profileResponse.data.userProfile.userId;
+          console.log('📞 Profile user phone number:', profile.phoneNumber);
           userData = {
             ...authUser,
             ...profile, // This should include avatar, phoneNumber, gender, etc.
           };
           console.log('✅ Merged user data with profile:', userData);
         }
-        
+
         setUser(userData);
         setName(userData.name || userData.fullName || '');
-        setMobileNumber(userData.phoneNumber || '');
+
+        // Try multiple possible phone number fields
+        const phoneData = userData.phoneNumber || userData.phone || authUser.phoneNumber;
+        console.log('📞 Final phone number to display:', phoneData);
+
+        // Handle phone number - it might be an object or a string
+        let phone = '';
+        if (phoneData) {
+          if (typeof phoneData === 'string') {
+            phone = phoneData;
+          } else if (typeof phoneData === 'object' && phoneData.internationalNumber) {
+            // Extract just the number part from "+91 83086 57425"
+            phone = phoneData.internationalNumber.replace(/^\+91\s*/, '').replace(/\s/g, '');
+          }
+        }
+        console.log('📞 Extracted phone number:', phone);
+        setMobileNumber(phone);
+
         setGender(userData.gender || 'male');
       } else {
         setError('Failed to load user data');
@@ -344,11 +364,12 @@ const EditProfile = () => {
                   <TextInput
                     value={mobileNumber}
                     onChangeText={setMobileNumber}
-                    placeholder="Your mobile number"
+                    placeholder="Mobile number"
                     placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                    className="flex-1 text-base text-black dark:text-white"
+                    className="flex-1 py-3 text-base text-black dark:text-white"
                     style={{ fontFamily: 'Poppins_400Regular' }}
                     keyboardType="phone-pad"
+                    maxLength={10}
                   />
                 </View>
 

@@ -18,7 +18,11 @@ const VendorFood = () => {
   const fetchSubscriptionPlans = async () => {
     try {
       setLoading(true);
-      const response = await subscriptionService.getActiveSubscriptions();
+      const response = await subscriptionService.getActiveSubscriptions(
+        {
+          category: 'food_vendor'
+        }
+      );
       
       if (response.success && response.data) {
         setPlans(response.data.subscriptions || []);

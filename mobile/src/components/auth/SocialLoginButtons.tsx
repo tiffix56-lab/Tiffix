@@ -62,16 +62,6 @@ export const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
           />
         </TouchableOpacity>
         
-        <TouchableOpacity
-          className="h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800"
-          activeOpacity={0.7}
-        >
-          <Image
-            source={require('../../assets/apple.png')}
-            style={{ height: 32, width: 32 }}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
       </View>
     </View>
   );

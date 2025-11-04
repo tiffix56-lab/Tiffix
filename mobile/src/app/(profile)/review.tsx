@@ -32,14 +32,28 @@ const Review = () => {
       return;
     }
 
+    // Determine review type based on which ID is present
+    let reviewType: 'order' | 'subscription' | 'vendor';
+    if (orderId) {
+      reviewType = 'order';
+    } else if (subscriptionId) {
+      reviewType = 'subscription';
+    } else if (vendorId) {
+      reviewType = 'vendor';
+    } else {
+      Alert.alert('Error', 'Invalid review parameters');
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await reviewService.createReview({
-        orderId: orderId as string,
-        subscriptionId: subscriptionId as string,
-        vendorId: vendorId as string,
+        reviewType,
+        orderId: orderId as string | undefined,
+        subscriptionId: subscriptionId as string | undefined,
+        vendorId: vendorId as string | undefined,
         rating,
-        comment: comment.trim(),
+        reviewText: comment.trim(),
       });
 
       if (response.success) {

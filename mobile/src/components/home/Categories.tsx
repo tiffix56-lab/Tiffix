@@ -29,7 +29,7 @@ const Categories = () => {
             <View className="absolute inset-0 rounded-xl bg-black/20" />
 
             {/* Discount Badge - Top Right */}
-            <View className="absolute right-3 top-3">
+            {/* <View className="absolute right-3 top-3">
               <View className="rounded-lg bg-orange-500 px-2 py-1">
                 <Text
                   className="text-xs font-semibold text-white"
@@ -37,7 +37,7 @@ const Categories = () => {
                   22% off
                 </Text>
               </View>
-            </View>
+            </View> */}
 
             {/* Gradient Background Section */}
             <View className="absolute bottom-0 left-0 right-0">
@@ -79,7 +79,7 @@ const Categories = () => {
             <View className="absolute inset-0 rounded-xl bg-black/20" />
 
             {/* Discount Badge - Top Right */}
-            <View className="absolute right-3 top-3">
+            {/* <View className="absolute right-3 top-3">
               <View className="rounded-lg bg-orange-500 px-2 py-1">
                 <Text
                   className="text-xs font-semibold text-white"
@@ -87,7 +87,7 @@ const Categories = () => {
                   15% off
                 </Text>
               </View>
-            </View>
+            </View> */}
 
             {/* Gradient Background Section */}
             <View className="absolute bottom-0 left-0 right-0">

@@ -17,11 +17,12 @@ export interface Review {
 }
 
 export interface CreateReviewRequest {
+  reviewType: 'order' | 'subscription' | 'vendor';
   orderId?: string;
   subscriptionId?: string;
   vendorId?: string;
   rating: number;
-  comment: string;
+  reviewText: string;
 }
 
 export interface UpdateReviewRequest {
