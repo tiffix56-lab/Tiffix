@@ -33,19 +33,34 @@ export default {
 
             const { emailAddress, password } = value;
 
-            const user = await userModel.findOne({ emailAddress });
+            const user = await userModel.findOne({ emailAddress, isDeleted: false });
             if (!user) {
                 return httpError(next, new Error(responseMessage.AUTH.ACCOUNT_NOT_FOUND), req, 401);
             }
 
+            if (user?.isBanned) {
+                return httpError(next, new Error(responseMessage.customMessage("Your Account Is Suspended")), req, 401)
+            }
+
             const isPasswordValid = await user.comparePassword(password);
+
 
             if (!isPasswordValid) {
                 return httpError(next, new Error(responseMessage.customMessage("Invalid Credentials")), req, 401);
             }
 
             if (!user.isAccountConfirmed()) {
-                return httpError(next, new Error('Account not verified'), req, 403);
+                return httpResponse(req, res, 403, responseMessage.customMessage('Account not verified'), {
+                    isVerified: false,
+                    requiresVerification: true,
+                    message: 'Please verify your account to continue',
+                    user: {
+                        id: user._id,
+                        email: user.emailAddress,
+                        phoneNumber: user.phoneNumber?.internationalNumber || null,
+                        name: user.name
+                    }
+                });
             }
 
             const accessToken = quicker.generateToken(
@@ -93,7 +108,7 @@ export default {
 
             const { emailAddress, password, name, phoneNumber } = value;
 
-            const existingUser = await userModel.findOne({ emailAddress });
+            const existingUser = await userModel.findOne({ emailAddress, isDeleted: false });
             if (existingUser) {
                 return httpError(next, new Error('User already exists with this email'), req, 409);
             }
@@ -101,6 +116,17 @@ export default {
             const { countryCode, isoCode, internationalNumber } = quicker.parsePhoneNumber(`+${phoneNumber}`)
             if (!countryCode || !isoCode || !internationalNumber) {
                 return httpError(next, new Error(responseMessage.AUTH.INVALID_PHONE_NUMBER), req, 422)
+            }
+
+            const existingUserByEmail = await userModel.findActiveByEmail(emailAddress);
+            const existingUserByPhone = await userModel.findActiveByPhoneNumber(internationalNumber);
+
+            if (existingUserByEmail) {
+                return httpError(next, new Error('An active account already exists with this email'), req, 409);
+            }
+
+            if (existingUserByPhone) {
+                return httpError(next, new Error('An active account already exists with this phone number'), req, 409);
             }
 
             const timezones = quicker.countryTimezone(isoCode)
@@ -122,6 +148,7 @@ export default {
                 timezone: timezone,
                 consent: true,
                 isActive: false,
+                isDeleted: false,
                 accountConfirmation: {
                     status: false,
                     otp: hashedOTP,
@@ -183,64 +210,26 @@ export default {
         }
     },
 
-    logout: (req, res, next) => {
-        try {
-            res.clearCookie('accessToken');
-            httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Logged out successfully' });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    changePassword: async (req, res, next) => {
+    verifyAccount: async (req, res, next) => {
         try {
             const { body } = req;
-            const { userId } = req.authenticatedUser;
+            const { otp, emailAddress, phoneNumber } = body;
 
-            const { error, value } = validateJoiSchema(ValidateChangePassword, body);
-            if (error) {
-                return httpError(next, error, req, 422);
+            if (!otp || (!emailAddress && !phoneNumber)) {
+                return httpError(next, new Error('OTP and either email address or phone number are required'), req, 400);
             }
 
-            const { currentPassword, newPassword } = value;
+            let user;
 
-            const user = await userModel.findById(userId);
+            if (emailAddress) {
+                user = await userModel.findOne({ emailAddress, isDeleted: false });
+            } else if (phoneNumber) {
+                const { internationalNumber } = quicker.parsePhoneNumber(`+${phoneNumber}`);
+                user = await userModel.findActiveByPhoneNumber(internationalNumber);
+            }
+
             if (!user) {
                 return httpError(next, new Error('User not found'), req, 404);
-            }
-
-            const isCurrentPasswordValid = await quicker.comparePassword(currentPassword, user.password);
-            if (!isCurrentPasswordValid) {
-                return httpError(next, new Error('Current password is incorrect'), req, 400);
-            }
-
-            const hashedNewPassword = await quicker.hashPassword(newPassword);
-            await userModel.findByIdAndUpdate(userId, { password: hashedNewPassword });
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Password changed successfully' });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    verifyEmail: async (req, res, next) => {
-        try {
-            const { body } = req;
-            const { otp, emailAddress } = body;
-
-            if (!otp || !emailAddress) {
-                return httpError(next, new Error('OTP and email address are required'), req, 400);
-            }
-
-            const user = await userModel.findOne({ emailAddress });
-            if (!user) {
-                return httpError(next, new Error('User not found'), req, 404);
-            }
-
-            if (user.accountConfirmation.status) {
-                return httpError(next, new Error('Email already verified'), req, 400);
             }
 
             const isOTPValid = await quicker.comparePassword(otp, user.accountConfirmation.otp);
@@ -251,6 +240,10 @@ export default {
             const otpAge = Date.now() - user.accountConfirmation.timestamp.getTime();
             if (otpAge > 10 * 60 * 1000) {
                 return httpError(next, new Error('OTP expired. Please request a new one'), req, 400);
+            }
+
+            if (user.accountConfirmation.status) {
+                return httpError(next, new Error('Account already verified'), req, 400);
             }
 
             user.accountConfirmation.status = true;
@@ -303,7 +296,7 @@ export default {
             });
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: `Email verified successfully!${referralRewardMessage}`,
+                message: `Account verified successfully!${referralRewardMessage}`,
                 user: {
                     id: user._id,
                     email: user.emailAddress,
@@ -324,19 +317,35 @@ export default {
 
     resendVerificationOTP: async (req, res, next) => {
         try {
-            const { emailAddress } = req.body;
+            const { emailAddress, phoneNumber } = req.body;
 
-            if (!emailAddress) {
-                return httpError(next, new Error('Email address is required'), req, 400);
+            if (!emailAddress && !phoneNumber) {
+                return httpError(next, new Error('Either email address or phone number is required'), req, 400);
             }
 
-            const user = await userModel.findOne({ emailAddress });
+            let user;
+
+            if (emailAddress) {
+                user = await userModel.findOne({ emailAddress });
+            } else if (phoneNumber) {
+                const { internationalNumber } = quicker.parsePhoneNumber(`+${phoneNumber}`);
+                user = await userModel.findActiveByPhoneNumber(internationalNumber);
+            }
+
             if (!user) {
                 return httpError(next, new Error('User not found'), req, 404);
             }
 
+            if (user?.isBanned) {
+                return httpError(next, new Error(responseMessage.customMessage("Your Account Is Suspended")), req, 401)
+            }
+
             if (user.accountConfirmation.status) {
-                return httpError(next, new Error('Email already verified'), req, 400);
+                return httpError(next, new Error('Account already verified'), req, 400);
+            }
+
+            if (!user.phoneNumber?.internationalNumber) {
+                return httpError(next, new Error('Phone number not found for this user. Cannot send verification code.'), req, 400);
             }
 
             const newOTP = quicker.generateOTP();
@@ -346,14 +355,61 @@ export default {
             await user.save();
 
             try {
-                await whatsappService.sendVerificationMessage(user.phoneNumber.internationalNumber, user.name, newOTP);
+                await whatsappService.sendVerificationMessage(
+                    user.phoneNumber.internationalNumber,
+                    user.name,
+                    newOTP
+                );
             } catch (whatsappError) {
                 return httpError(next, new Error('Failed to send verification WhatsApp'), req, 500);
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: 'New verification code sent to your WhatsApp'
+                message: 'New verification code sent to your WhatsApp',
+                phoneNumber: user.phoneNumber.internationalNumber
             });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    logout: (req, res, next) => {
+        try {
+            res.clearCookie('accessToken');
+            httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Logged out successfully' });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    changePassword: async (req, res, next) => {
+        try {
+            const { body } = req;
+            const { userId } = req.authenticatedUser;
+
+            const { error, value } = validateJoiSchema(ValidateChangePassword, body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+
+            const { currentPassword, newPassword } = value;
+
+            const user = await userModel.findById(userId);
+            if (!user) {
+                return httpError(next, new Error('User not found'), req, 404);
+            }
+
+            const isCurrentPasswordValid = await quicker.comparePassword(currentPassword, user.password);
+            if (!isCurrentPasswordValid) {
+                return httpError(next, new Error('Current password is incorrect'), req, 400);
+            }
+
+            const hashedNewPassword = await quicker.hashPassword(newPassword);
+            await userModel.findByIdAndUpdate(userId, { password: hashedNewPassword });
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, { message: 'Password changed successfully' });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
             httpError(next, new Error(errorMessage), req, 500);
@@ -430,6 +486,47 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 message: 'Password reset successfully'
+            });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    deleteAccount: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser;
+            const { reason, password } = req.body;
+
+            if (!password) {
+                return httpError(next, new Error('Password is required to delete account'), req, 400);
+            }
+
+            const user = await userModel.findById(userId);
+            if (!user) {
+                return httpError(next, new Error('User not found'), req, 404);
+            }
+
+            if (user.isDeleted) {
+                return httpError(next, new Error('User not found'), req, 404);
+            }
+
+            if (user?.isBanned) {
+                return httpError(next, new Error(responseMessage.customMessage("Your Account Is Suspended")), req, 401)
+            }
+
+            const isPasswordValid = await user.comparePassword(password);
+            if (!isPasswordValid) {
+                return httpError(next, new Error('Invalid password'), req, 401);
+            }
+
+            await user.softDelete(reason || 'User requested account deletion');
+
+            res.clearCookie('accessToken');
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                message: 'Account deleted successfully. We hope to see you again!',
+                deleted: true
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
@@ -576,7 +673,7 @@ export default {
                 return httpError(next, new Error(responseMessage.AUTH.INVALID_PHONE_NUMBER), req, 422);
             }
 
-            const existingUserWithPhone = await userModel.findByPhoneNumber(internationalNumber);
+            const existingUserWithPhone = await userModel.findActiveByPhoneNumber(internationalNumber);
             if (existingUserWithPhone) {
                 return httpError(next, new Error('Phone number already in use'), req, 409);
             }

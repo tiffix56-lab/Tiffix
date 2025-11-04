@@ -38,7 +38,7 @@ router.route('/upload-file').post(uploadFiles, apiController.uploadFile);
 router.route('/auth/self').get(authController.self)
 router.route('/auth/login').post(authController.login)
 router.route('/auth/register').post(authController.register)
-router.route('/auth/verify-email').post(authController.verifyEmail)
+router.route('/auth/verify-email').post(authController.verifyAccount)
 router.route('/auth/resend-otp').post(authController.resendVerificationOTP)
 router.route('/auth/logout').post(authentication, authController.logout)
 router.route('/auth/change-password').post(authentication, authController.changePassword)
@@ -48,6 +48,8 @@ router.route('/auth/me').get(authentication, authController.me)
 router.route('/auth/init-profile-fill').post(authentication, authController.updatePhoneNumber)
 router.route('/auth/location').put(authentication, authController.updateLocation)
 router.route('/auth/location').get(authentication, authController.getUserLocation)
+router.route('/auth/delete-account').post(authentication, authController.deleteAccount);
+
 
 // OAuth routes
 router.route('/auth/google').get(passport.authenticate('google', { scope: ['profile', 'email'] }))

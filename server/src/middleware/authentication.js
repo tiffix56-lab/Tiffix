@@ -31,11 +31,18 @@ export default async (request, _res, next) => {
         try {
             const { userId } = await quicker.verifyToken(accessToken, config.auth.jwtSecret)
 
-            const user = await userModel.findOne({ _id: userId }).select('-password')
+            const user = await userModel.findOne({ _id: userId, isDeleted: false }).select('-password')
+
+
 
             if (!user) {
                 return httpError(next, new Error(responseMessage.AUTH.UNAUTHORIZED), req, 401)
             }
+
+            if (user?.isBanned) {
+                return httpError(next, new Error(responseMessage.customMessage("Your Account Is Suspended")), req, 401)
+            }
+
 
             req.authenticatedUser = user
             req.authenticatedUser.userId = user?._id

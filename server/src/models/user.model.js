@@ -189,6 +189,21 @@ const userSchema = new mongoose.Schema(
             type: Date,
             default: null
         },
+        isDeleted: {
+            type: Boolean,
+            default: false
+        },
+        deletionDetails: {
+            _id: false,
+            deletedAt: {
+                type: Date,
+                default: null
+            },
+            deletionReason: {
+                type: String,
+                default: null
+            }
+        },
         referral: {
             _id: false,
             referredBy: {
@@ -238,7 +253,7 @@ const userSchema = new mongoose.Schema(
             },
             canRefer: {
                 type: Boolean,
-                default: function() {
+                default: function () {
                     return this.role === 'user'
                 }
             }
@@ -293,6 +308,57 @@ userSchema.methods.isPasswordResetValid = function () {
     return Date.now() < this.passwordReset.expiry
 }
 
+
+userSchema.methods.softDelete = async function (reason = null) {
+    const User = this.constructor;
+
+    const baseEmail = this.emailAddress;
+    const basePhone = this.phoneNumber?.internationalNumber;
+
+    // Find how many deleted users exist with same base email
+    const existingDeletedEmailUsers = await User.find({
+        emailAddress: new RegExp(`^${baseEmail}-delete-\\d+$`, 'i')
+    });
+
+    const nextEmailSuffix = existingDeletedEmailUsers.length;
+
+    // Update email to include delete suffix
+    this.emailAddress = `${baseEmail}-delete-${nextEmailSuffix}`;
+
+    // Do same for phone number if available
+    if (basePhone) {
+        const existingDeletedPhoneUsers = await User.find({
+            'phoneNumber.internationalNumber': new RegExp(`^${basePhone}-delete-\\d+$`, 'i')
+        });
+        const nextPhoneSuffix = existingDeletedPhoneUsers.length;
+        this.phoneNumber.internationalNumber = `${basePhone}-delete-${nextPhoneSuffix}`;
+    }
+
+    // Soft delete flags
+    this.isDeleted = true;
+    this.isActive = false;
+    this.deletionDetails = {
+        deletedAt: new Date(),
+        deletionReason: reason
+    };
+
+    return this.save();
+};
+
+userSchema.statics.findActiveByEmail = function (email) {
+    return this.findOne({
+        emailAddress: email.toLowerCase(),
+        isDeleted: false
+    });
+};
+
+userSchema.statics.findActiveByPhoneNumber = function (internationalNumber) {
+    return this.findOne({
+        'phoneNumber.internationalNumber': internationalNumber,
+        isDeleted: false
+    });
+}
+
 userSchema.statics.findByEmail = function (email) {
     return this.findOne({ emailAddress: email.toLowerCase() })
 }
@@ -317,23 +383,23 @@ userSchema.statics.findByReferralCode = function (referralCode) {
 userSchema.statics.generateUniqueReferralCode = async function () {
     const MAX_ATTEMPTS = 10
     let attempts = 0
-    
+
     while (attempts < MAX_ATTEMPTS) {
         // Generate date-based code with timestamp
         const now = new Date()
         const timestamp = now.getTime().toString(36).toUpperCase()
         const randomPart = Math.random().toString(36).substring(2, 5).toUpperCase()
         const code = `${randomPart}${timestamp}`.substring(0, 8)
-        
+
         // Check if code already exists
         const existingUser = await this.findOne({ 'referral.userReferralCode': code })
         if (!existingUser) {
             return code
         }
-        
+
         attempts++
     }
-    
+
     // Fallback to random code if all attempts failed
     const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     let fallbackCode = ''
@@ -406,10 +472,14 @@ userSchema.statics.getReferralStats = function () {
                 },
                 totalCreditsAwarded: { $sum: '$referral.totalreferralCredits' },
                 activeReferrers: {
-                    $sum: { $cond: [{ $and: [
-                        { $eq: ['$referral.canRefer', true] },
-                        { $gt: ['$referral.totalreferralCredits', 0] }
-                    ]}, 1, 0] }
+                    $sum: {
+                        $cond: [{
+                            $and: [
+                                { $eq: ['$referral.canRefer', true] },
+                                { $gt: ['$referral.totalreferralCredits', 0] }
+                            ]
+                        }, 1, 0]
+                    }
                 }
             }
         }
