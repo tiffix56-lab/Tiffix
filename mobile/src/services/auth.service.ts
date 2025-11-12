@@ -107,7 +107,7 @@ class AuthService {
   }
 
   async deleteAccount(): Promise<ApiResponse> {
-    return await apiService.delete(API_ENDPOINTS.AUTH.DELETE_ACCOUNT);
+    return await apiService.post(API_ENDPOINTS.AUTH.DELETE_ACCOUNT);
   }
 }
 

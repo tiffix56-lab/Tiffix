@@ -17,7 +17,7 @@ import { LoginCredentials } from '@/types/auth.types';
 
 const Login = () => {
   const { colorScheme } = useColorScheme();
-  const { login, isLoading, user } = useAuth();
+  const { login, isLoading, user, resendOTP } = useAuth();
   const [error, setError] = useState<string>('');
   const [, setSocialLoading] = useState(false);
   const shouldNavigateRef = useRef(false);
@@ -49,11 +49,15 @@ const Login = () => {
     const result = await login(data);
 
     if (result.success) {
-      // Set flag to navigate once user data is available in context
-      console.log('✅ [LOGIN] Login successful, waiting for user data in context...');
       shouldNavigateRef.current = true;
     } else {
-      console.log(result, "fsdf");
+      if(result.message.includes("Account not verified")) {
+        resendOTP(data.emailAddress);
+        router.push({
+          pathname: '/otp',
+          params: { email: data.emailAddress },
+        });
+      }
 
       setError(result.message);
     }

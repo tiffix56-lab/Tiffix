@@ -47,6 +47,8 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
+    console.log(error.response?.data, "asds");
+    
     console.error('❌ [AXIOS] Response interceptor - error');
     console.error('❌ [AXIOS] Error URL:', error.config ? `${error.config.baseURL}${error.config.url}` : 'Unknown URL');
     console.error('❌ [AXIOS] Error status:', error.response?.status);
@@ -67,7 +69,7 @@ api.interceptors.response.use(
         ]);
         
         console.log('🔄 [AXIOS] Auth data cleared, rejecting with session expired');
-        return Promise.reject(new Error('Session expired'));
+        return Promise.reject(new Error(error.response?.data.message || 'Something went wrong. Please try again.'));
       } catch (clearError) {
         console.error('❌ [AXIOS] Failed to clear auth data:', clearError);
         return Promise.reject(error);

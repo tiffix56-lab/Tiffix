@@ -40,3 +40,5 @@ android/app/release.keystore
 
 # MacOS files (if any dev is using mac)
 android/.DS_Store
+
+my-upload-key.keystore

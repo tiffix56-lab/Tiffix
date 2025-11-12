@@ -2,7 +2,7 @@
   "expo": {
     "name": "Tiffix",
     "slug": "tiffix-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "tiffix",
     "web": {
       "favicon": "./src/assets/favicon.png"
@@ -53,11 +53,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/splash.png",
+        "foregroundImage": "./src/assets/applogo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.rutwik187.tiffix",
-      "versionCode": 2,
+      "versionCode": 3,
       "config": {
         "googleMaps": {
           "apiKey": ""
@@ -68,7 +68,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c1fb3ddb-7aa1-491f-bcfa-c4669d218b27"
+        "projectId": "12862b1b-d529-4628-bfb2-2bae511fe1dc"
       }
     },
     "updates": {
@@ -76,6 +76,7 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "owner": "tiffix"
   }
 }
