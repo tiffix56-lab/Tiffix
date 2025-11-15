@@ -64,6 +64,9 @@ router.route('/auth/facebook/callback').get(
 )
 router.route('/auth/failure').get(authController.oauthFailure)
 
+// Mobile OAuth routes
+router.route('/auth/google/mobile').post(authController.googleMobileAuth)
+
 
 // ############### USER PROFILE ROUTES ####################
 // User profile routes

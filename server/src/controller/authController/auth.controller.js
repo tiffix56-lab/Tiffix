@@ -10,6 +10,7 @@ import quicker from '../../util/quicker.js';
 import whatsappService from '../../service/whatsappService.js';
 import referralService from '../../service/referralService.js';
 import TimezoneUtil from '../../util/timezone.js';
+import { OAuth2Client } from 'google-auth-library';
 
 
 export default {
@@ -780,6 +781,131 @@ export default {
                 }
             });
         } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    googleMobileAuth: async (req, res, next) => {
+        try {
+            const { idToken } = req.body;
+
+            if (!idToken) {
+                return httpError(next, new Error('ID token is required'), req, 400);
+            }
+
+            // Initialize Google OAuth2 client
+            const client = new OAuth2Client(config.google.clientID);
+
+            // Verify the ID token
+            let ticket;
+            try {
+                ticket = await client.verifyIdToken({
+                    idToken: idToken,
+                    audience: config.google.clientID,
+                });
+            } catch (verifyError) {
+                console.error('Google token verification failed:', verifyError);
+                return httpError(next, new Error('Invalid Google token'), req, 401);
+            }
+
+            const payload = ticket.getPayload();
+            const { email, name, sub: googleId, picture } = payload;
+
+            if (!email) {
+                return httpError(next, new Error('Email not provided by Google'), req, 400);
+            }
+
+            // Check if user exists
+            let user = await userModel.findOne({ emailAddress: email, isDeleted: false });
+
+            if (user) {
+                // Existing user - log them in
+                if (user.isBanned) {
+                    return httpError(next, new Error('Your account is suspended'), req, 401);
+                }
+
+                // Update provider info if it was a local account
+                if (user.provider === EAuthProvider.LOCAL) {
+                    user.provider = EAuthProvider.GOOGLE;
+                    user.providerId = googleId;
+                    user.accountConfirmation.status = true;
+                    user.isActive = true;
+                    await user.save();
+                }
+            } else {
+                // New user - create account
+                const userData = {
+                    name,
+                    emailAddress: email,
+                    provider: EAuthProvider.GOOGLE,
+                    providerId: googleId,
+                    role: EUserRole.USER,
+                    profilePicture: picture,
+                    consent: true,
+                    isActive: true,
+                    isDeleted: false,
+                    accountConfirmation: {
+                        status: true,
+                        timestamp: TimezoneUtil.now()
+                    },
+                    referral: {
+                        userReferralCode: await userModel.generateUniqueReferralCode(),
+                        referralCodeGeneratedAt: TimezoneUtil.now(),
+                        canRefer: true
+                    }
+                };
+
+                user = new userModel(userData);
+                await user.save();
+
+                // Create user profile
+                const userProfile = new userProfileModel({
+                    userId: user._id,
+                    addresses: [],
+                    preferences: {}
+                });
+                await userProfile.save();
+            }
+
+            const needsProfileCompletion = !user.phoneNumber?.internationalNumber;
+
+            // Generate JWT token
+            const accessToken = quicker.generateToken(
+                {
+                    userId: user._id,
+                    email: user.emailAddress,
+                    userType: user.role,
+                    role: user.role
+                },
+                config.auth.jwtSecret,
+                config.auth.jwtExpiresIn
+            );
+
+            res.cookie('accessToken', accessToken, {
+                sameSite: 'strict',
+                maxAge: 1000 * 3600 * 24 * 365,
+                httpOnly: true,
+                secure: !(config.env === EApplicationEnvironment.DEVELOPMENT)
+            });
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                accessToken,
+                user: {
+                    id: user._id,
+                    email: user.emailAddress,
+                    name: user.name,
+                    userType: user.role,
+                    role: user.role
+                },
+                needsProfileCompletion,
+                message: needsProfileCompletion
+                    ? 'Please complete your profile by adding phone number'
+                    : 'Login successful'
+            });
+
+        } catch (err) {
+            console.error('Google mobile auth error:', err);
             const errorMessage = err.message || 'Internal server error';
             httpError(next, new Error(errorMessage), req, 500);
         }
