@@ -789,20 +789,21 @@ export default {
     googleMobileAuth: async (req, res, next) => {
         try {
             const { idToken } = req.body;
-
+            console.log(config.auth.google.clientId);
+            
             if (!idToken) {
                 return httpError(next, new Error('ID token is required'), req, 400);
             }
 
             // Initialize Google OAuth2 client
-            const client = new OAuth2Client(config.google.clientID);
+            const client = new OAuth2Client(config.auth.google.clientId);
 
             // Verify the ID token
             let ticket;
             try {
                 ticket = await client.verifyIdToken({
                     idToken: idToken,
-                    audience: config.google.clientID,
+                    audience: config.auth.google.clientId,
                 });
             } catch (verifyError) {
                 console.error('Google token verification failed:', verifyError);
