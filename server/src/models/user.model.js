@@ -48,7 +48,10 @@ const userSchema = new mongoose.Schema(
         timezone: {
             type: String,
             trim: true,
-            required: true
+            required: function () {
+                return this.provider === 'LOCAL'
+            },
+            default: 'Asia/Kolkata' // Default timezone for OAuth users
         },
         password: {
             type: String,
@@ -78,8 +81,10 @@ const userSchema = new mongoose.Schema(
             },
             otp: {
                 type: String,
-                required: true,
-
+                required: function () {
+                    return this.provider === 'LOCAL'
+                },
+                default: '000000' // Placeholder for OAuth users
             },
             timestamp: {
                 type: Date,
@@ -315,9 +320,14 @@ userSchema.methods.softDelete = async function (reason = null) {
     const baseEmail = this.emailAddress;
     const basePhone = this.phoneNumber?.internationalNumber;
 
+    // Helper function to escape special regex characters
+    const escapeRegex = (str) => {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
     // Find how many deleted users exist with same base email
     const existingDeletedEmailUsers = await User.find({
-        emailAddress: new RegExp(`^${baseEmail}-delete-\\d+$`, 'i')
+        emailAddress: new RegExp(`^${escapeRegex(baseEmail)}-delete-\\d+$`, 'i')
     });
 
     const nextEmailSuffix = existingDeletedEmailUsers.length;
@@ -328,7 +338,7 @@ userSchema.methods.softDelete = async function (reason = null) {
     // Do same for phone number if available
     if (basePhone) {
         const existingDeletedPhoneUsers = await User.find({
-            'phoneNumber.internationalNumber': new RegExp(`^${basePhone}-delete-\\d+$`, 'i')
+            'phoneNumber.internationalNumber': new RegExp(`^${escapeRegex(basePhone)}-delete-\\d+$`, 'i')
         });
         const nextPhoneSuffix = existingDeletedPhoneUsers.length;
         this.phoneNumber.internationalNumber = `${basePhone}-delete-${nextPhoneSuffix}`;

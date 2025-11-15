@@ -499,10 +499,6 @@ export default {
             const { userId } = req.authenticatedUser;
             const { reason, password } = req.body;
 
-            if (!password) {
-                return httpError(next, new Error('Password is required to delete account'), req, 400);
-            }
-
             const user = await userModel.findById(userId);
             if (!user) {
                 return httpError(next, new Error('User not found'), req, 404);
@@ -516,10 +512,19 @@ export default {
                 return httpError(next, new Error(responseMessage.customMessage("Your Account Is Suspended")), req, 401)
             }
 
-            const isPasswordValid = await user.comparePassword(password);
-            if (!isPasswordValid) {
-                return httpError(next, new Error('Invalid password'), req, 401);
+            // For LOCAL users, password verification is required
+            if (user.provider === 'LOCAL') {
+                if (!password) {
+                    return httpError(next, new Error('Password is required to delete account'), req, 400);
+                }
+
+                const isPasswordValid = await user.comparePassword(password);
+                if (!isPasswordValid) {
+                    return httpError(next, new Error('Invalid password'), req, 401);
+                }
             }
+            // For OAuth users (GOOGLE, FACEBOOK, etc.), no password verification needed
+            // since they're already authenticated via the authentication middleware
 
             await user.softDelete(reason || 'User requested account deletion');
 
@@ -790,7 +795,7 @@ export default {
         try {
             const { idToken } = req.body;
             console.log(config.auth.google.clientId);
-            
+
             if (!idToken) {
                 return httpError(next, new Error('ID token is required'), req, 400);
             }
@@ -829,44 +834,52 @@ export default {
                 // Update provider info if it was a local account
                 if (user.provider === EAuthProvider.LOCAL) {
                     user.provider = EAuthProvider.GOOGLE;
-                    user.providerId = googleId;
+                    user.googleId = googleId;
                     user.accountConfirmation.status = true;
                     user.isActive = true;
-                    await user.save();
                 }
+
+                // Update last login
+                user.lastLogin = new Date();
+                await user.save();
             } else {
                 // New user - create account
                 const userData = {
                     name,
                     emailAddress: email,
+                    avatar: picture,
+                    googleId: googleId,
                     provider: EAuthProvider.GOOGLE,
-                    providerId: googleId,
                     role: EUserRole.USER,
-                    profilePicture: picture,
                     consent: true,
                     isActive: true,
                     isDeleted: false,
                     accountConfirmation: {
                         status: true,
-                        timestamp: TimezoneUtil.now()
+                        timestamp: new Date()
                     },
                     referral: {
                         userReferralCode: await userModel.generateUniqueReferralCode(),
-                        referralCodeGeneratedAt: TimezoneUtil.now(),
+                        referralCodeGeneratedAt: new Date(),
                         canRefer: true
-                    }
+                    },
+                    lastLogin: new Date()
                 };
 
                 user = new userModel(userData);
                 await user.save();
 
                 // Create user profile
-                const userProfile = new userProfileModel({
-                    userId: user._id,
-                    addresses: [],
-                    preferences: {}
-                });
-                await userProfile.save();
+                try {
+                    const userProfile = new userProfileModel({
+                        userId: user._id,
+                        addresses: [],
+                        preferences: {}
+                    });
+                    await userProfile.save();
+                } catch (profileError) {
+                    console.warn('User profile creation failed for OAuth user:', profileError.message);
+                }
             }
 
             const needsProfileCompletion = !user.phoneNumber?.internationalNumber;
