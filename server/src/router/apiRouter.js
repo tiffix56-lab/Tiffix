@@ -6,7 +6,6 @@ import subscriptionController from '../controller/subscriptionController/subscri
 import locationZoneController from '../controller/locationZoneController/locationZone.controller.js'
 import vendorProfileController from '../controller/vendorProfileController/vendorProfile.controller.js'
 import userProfileController from '../controller/userProfileController/userProfile.controller.js'
-import referralController from '../controller/referralController/referral.controller.js'
 import promoCodeController from '../controller/promoCodeController/promoCode.controller.js'
 import subscriptionPurchaseController from '../controller/subscriptionPurchaseController/subscriptionPurchase.controller.js'
 import adminSubscriptionPurchaseController from '../controller/subscriptionPurchaseController/admin-subscriptionPurchase.controller.js'
@@ -18,6 +17,7 @@ import dailyMealController from '../controller/orderController/dailyMeal.control
 import orderController from '../controller/orderController/order.controller.js'
 import reviewController from '../controller/reviewController/review.controller.js'
 import adminController from '../controller/AdminController/admin.controller.js'
+import referralController from '../controller/referralController/referral.controller.js'
 import mapsController from '../controller/mapsController/maps.controller.js'
 import complainController from '../controller/complainController/complain.controller.js'
 import { uploadFiles } from '../middleware/multerHandler.js'
@@ -84,21 +84,9 @@ router.route('/user-profiles/preferences').patch(authentication, userProfileCont
 
 
 // ############### REFERRAL ROUTES ####################
-// Public referral routes
-router.route('/referral/validate/:referralCode').get(referralController.validateReferralCode)
-router.route('/referral/leaderboard').get(referralController.getReferralLeaderboard)
-
-// User referral routes
-router.route('/referral/generate-link').get(authentication, authorization([EUserRole.USER]), referralController.generateReferralLink)
-router.route('/referral/stats').get(authentication, referralController.getReferralStats)
-
-// Admin referral routes
-router.route('/admin/referral/analytics').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralAnalytics)
-router.route('/admin/referral/system-stats').get(authentication, authorization([EUserRole.ADMIN]), referralController.getSystemReferralStats)
-router.route('/admin/referral/users/:userId/disable').post(authentication, authorization([EUserRole.ADMIN]), referralController.disableUserReferrals)
-router.route('/admin/referral/users/:userId/enable').post(authentication, authorization([EUserRole.ADMIN]), referralController.enableUserReferrals)
-router.route('/admin/referral/users/:userId/process-reward').post(authentication, authorization([EUserRole.ADMIN]), referralController.processReferralReward)
-
+// Admin referral management - view users who used referral codes
+router.route('/admin/referrals/used-users').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralUsedUsers)
+router.route('/admin/referrals/user/:userId').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralDetailsById)
 
 // ############### MENU ROUTES ####################
 // Public menu routes - Simplified (use query parameters for filtering)

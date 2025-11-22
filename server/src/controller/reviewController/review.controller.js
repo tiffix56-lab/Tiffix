@@ -341,7 +341,6 @@ export default {
                 .populate('subscriptionId', 'planName category')
                 .populate('vendorId', 'businessInfo.businessName')
                 .populate('orderId', 'orderNumber mealType deliveryDate')
-                .populate('moderatedBy', 'name')
                 .sort({ createdAt: -1 })
                 .limit(parseInt(limit))
                 .skip((parseInt(page) - 1) * parseInt(limit));

@@ -15,8 +15,10 @@ import UserSubscription from '../../models/userSubscription.model.js'
 import LocationZone from '../../models/locationZone.model.js'
 import paymentService from '../../service/paymentService.js'
 import promoCodeService from '../../service/promoCodeService.js'
+import referralService from '../../service/referralService.js'
 import TimezoneUtil from '../../util/timezone.js'
 import VendorAssignmentRequest from '../../models/vendorSwitchRequest.model.js'
+import User from '../../models/user.model.js'
 import { EPaymentStatus } from '../../constant/application.js'
 
 
@@ -32,6 +34,7 @@ export default {
             const {
                 subscriptionId,
                 promoCode,
+                referralCode,
                 deliveryAddress,
                 mealTimings,
                 startDate
@@ -164,6 +167,20 @@ export default {
                 return httpError(next, new Error('At least one meal timing must be selected'), req, 400);
             }
 
+            // Validate and verify referral code
+            let referralData = null;
+            if (referralCode) {
+                const referralValidation = await referralService.canUserUseReferral(userId, referralCode);
+                if (!referralValidation.canUse) {
+                    return httpError(next, new Error(referralValidation.message), req, 400);
+                }
+                referralData = {
+                    referralCode: referralCode,
+                    referrerId: referralValidation.referrerId,
+                    referrerName: referralValidation.referrerName
+                };
+            }
+
             // Apply promo code
             let finalPrice = subscription.discountedPrice;
             let discountApplied = 0;
@@ -258,6 +275,15 @@ export default {
                 promoCodeUsed: promoCodeData?._id || null,
                 status: 'pending',
                 deliveryZone: serviceableZone._id,
+                referralDetails: referralData ? {
+                    isReferralUsed: true,
+                    referralCode: referralData.referralCode,
+                    referredBy: referralData.referrerId
+                } : {
+                    isReferralUsed: false,
+                    referralCode: null,
+                    referredBy: null
+                }
             });
 
             await userSubscription.save();
@@ -401,7 +427,54 @@ export default {
                 await promoCodeService.usePromoCode(userSubscription.promoCodeUsed, userId);
             }
 
+            // Handle referral code 
+            if (userSubscription.referralDetails && userSubscription.referralDetails.isReferralUsed) {
+                const user = await User.findById(userId);
 
+                // Check if user already used referral code in another PAID subscription
+                if (user.referral.isReferralUsed && user.referral.usedReferralDetails.usedInSubscription) {
+                    // User already used referral in another subscription
+                    // Check if that subscription is paid (status = active/expired)
+                    const previousSubscription = await UserSubscription.findById(
+                        user.referral.usedReferralDetails.usedInSubscription
+                    );
+
+                    if (previousSubscription && (previousSubscription.status === 'active' || previousSubscription.status === 'expired')) {
+
+                        console.log('Edge case detected: User already used referral in another paid subscription', {
+                            userId,
+                            previousSubscriptionId: previousSubscription._id,
+                            currentSubscriptionId: userSubscription._id
+                        });
+
+                        // Clear referral details from current subscription
+                        userSubscription.referralDetails.isReferralUsed = false;
+                        userSubscription.referralDetails.referralCode = null;
+                        userSubscription.referralDetails.referredBy = null;
+                        await userSubscription.save();
+                    } else {
+
+                        user.referral.isReferralUsed = true;
+                        user.referral.referralUsedAt = TimezoneUtil.now();
+                        user.referral.usedReferralDetails = {
+                            referralCode: userSubscription.referralDetails.referralCode,
+                            referredBy: userSubscription.referralDetails.referredBy,
+                            usedInSubscription: userSubscription._id
+                        };
+                        await user.save();
+                    }
+                } else {
+                    // First time using referral code
+                    user.referral.isReferralUsed = true;
+                    user.referral.referralUsedAt = TimezoneUtil.now();
+                    user.referral.usedReferralDetails = {
+                        referralCode: userSubscription.referralDetails.referralCode,
+                        referredBy: userSubscription.referralDetails.referredBy,
+                        usedInSubscription: userSubscription._id
+                    };
+                    await user.save();
+                }
+            }
 
             const deliveryZone = await LocationZone.findByPincode(userSubscription.deliveryAddress.zipCode);
             const zone = deliveryZone && deliveryZone.length > 0 ? deliveryZone[0] : null;

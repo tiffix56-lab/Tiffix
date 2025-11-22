@@ -8,7 +8,6 @@ import userModel from '../../models/user.model.js';
 import userProfileModel from '../../models/userProfile.model.js';
 import quicker from '../../util/quicker.js';
 import whatsappService from '../../service/whatsappService.js';
-import referralService from '../../service/referralService.js';
 import TimezoneUtil from '../../util/timezone.js';
 import { OAuth2Client } from 'google-auth-library';
 
@@ -100,7 +99,6 @@ export default {
     register: async (req, res, next) => {
         try {
             const { body } = req;
-            const { referralCode } = body;
 
             const { error, value } = validateJoiSchema(ValidateRegister, body);
             if (error) {
@@ -175,17 +173,7 @@ export default {
             console.log('✅ Created user profile for new user:', savedUser._id);
 
 
-            let referralMessage = '';
-            if (referralCode) {
-                try {
-                    const referralResult = await referralService.validateAndLinkReferral(referralCode, savedUser._id);
-                    if (referralResult.success) {
-                        referralMessage = ` You've been referred by ${referralResult.referrerName}!`;
-                    }
-                } catch (referralError) {
-                    console.warn('Referral linking failed:', referralError.message);
-                }
-            }
+
 
             try {
                 await whatsappService.sendVerificationMessage(userData.phoneNumber.internationalNumber, userData.name, otp);
@@ -194,14 +182,13 @@ export default {
             }
 
             httpResponse(req, res, 201, responseMessage.SUCCESS, {
-                message: `Registration successful! Please check your WhatsApp for verification code.${referralMessage}`,
+                message: `Registration successful! Please check your WhatsApp for verification code.`,
                 user: {
                     id: savedUser._id,
                     email: savedUser.emailAddress,
                     name: savedUser.name,
                     role: savedUser.role,
                     isAccountConfirmed: false,
-                    referralCode: savedUser.referral.userReferralCode
                 },
                 requiresVerification: true
             });
@@ -266,17 +253,7 @@ export default {
                 console.warn('User profile creation failed:', profileError.message);
             }
 
-            let referralRewardMessage = '';
-            if (user.referral.referredBy && !user.referral.isReferralUsed) {
-                try {
-                    const referralResult = await referralService.processReferralReward(user._id);
-                    if (referralResult.success) {
-                        referralRewardMessage = ` 🎉 Referral bonus: You got ${referralResult.newUserCredits} credits and your referrer got ${referralResult.referrerCredits} credits!`;
-                    }
-                } catch (referralError) {
-                    console.warn('Referral reward processing failed:', referralError.message);
-                }
-            }
+
 
             const accessToken = quicker.generateToken(
                 {
@@ -297,7 +274,7 @@ export default {
             });
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                message: `Account verified successfully!${referralRewardMessage}`,
+                message: `Account verified successfully!`,
                 user: {
                     id: user._id,
                     email: user.emailAddress,
@@ -308,7 +285,6 @@ export default {
                     canRefer: user.referral.canRefer
                 },
                 accessToken,
-                hasReferralReward: !!referralRewardMessage
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
@@ -840,7 +816,7 @@ export default {
                 }
 
                 // Update last login
-                user.lastLogin = new Date();
+                user.lastLogin = TimezoneUtil.now();
                 await user.save();
             } else {
                 // New user - create account
@@ -856,14 +832,14 @@ export default {
                     isDeleted: false,
                     accountConfirmation: {
                         status: true,
-                        timestamp: new Date()
+                        timestamp: TimezoneUtil.now()
                     },
                     referral: {
                         userReferralCode: await userModel.generateUniqueReferralCode(),
-                        referralCodeGeneratedAt: new Date(),
+                        referralCodeGeneratedAt: TimezoneUtil.now(),
                         canRefer: true
                     },
-                    lastLogin: new Date()
+                    lastLogin: TimezoneUtil.now()
                 };
 
                 user = new userModel(userData);

@@ -148,7 +148,6 @@ export default {
             const { id } = req.params
 
             const user = await User.findById(id)
-                .populate('referral.referredBy', 'name emailAddress')
 
             if (!user) {
                 return httpError(next, new Error('User not found'), req, 404)
@@ -160,20 +159,11 @@ export default {
                 .populate('transactionId', 'transactionId finalAmount status')
                 .sort({ createdAt: -1 })
 
-            // Get user referrals
-            const referrals = await User.findReferredUsers(id)
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 user: {
                     ...user.toJSON(),
                     subscriptions,
-                    referrals: referrals.map(ref => ({
-                        id: ref._id,
-                        name: ref.name,
-                        emailAddress: ref.emailAddress,
-                        createdAt: ref.createdAt
-                    })),
-                    totalReferrals: referrals.length,
                     totalSubscriptions: subscriptions.length,
                     activeSubscriptions: subscriptions.filter(sub => sub.status === 'active').length
                 }

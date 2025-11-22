@@ -3,378 +3,344 @@ import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
 import referralService from '../../service/referralService.js';
 import User from '../../models/user.model.js';
+import UserSubscription from '../../models/userSubscription.model.js';
+import { validateJoiSchema, ValidateGetReferralUsedUsers, ValidateGetReferralDetailsById } from '../../service/validationService.js';
+import TimezoneUtil from '../../util/timezone.js';
 
 export default {
-
     /**
-     * Validate referral code (public endpoint for registration form)
+     * Get all users who used referral codes with pagination, filtering, and search
+     * Admin only
      */
-    validateReferralCode: async (req, res, next) => {
+    getReferralUsedUsers: async (req, res, next) => {
         try {
-            const { referralCode } = req.params;
-
-            if (!referralCode) {
-                return httpError(next, new Error('Referral code is required'), req, 400);
+            const { error } = validateJoiSchema(ValidateGetReferralUsedUsers, req.query);
+            if (error) {
+                return httpError(next, error, req, 422);
             }
 
-            // Validate referral code format
-            if (referralCode.length < 6 || referralCode.length > 10) {
-                return httpError(next, new Error('Invalid referral code format'), req, 400);
-            }
-
-            const validationResult = await referralService.validateReferralCode(referralCode);
-
-            if (!validationResult.valid) {
-                return httpError(next, new Error(validationResult.message), req, 404);
-            }
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                valid: true,
-                referrerName: validationResult.referrerName,
-                message: validationResult.message,
-                rewards: {
-                    newUserBonus: 100,
-                    referrerBonus: 50
-                }
-            });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    /**
-     * Generate referral link and sharing content
-     */
-    generateReferralLink: async (req, res, next) => {
-        try {
-            const { userId, role } = req.authenticatedUser;
-
-            // Check if user can generate referral links
-            if (role !== 'user') {
-                return httpError(next, new Error('Only regular users can generate referral links'), req, 403);
-            }
-
-            const referralData = await referralService.generateReferralLink(userId);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                success: true,
-                ...referralData
-            });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    /**
-     * Get referral statistics for the authenticated user
-     */
-    getReferralStats: async (req, res, next) => {
-        try {
-            const { userId, role } = req.authenticatedUser;
-
-            const stats = await referralService.getReferralStats(userId);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                success: true,
-                userRole: role,
-                ...stats
-            });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    /**
-     * Get referral leaderboard (Public for motivation)
-     */
-    getReferralLeaderboard: async (req, res, next) => {
-        try {
-            const { limit = 10 } = req.query;
-            const limitNumber = Math.min(parseInt(limit) || 10, 50);
-
-            const leaderboard = await referralService.getReferralLeaderboard(limitNumber);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                success: true,
-                leaderboard,
-                totalEntries: leaderboard.length,
-                limit: limitNumber,
-                lastUpdated: new Date().toISOString()
-            });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    /**
-     * Admin: Get comprehensive referral analytics with advanced statistics
-     */
-    getReferralAnalytics: async (req, res, next) => {
-        try {
             const {
                 page = 1,
-                limit = 20,
-                startDate,
-                endDate,
-                sortBy = 'totalreferralCredits',
-                sortOrder = 'desc'
+                limit = 10,
+                search = '',
+                sortBy = 'referralUsedAt',
+                sortOrder = 'desc',
+                hasActiveSubscription
             } = req.query;
 
+            const skip = (page - 1) * limit;
 
-            const dateFilter = {};
-            if (startDate || endDate) {
-                dateFilter.createdAt = {};
-                if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
-                if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
+            const matchQuery = {
+                'referral.isReferralUsed': true,
+                'referral.usedReferralDetails.referralCode': { $ne: null }
+            };
+
+            if (search) {
+                matchQuery.$or = [
+                    { name: { $regex: search, $options: 'i' } },
+                    { emailAddress: { $regex: search, $options: 'i' } },
+                    { 'phoneNumber.internationalNumber': { $regex: search, $options: 'i' } },
+                    { 'referral.usedReferralDetails.referralCode': { $regex: search, $options: 'i' } }
+                ];
             }
 
-            const skip = (page - 1) * limit;
-            const sortObj = {};
-            sortObj[`referral.${sortBy}`] = sortOrder === 'desc' ? -1 : 1;
+            const pipeline = [
+                { $match: matchQuery },
 
-            const analytics = await User.aggregate([
-                {
-                    $match: {
-                        'referral.totalreferralCredits': { $gt: 0 },
-                        ...dateFilter
-                    }
-                },
+                // Lookup the referrer (who referred this user)
                 {
                     $lookup: {
                         from: 'users',
-                        localField: '_id',
-                        foreignField: 'referral.referredBy',
-                        as: 'referredUsers'
+                        localField: 'referral.usedReferralDetails.referredBy',
+                        foreignField: '_id',
+                        as: 'referrerDetails'
                     }
                 },
                 {
-                    $addFields: {
-                        totalReferrals: { $size: '$referredUsers' },
-                        successfulReferrals: {
-                            $size: {
-                                $filter: {
-                                    input: '$referredUsers',
-                                    cond: { $eq: ['$$this.referral.isReferralUsed', true] }
-                                }
-                            }
-                        }
+                    $unwind: {
+                        path: '$referrerDetails',
+                        preserveNullAndEmptyArrays: true
                     }
                 },
+
+                // Lookup the subscription where referral was used
+                {
+                    $lookup: {
+                        from: 'usersubscriptions',
+                        localField: 'referral.usedReferralDetails.usedInSubscription',
+                        foreignField: '_id',
+                        as: 'subscriptionDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$subscriptionDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+
+                // Lookup subscription plan details
+                {
+                    $lookup: {
+                        from: 'subscriptions',
+                        localField: 'subscriptionDetails.subscriptionId',
+                        foreignField: '_id',
+                        as: 'planDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$planDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+
+                // Project required fields
                 {
                     $project: {
+                        _id: 1,
                         name: 1,
                         emailAddress: 1,
-                        'referral.userReferralCode': 1,
-                        'referral.totalreferralCredits': 1,
-                        totalReferrals: 1,
-                        successfulReferrals: 1,
-                        createdAt: 1
-                    }
-                },
-                {
-                    $sort: sortObj
-                },
-                {
-                    $skip: skip
-                },
-                {
-                    $limit: parseInt(limit)
-                }
-            ]);
-
-            const totalCount = await User.countDocuments({
-                'referral.totalreferralCredits': { $gt: 0 },
-                ...dateFilter
-            });
-
-            const overallStats = await User.aggregate([
-                {
-                    $group: {
-                        _id: null,
-                        totalUsers: { $sum: 1 },
-                        totalReferrers: {
-                            $sum: { $cond: [{ $gt: ['$referral.totalreferralCredits', 0] }, 1, 0] }
+                        phoneNumber: 1,
+                        avatar: 1,
+                        isActive: 1,
+                        createdAt: 1,
+                        'referral.isReferralUsed': 1,
+                        'referral.referralUsedAt': 1,
+                        'referral.usedReferralDetails': 1,
+                        referrerDetails: {
+                            _id: 1,
+                            name: 1,
+                            emailAddress: 1,
+                            phoneNumber: 1,
+                            'referral.userReferralCode': 1
                         },
-                        totalCreditsAwarded: { $sum: '$referral.totalreferralCredits' },
-                        totalReferrals: {
-                            $sum: { $cond: [{ $ne: ['$referral.referredBy', null] }, 1, 0] }
+                        subscriptionDetails: {
+                            _id: 1,
+                            status: 1,
+                            startDate: 1,
+                            endDate: 1,
+                            finalPrice: 1,
+                            createdAt: 1
                         },
-                        avgCreditsPerReferrer: { $avg: '$referral.totalreferralCredits' },
-                        avgReferralsPerUser: { $avg: { $cond: [{ $gt: ['$referral.totalreferralCredits', 0] }, '$referral.totalreferralCredits', 0] } }
-                    }
-                }
-            ]);
-
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-            const recentStats = await User.aggregate([
-                {
-                    $match: {
-                        createdAt: { $gte: thirtyDaysAgo }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        newUsersLast30Days: { $sum: 1 },
-                        newReferralsLast30Days: {
-                            $sum: { $cond: [{ $ne: ['$referral.referredBy', null] }, 1, 0] }
+                        planDetails: {
+                            _id: 1,
+                            planName: 1,
+                            category: 1,
+                            duration: 1
                         }
                     }
                 }
-            ]);
+            ];
 
-            const topReferrers = await User.find({
-                'referral.totalreferralCredits': { $gt: 0 }
-            })
-                .select('name emailAddress referral.totalreferralCredits referral.userReferralCode')
-                .sort({ 'referral.totalreferralCredits': -1 })
-                .limit(5);
+            if (hasActiveSubscription === 'true') {
+                pipeline.push({
+                    $match: {
+                        'subscriptionDetails.status': 'active'
+                    }
+                });
+            } else if (hasActiveSubscription === 'false') {
+                pipeline.push({
+                    $match: {
+                        $or: [
+                            { 'subscriptionDetails.status': { $ne: 'active' } },
+                            { subscriptionDetails: { $exists: false } }
+                        ]
+                    }
+                });
+            }
+
+            const sortObj = {};
+            if (sortBy === 'referralUsedAt') {
+                sortObj['referral.referralUsedAt'] = sortOrder === 'desc' ? -1 : 1;
+            } else {
+                sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+            }
+            pipeline.push({ $sort: sortObj });
+
+            const countPipeline = [...pipeline, { $count: 'total' }];
+            const countResult = await User.aggregate(countPipeline);
+            const totalUsers = countResult.length > 0 ? countResult[0].total : 0;
+
+            pipeline.push({ $skip: skip });
+            pipeline.push({ $limit: parseInt(limit) });
+
+            const users = await User.aggregate(pipeline);
+
+            const formattedUsers = users.map(user => ({
+                ...user,
+                referral: {
+                    ...user.referral,
+                    referralUsedAt: user.referral?.referralUsedAt
+                        ? TimezoneUtil.format(user.referral.referralUsedAt, 'datetime')
+                        : null
+                },
+                subscriptionDetails: user.subscriptionDetails ? {
+                    ...user.subscriptionDetails,
+                    startDate: TimezoneUtil.format(user.subscriptionDetails.startDate, 'date'),
+                    endDate: TimezoneUtil.format(user.subscriptionDetails.endDate, 'date'),
+                    createdAt: TimezoneUtil.format(user.subscriptionDetails.createdAt, 'datetime')
+                } : null
+            }));
+
+            const totalPages = Math.ceil(totalUsers / limit);
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                analytics,
+                users: formattedUsers,
                 pagination: {
-                    currentPage: parseInt(page),
-                    totalPages: Math.ceil(totalCount / limit),
-                    totalItems: totalCount,
-                    itemsPerPage: parseInt(limit),
-                    hasNextPage: page < Math.ceil(totalCount / limit),
+                    currentPage: Number(page),
+                    totalPages,
+                    totalUsers,
+                    limit: Number(limit),
+                    hasNextPage: page < totalPages,
                     hasPrevPage: page > 1
-                },
-                overallStats: overallStats[0] || {
-                    totalUsers: 0,
-                    totalReferrers: 0,
-                    totalCreditsAwarded: 0,
-                    totalReferrals: 0,
-                    avgCreditsPerReferrer: 0,
-                    avgReferralsPerUser: 0
-                },
-                recentStats: recentStats[0] || {
-                    newUsersLast30Days: 0,
-                    newReferralsLast30Days: 0
-                },
-                topReferrers,
-                filters: {
-                    startDate,
-                    endDate,
-                    sortBy,
-                    sortOrder
                 }
             });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
 
-    /**
-     * Get system-wide referral statistics (Admin only)
-     */
-    getSystemReferralStats: async (req, res, next) => {
-        try {
-            const systemStats = await referralService.getSystemReferralStats();
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                success: true,
-                systemStats,
-                generatedAt: new Date().toISOString()
+        } catch (error) {
+            console.error('Get Referral Used Users Error:', {
+                message: error.message,
+                stack: error.stack
             });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
+            const errorMessage = error.message || 'Internal server error while fetching referral users';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
     },
 
     /**
-     * Disable user referral capability (Admin only)
+     * Get detailed referral information for a specific user
+     * Admin only
      */
-    disableUserReferrals: async (req, res, next) => {
+    getReferralDetailsById: async (req, res, next) => {
         try {
-            const { userId } = req.params;
-            const { reason } = req.body;
-
-            if (!userId) {
-                return httpError(next, new Error('User ID is required'), req, 400);
+            const { error } = validateJoiSchema(ValidateGetReferralDetailsById, req.params);
+            if (error) {
+                return httpError(next, error, req, 422);
             }
 
-            const result = await referralService.disableUserReferrals(userId, reason);
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                success: true,
-                message: result.message,
-                userId,
-                disabledBy: req.authenticatedUser.userId,
-                reason: reason || 'No reason provided',
-                timestamp: new Date().toISOString()
-            });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
-    /**
-     * Enable user referral capability (Admin only)
-     */
-    enableUserReferrals: async (req, res, next) => {
-        try {
             const { userId } = req.params;
 
-            if (!userId) {
-                return httpError(next, new Error('User ID is required'), req, 400);
+            const user = await User.findById(userId)
+                .select('name emailAddress phoneNumber avatar isActive isBanned referral createdAt')
+                .lean();
+
+            if (!user) {
+                return httpError(next, new Error('User not found'), req, 404);
             }
 
-            const result = await referralService.enableUserReferrals(userId);
+            if (!user.referral.isReferralUsed) {
+                return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                    user: {
+                        _id: user._id,
+                        name: user.name,
+                        emailAddress: user.emailAddress,
+                        phoneNumber: user.phoneNumber,
+                        isActive: user.isActive
+                    },
+                    hasUsedReferral: false,
+                    message: 'This user has not used any referral code'
+                });
+            }
 
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                success: true,
-                message: result.message,
-                userId,
-                enabledBy: req.authenticatedUser.userId,
-                timestamp: new Date().toISOString()
+            let referrerDetails = null;
+            if (user.referral.usedReferralDetails?.referredBy) {
+                referrerDetails = await User.findById(user.referral.usedReferralDetails.referredBy)
+                    .select('name emailAddress phoneNumber referral.userReferralCode avatar isActive')
+                    .lean();
+            }
+
+            let subscriptionDetails = null;
+            if (user.referral.usedReferralDetails?.usedInSubscription) {
+                subscriptionDetails = await UserSubscription.findById(
+                    user.referral.usedReferralDetails.usedInSubscription
+                )
+                    .populate('subscriptionId', 'planName category duration durationDays originalPrice discountedPrice')
+                    .populate('transactionId', 'amount finalAmount paymentId completedAt status')
+                    .lean();
+            }
+
+            const allSubscriptions = await UserSubscription.find({ userId: user._id })
+                .populate('subscriptionId', 'planName category duration')
+                .select('status startDate endDate finalPrice createdAt referralDetails')
+                .sort({ createdAt: -1 })
+                .limit(10)
+                .lean();
+
+            const response = {
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    emailAddress: user.emailAddress,
+                    phoneNumber: user.phoneNumber,
+                    avatar: user.avatar,
+                    isActive: user.isActive,
+                    isBanned: user.isBanned,
+                    createdAt: TimezoneUtil.format(user.createdAt, 'datetime')
+                },
+                hasUsedReferral: true,
+                referralInfo: {
+                    referralCode: user.referral.usedReferralDetails?.referralCode || null,
+                    referralUsedAt: user.referral.referralUsedAt
+                        ? TimezoneUtil.format(user.referral.referralUsedAt, 'datetime')
+                        : null
+                },
+                referrer: referrerDetails ? {
+                    _id: referrerDetails._id,
+                    name: referrerDetails.name,
+                    emailAddress: referrerDetails.emailAddress,
+                    phoneNumber: referrerDetails.phoneNumber,
+                    avatar: referrerDetails.avatar,
+                    isActive: referrerDetails.isActive,
+                    ownReferralCode: referrerDetails.referral?.userReferralCode || null
+                } : null,
+                subscriptionUsedIn: subscriptionDetails ? {
+                    _id: subscriptionDetails._id,
+                    status: subscriptionDetails.status,
+                    startDate: TimezoneUtil.format(subscriptionDetails.startDate, 'date'),
+                    endDate: TimezoneUtil.format(subscriptionDetails.endDate, 'date'),
+                    finalPrice: subscriptionDetails.finalPrice,
+                    createdAt: TimezoneUtil.format(subscriptionDetails.createdAt, 'datetime'),
+                    plan: subscriptionDetails.subscriptionId ? {
+                        _id: subscriptionDetails.subscriptionId._id,
+                        planName: subscriptionDetails.subscriptionId.planName,
+                        category: subscriptionDetails.subscriptionId.category,
+                        duration: subscriptionDetails.subscriptionId.duration,
+                        originalPrice: subscriptionDetails.subscriptionId.originalPrice,
+                        discountedPrice: subscriptionDetails.subscriptionId.discountedPrice
+                    } : null,
+                    transaction: subscriptionDetails.transactionId ? {
+                        amount: subscriptionDetails.transactionId.amount,
+                        finalAmount: subscriptionDetails.transactionId.finalAmount,
+                        paymentId: subscriptionDetails.transactionId.paymentId,
+                        status: subscriptionDetails.transactionId.status,
+                        completedAt: subscriptionDetails.transactionId.completedAt
+                            ? TimezoneUtil.format(subscriptionDetails.transactionId.completedAt, 'datetime')
+                            : null
+                    } : null
+                } : null,
+                subscriptionHistory: allSubscriptions.map(sub => ({
+                    _id: sub._id,
+                    status: sub.status,
+                    startDate: TimezoneUtil.format(sub.startDate, 'date'),
+                    endDate: TimezoneUtil.format(sub.endDate, 'date'),
+                    finalPrice: sub.finalPrice,
+                    createdAt: TimezoneUtil.format(sub.createdAt, 'datetime'),
+                    planName: sub.subscriptionId?.planName || 'N/A',
+                    category: sub.subscriptionId?.category || 'N/A',
+                    usedReferralInThis: sub.referralDetails?.isReferralUsed || false
+                }))
+            };
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, response);
+
+        } catch (error) {
+            console.error('Get Referral Details By ID Error:', {
+                message: error.message,
+                stack: error.stack,
+                userId: req.params?.userId
             });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
+            const errorMessage = error.message || 'Internal server error while fetching referral details';
+            return httpError(next, new Error(errorMessage), req, 500);
         }
-    },
-
-    /**
-     * Process referral reward manually (Admin only)
-     */
-    processReferralReward: async (req, res, next) => {
-        try {
-            const { userId } = req.params;
-            const { subscriptionAmount } = req.body;
-
-            if (!userId) {
-                return httpError(next, new Error('User ID is required'), req, 400);
-            }
-
-            const result = await referralService.processReferralReward(userId, subscriptionAmount);
-
-            if (!result.success) {
-                return httpError(next, new Error(result.message), req, 400);
-            }
-
-            httpResponse(req, res, 200, responseMessage.SUCCESS, {
-                success: true,
-                message: result.message,
-                referrerCredits: result.referrerCredits,
-                newUserCredits: result.newUserCredits,
-                referrerName: result.referrerName,
-                processedBy: req.authenticatedUser.userId,
-                timestamp: new Date().toISOString()
-            });
-        } catch (err) {
-            const errorMessage = err.message || 'Internal server error';
-            httpError(next, new Error(errorMessage), req, 500);
-        }
-    },
-
+    }
 };

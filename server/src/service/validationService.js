@@ -28,7 +28,6 @@ export const ValidateRegister = Joi.object({
     name: Joi.string().min(2).max(50).trim().required(),
     gender: Joi.string().valid('male', 'female', 'other').optional(),
     phoneNumber: Joi.string().pattern(/[0-9]{10,15}$/).required(),
-    referralCode: Joi.string().optional().default("")
 });
 
 export const ValidateChangePassword = Joi.object({
@@ -187,18 +186,6 @@ export const ValidateReferralCode = Joi.object({
     referralCode: Joi.string().min(6).max(10).trim().uppercase().required()
 });
 
-
-export const ValidateProcessReferralReward = Joi.object({
-    subscriptionAmount: Joi.number().positive().optional()
-});
-
-export const ValidateDisableUserReferrals = Joi.object({
-    reason: Joi.string().min(5).max(500).trim().optional()
-});
-
-export const ValidateReferralLeaderboardQuery = Joi.object({
-    limit: Joi.number().positive().max(50).optional()
-});
 
 
 
@@ -571,6 +558,7 @@ export const ValidateApplyPromoCode = Joi.object({
 export const ValidateInitiatePurchase = Joi.object({
     subscriptionId: Joi.string().hex().length(24).required(),
     promoCode: Joi.string().min(3).max(20).trim().uppercase().optional(),
+    referralCode: Joi.string().min(6).max(10).trim().uppercase().optional(),
     deliveryAddress: Joi.object({
         street: Joi.string().min(5).max(200).trim().required(),
         city: Joi.string().min(2).max(50).trim().required(),
@@ -634,6 +622,22 @@ export const ValidateCancelSubscription = Joi.object({
 
 export const ValidateVendorSwitchRequest = Joi.object({
     reason: Joi.string().min(5).max(500).trim().optional()
+});
+
+/**
+ * ************ REFERRAL VALIDATION ***********************
+ */
+export const ValidateGetReferralUsedUsers = Joi.object({
+    page: Joi.number().positive().optional(),
+    limit: Joi.number().positive().max(100).optional(),
+    search: Joi.string().min(1).max(100).trim().optional(),
+    sortBy: Joi.string().valid('referralUsedAt', 'createdAt', 'name').optional(),
+    sortOrder: Joi.string().valid('asc', 'desc').optional(),
+    hasActiveSubscription: Joi.string().valid('true', 'false').optional()
+});
+
+export const ValidateGetReferralDetailsById = Joi.object({
+    userId: Joi.string().hex().length(24).required()
 });
 
 /**

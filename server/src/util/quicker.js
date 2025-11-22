@@ -84,17 +84,10 @@ export default {
         return crypto.randomBytes(length).toString('hex');
     },
 
-    calculateReferralCredits: (subscriptionAmount) => {
-        const credits = Math.floor(subscriptionAmount * 0.1);
-        return Math.min(Math.max(credits, 50), 500);
-    },
-
-
     isValidPhoneNumber: (phoneNumber) => {
         const phoneRegex = /^[+]?[0-9]{10,15}$/;
         return phoneRegex.test(phoneNumber);
     },
-
 
     isValidPincode: (pincode) => {
         const pincodeRegex = /^[1-9][0-9]{5}$/;

@@ -203,6 +203,21 @@ const userSubscriptionSchema = new mongoose.Schema(
                 default: 0
             }
         },
+        referralDetails: {
+            isReferralUsed: {
+                type: Boolean,
+                default: false
+            },
+            referralCode: {
+                type: String,
+                default: null
+            },
+            referredBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+                default: null
+            }
+        }
     },
     { timestamps: true }
 )
