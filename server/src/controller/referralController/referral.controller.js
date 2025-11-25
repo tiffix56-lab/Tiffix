@@ -355,7 +355,6 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 success: true,
-                userRole: role,
                 ...stats
             });
         } catch (error) {
