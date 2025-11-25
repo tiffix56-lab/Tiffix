@@ -342,5 +342,25 @@ export default {
             const errorMessage = error.message || 'Internal server error while fetching referral details';
             return httpError(next, new Error(errorMessage), req, 500);
         }
+    },
+    getStats: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser;
+
+            const stats = await User.findById(userId).select('referral').lean();
+
+            if (!stats) {
+                return httpError(next, new Error('User not found'), req, 404);
+            }
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                success: true,
+                userRole: role,
+                ...stats
+            });
+        } catch (error) {
+            const errorMessage = error.message || 'Internal server error while fetching referral stats';
+            return httpError(next, new Error(errorMessage), req, 500);
+        }
     }
 };

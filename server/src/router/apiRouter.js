@@ -85,6 +85,7 @@ router.route('/user-profiles/preferences').patch(authentication, userProfileCont
 
 // ############### REFERRAL ROUTES ####################
 // Admin referral management - view users who used referral codes
+router.route('/referral/stats').get(authentication, referralController.getStats)
 router.route('/admin/referrals/used-users').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralUsedUsers)
 router.route('/admin/referrals/user/:userId').get(authentication, authorization([EUserRole.ADMIN]), referralController.getReferralDetailsById)
 
