@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://app.tiffix.in/api/v1",
+        "EXPO_PUBLIC_API_URL": "https://app.tiffix.com/api/v1",
         "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
       }
     },
@@ -21,7 +21,7 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://app.tiffix.in/api/v1",
+        "EXPO_PUBLIC_API_URL": "https://app.tiffix.com/api/v1",
         "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
       }
     },
@@ -33,7 +33,7 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://app.tiffix.in/api/v1",
+        "EXPO_PUBLIC_API_URL": "https://app.tiffix.com/api/v1",
         "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
       }
     }
