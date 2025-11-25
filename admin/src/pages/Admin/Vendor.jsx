@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Plus, Edit, Trash2, Search, Filter, Users, MapPin, Star, 
   Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Shield,
-  User, Building, Phone, Mail, Eye, EyeOff
+  User, Building, Phone, Mail, Eye, EyeOff, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import {
   getVendorsApi,
@@ -16,6 +16,62 @@ import {
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
+const StatCard = ({ icon: Icon, title, value, color }) => {
+  const colorClasses = {
+      blue: 'text-blue-400',
+      green: 'text-green-400',
+      teal: 'text-teal-400',
+      purple: 'text-purple-400',
+      indigo: 'text-indigo-400',
+  };
+
+  return (
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-xl p-6">
+          <div className="flex items-center justify-between">
+              <div>
+                  <p className="text-gray-400 text-sm">{title}</p>
+                  <p className="text-2xl font-bold text-white">{value || 0}</p>
+              </div>
+              <Icon className={`w-8 h-8 ${colorClasses[color]}`} />
+          </div>
+      </div>
+  );
+}
+
+const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+      <div className="flex items-center justify-between mt-8 text-gray-400">
+          <div>
+              <p>Showing <span className="font-semibold text-white">{startItem}</span> to <span className="font-semibold text-white">{endItem}</span> of <span className="font-semibold text-white">{totalItems}</span> results</p>
+          </div>
+          <div className="flex items-center space-x-2">
+              <button
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-700 text-white"
+              >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+              </button>
+              <span className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  {currentPage} / {totalPages}
+              </span>
+              <button
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-700 text-white"
+              >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+              </button>
+          </div>
+      </div>
+  );
+};
+
 function Vendor() {
   const [vendors, setVendors] = useState([])
   const [loading, setLoading] = useState(false)
@@ -23,6 +79,8 @@ function Vendor() {
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [editingVendor, setEditingVendor] = useState(null)
   const [addressVendor, setAddressVendor] = useState(null)
+  const [pagination, setPagination] = useState(null)
+  const [stats, setStats] = useState(null)
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
@@ -104,12 +162,14 @@ function Vendor() {
         Object.entries(filters).filter(([_, value]) => value !== '')
       )
       const response = await getVendorsApi(cleanFilters);
-      console.log(response, "Vendors");
-      
       setVendors(Array.isArray(response.data.vendorProfiles) ? response.data.vendorProfiles : [])
+      setPagination(response.data.pagination)
+      setStats(response.data.stats)
     } catch (error) {
       console.error('Error fetching vendors:', error)
       setVendors([])
+      setPagination(null)
+      setStats(null)
     }
     setLoading(false)
   }
@@ -386,6 +446,16 @@ function Vendor() {
           <p className="text-gray-400">Manage vendors, home chefs, and food service providers</p>
         </div>
 
+        {stats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                <StatCard icon={Users} title="Total Vendors" value={stats.totalVendors} color="blue" />
+                <StatCard icon={CheckCircle} title="Verified Vendors" value={stats.verifiedVendors} color="green" />
+                <StatCard icon={Eye} title="Available Vendors" value={stats.availableVendors} color="teal" />
+                <StatCard icon={User} title="Home Chefs" value={stats.homeChefs} color="purple" />
+                <StatCard icon={Building} title="Food Vendors" value={stats.foodVendors} color="indigo" />
+            </div>
+        )}
+
         {/* Controls */}
         <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl shadow-xl p-6 mb-6 border border-gray-600">
           <div className="space-y-4">
@@ -656,6 +726,16 @@ function Vendor() {
             </div>
           )}
         </div>
+
+        {pagination && pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            itemsPerPage={pagination.itemsPerPage}
+            onPageChange={(page) => setFilters(prev => ({ ...prev, page }))}
+          />
+        )}
       </div>
 
       {/* Create/Edit Vendor Modal */}

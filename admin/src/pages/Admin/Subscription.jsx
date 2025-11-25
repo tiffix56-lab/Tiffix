@@ -205,7 +205,7 @@ function Subscription() {
       features: Array.isArray(subscription.features) ? subscription.features.join(', ') : (subscription.features || ''),
       terms: subscription.terms || '',
       tags: Array.isArray(subscription.tags) ? subscription.tags.join(', ') : (subscription.tags || ''),
-      planMenus: subscription.planMenus || []
+      planMenus: Array.isArray(subscription.planMenus) ? subscription.planMenus.map(menu => (typeof menu === 'object' && menu !== null) ? menu._id : menu) : []
     })
     setShowModal(true)
   }
@@ -378,7 +378,7 @@ function Subscription() {
                   >
                     <option value="" className="bg-gray-800">All Categories</option>
                     <option value="home_chef" className="bg-gray-800">Home Chef</option>
-                    <option value="restaurant" className="bg-gray-800">Restaurant</option>
+                    <option value="food_vendor" className="bg-gray-800">Food Vendor</option>
                   </select>
                 </div>
 
@@ -479,7 +479,7 @@ function Subscription() {
                         ? 'bg-green-900/50 text-green-300' 
                         : 'bg-blue-900/50 text-blue-300'
                     }`}>
-                      {subscription.category === 'home_chef' ? 'Home Chef' : 'Restaurant'}
+                      {subscription.category === 'home_chef' ? 'Home Chef' : 'Food Vendor'}
                     </span>
                   </div>
                 </div>
@@ -762,7 +762,7 @@ function Subscription() {
                     className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
                   >
                     <option value="home_chef" className="bg-gray-800">Home Chef</option>
-                    <option value="restaurant" className="bg-gray-800">Restaurant</option>
+                    <option value="food_vendor" className="bg-gray-800">Food Vendor</option>
                   </select>
                 </div>
               </div>

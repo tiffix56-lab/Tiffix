@@ -496,42 +496,15 @@ export const validatePromoCodeApi = async (body) => {
 
 // ADMIN REFERRAL MANAGEMENT
 
-export const getReferralSystemStatsApi = async () => {
-    const response = await servicesAxiosInstance.get('/admin/referral/system-stats');
-    return response.data;
-}
-
-export const getReferralAnalyticsApi = async (params) => {
-    const response = await servicesAxiosInstance.get('/admin/referral/analytics', {
+export const getReferralUsersApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/referrals/used-users', {
         params
     });
     return response.data;
 }
 
-export const disableUserReferralApi = async (userId, body) => {
-    const response = await servicesAxiosInstance.post(`/admin/referral/users/${userId}/disable`, body);
-    return response.data;
-}
-
-export const enableUserReferralApi = async (userId) => {
-    const response = await servicesAxiosInstance.post(`/admin/referral/users/${userId}/enable`);
-    return response.data;
-}
-
-export const processReferralRewardApi = async (userId, body) => {
-    const response = await servicesAxiosInstance.post(`/admin/referral/users/${userId}/process-reward`, body);
-    return response.data;
-}
-
-export const validateReferralCodeApi = async (referralCode) => {
-    const response = await servicesAxiosInstance.get(`/referral/validate/${referralCode}`);
-    return response.data;
-}
-
-export const getReferralLeaderboardApi = async (params) => {
-    const response = await servicesAxiosInstance.get('/referral/leaderboard', {
-        params
-    });
+export const getReferralUserByIdApi = async (userId) => {
+    const response = await servicesAxiosInstance.get(`/admin/referrals/user/${userId}`);
     return response.data;
 }
 

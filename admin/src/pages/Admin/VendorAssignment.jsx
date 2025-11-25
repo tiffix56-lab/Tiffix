@@ -96,8 +96,7 @@ function VendorAssignment() {
   const requestTypeOptions = [
     { value: 'all', label: 'All Types' },
     { value: 'initial_assignment', label: 'Initial Assignment' },
-    { value: 'vendor_switch', label: 'Vendor Switch' },
-    { value: 'reassignment', label: 'Reassignment' }
+    { value: 'vendor_switch', label: 'Vendor Switch' }
   ];
 
   const priorityOptions = [
@@ -151,7 +150,7 @@ function VendorAssignment() {
         endDate: today.toISOString().split('T')[0]
       };
 
-      const response = await getVendorAssignmentStatsApi(params);
+      const response = await getVendorAssignmentStatsApi();
       setStats(response.data.overallStats);
     } catch (error) {
       toast.error('Failed to fetch statistics');
@@ -424,7 +423,7 @@ function VendorAssignment() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
@@ -464,7 +463,7 @@ function VendorAssignment() {
             <AlertTriangle className="w-8 h-8 text-red-400" />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Quick Actions */}
       <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">

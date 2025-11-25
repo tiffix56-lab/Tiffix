@@ -240,7 +240,7 @@ function Order() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
         <div className="bg-[#1E2938] p-6 rounded-xl border border-orange-500/30">
           <div className="flex items-center justify-between">
             <div>
@@ -300,7 +300,7 @@ function Order() {
             <XCircle className="w-8 h-8 text-red-400" />
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Search and Filters */}
       <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
@@ -363,7 +363,7 @@ function Order() {
             ))}
           </select>
 
-          <select
+          {/* <select
             value={filters.vendorId}
             onChange={(e) => handleFilterChange('vendorId', e.target.value)}
             className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
@@ -374,9 +374,9 @@ function Order() {
                 {vendor.name}
               </option>
             ))}
-          </select>
+          </select> */}
 
-          <select
+          {/* <select
             value={filters.days}
             onChange={(e) => handleFilterChange('days', e.target.value)}
             className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
@@ -385,7 +385,7 @@ function Order() {
             <option value="1">Today</option>
             <option value="7">Next 7 Days</option>
             <option value="30">Next 30 Days</option>
-          </select>
+          </select> */}
 
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400 w-4 h-4" />

@@ -32,6 +32,14 @@ function Purchases() {
     sortBy: 'createdAt',
     sortOrder: 'desc'
   })
+  const [pagination, setPagination] = useState({
+  currentPage: 1,
+  totalPages: 1,
+  hasNextPage: false,
+  hasPrevPage: false,
+  totalSubscriptions: 0
+});
+
 
   const fetchPurchases = async () => {
     setLoading(true)
@@ -40,9 +48,9 @@ function Purchases() {
         Object.entries(filters).filter(([_, value]) => value !== '')
       )
       const data = await getSubscriptionPurchasesApi(cleanFilters)
-      console.log(data.data.subscriptions, "Purchases");
       
       setPurchases(data.data.subscriptions || [])
+      setPagination(data.data.pagination);
     } catch (error) {
       console.error('Error fetching purchases:', error)
       toast.error(error.response?.data?.message || 'Error fetching purchases')
@@ -110,7 +118,7 @@ function Purchases() {
           <Filter className="w-5 h-5 text-gray-400" />
           <h2 className="text-lg font-semibold text-white">Filters</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="flex flex-wrap gap-4 mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
@@ -154,7 +162,7 @@ function Purchases() {
           </select>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="flex flex-wrap gap-4">
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
@@ -177,27 +185,6 @@ function Purchases() {
             />
           </div>
 
-          <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-            <input
-              type="number"
-              placeholder="Min Price"
-              value={filters.priceMin}
-              onChange={(e) => handleFilterChange('priceMin', e.target.value)}
-              className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
-          </div>
-
-          <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-            <input
-              type="number"
-              placeholder="Max Price"
-              value={filters.priceMax}
-              onChange={(e) => handleFilterChange('priceMax', e.target.value)}
-              className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
-          </div>
 
           <select
             value={filters.sortBy}
@@ -205,7 +192,6 @@ function Purchases() {
             className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
           >
             <option value="createdAt">Created At</option>
-            <option value="price">Price</option>
             <option value="status">Status</option>
           </select>
 
@@ -366,34 +352,34 @@ function Purchases() {
               </div>
             )}
 
-            {purchases?.length >= filters.limit && (
-              <div className="px-6 py-4 bg-gray-700 border-t border-gray-600">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-400">
-                    Showing {((filters.page - 1) * filters.limit) + 1} to {Math.min(filters.page * filters.limit, purchases.length)} of {purchases.length}+ purchases
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handlePageChange(filters.page - 1)}
-                      disabled={filters.page <= 1}
-                      className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <span className="text-sm text-gray-400">
-                      Page {filters.page}
-                    </span>
-                    <button
-                      onClick={() => handlePageChange(filters.page + 1)}
-                      disabled={purchases.length < filters.limit}
-                      className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="px-6 py-4 bg-gray-700 border-t border-gray-600">
+  <div className="flex items-center justify-between">
+
+    <div className="text-sm text-gray-400">
+      Page {pagination.currentPage} of {pagination.totalPages}
+    </div>
+
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => handlePageChange(pagination.currentPage - 1)}
+        disabled={!pagination.hasPrevPage}
+        className="px-3 py-1 text-sm bg-gray-600 text-white rounded disabled:opacity-50"
+      >
+        Previous
+      </button>
+
+      <button
+        onClick={() => handlePageChange(pagination.currentPage + 1)}
+        disabled={!pagination.hasNextPage}
+        className="px-3 py-1 text-sm bg-gray-600 text-white rounded disabled:opacity-50"
+      >
+        Next
+      </button>
+    </div>
+
+  </div>
+</div>
+
           </div>
         </div>
       )}
@@ -885,6 +871,7 @@ function Purchases() {
                   </div>
                 </div>
               </div>
+              
             </div>
           ) : (
             <div className="text-center py-12">

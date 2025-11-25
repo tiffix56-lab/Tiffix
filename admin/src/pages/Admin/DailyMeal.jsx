@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Calendar, Clock, ChefHat, Users, Filter,
   Eye, Plus, RefreshCw, AlertCircle, Utensils,
-  RotateCcw, FileText, Activity, Leaf
+  RotateCcw, FileText, Activity, Leaf, ChevronLeft, ChevronRight, CheckCircle, XCircle
 } from 'lucide-react'
 import {
   getDailyMealsApi,
@@ -14,6 +14,40 @@ import {
   getMenusApi
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
+
+const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+      <div className="flex items-center justify-between mt-8 text-gray-400">
+          <div>
+              <p>Showing <span className="font-semibold text-white">{startItem}</span> to <span className="font-semibold text-white">{endItem}</span> of <span className="font-semibold text-white">{totalItems}</span> results</p>
+          </div>
+          <div className="flex items-center space-x-2">
+              <button
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-700 text-white"
+              >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+              </button>
+              <span className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  {currentPage} / {totalPages}
+              </span>
+              <button
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-700 text-white"
+              >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+              </button>
+          </div>
+      </div>
+  );
+};
 
 function DailyMeal() {
   const [dailyMeals, setDailyMeals] = useState([])
@@ -49,6 +83,9 @@ function DailyMeal() {
     limit: 20
   })
 
+  const [mealPagination, setMealPagination] = useState(null);
+  const [logPagination, setLogPagination] = useState(null)
+
   // Set meal form state
   const [mealForm, setMealForm] = useState({
     subscriptionId: '',
@@ -79,12 +116,11 @@ function DailyMeal() {
     { value: '', label: 'All Vendor Types' },
     { value: 'home_chef', label: 'Home Chef' },
     { value: 'food_vendor', label: 'Food Vendor' },
-    { value: 'restaurant', label: 'Restaurant' }
   ]
 
   const logStatuses = [
     { value: '', label: 'All Statuses' },
-    { value: 'success', label: 'Success' },
+    { value: 'completed', label: 'Completed' },
     { value: 'failed', label: 'Failed' },
     { value: 'pending', label: 'Pending' }
   ]
@@ -96,22 +132,22 @@ function DailyMeal() {
         Object.entries(filters).filter(([_, value]) => value !== '')
       )
       const data = await getDailyMealsApi(cleanFilters)
-      console.log('Daily Meals:', data)
+      const responseData = data.data
       
-      setDailyMeals(data.data.meals || [])
+      setDailyMeals(responseData.meals || [])
+      setMealPagination(responseData.pagination)
       
-      // Calculate stats
-      const meals = data.data.meals || []
+      const meals = responseData.meals || []
       const today = new Date().toDateString()
       
-      setStats({
-        totalMeals: meals.length,
+      setStats(prevStats => ({
+        ...prevStats,
+        totalMeals: responseData.pagination?.total || meals.length,
         todayMeals: meals.filter(meal => 
           new Date(meal.mealDate).toDateString() === today
         ).length,
         activeMeals: meals.filter(meal => meal.isActive).length,
-        failedOrders: 0 // Will be updated from logs
-      })
+      }))
       
     } catch (error) {
       console.error('Error fetching daily meals:', error)
@@ -128,13 +164,13 @@ function DailyMeal() {
         Object.entries(logFilters).filter(([_, value]) => value !== '')
       )
       const data = await getOrderCreationLogsApi(cleanFilters)
-      console.log('Order Logs:', data)
       
       setOrderLogs(data.data.logs || [])
+      setLogPagination(data.data.pagination)
       
       // Update failed orders count
       const failedCount = (data.data.logs || []).filter(log => 
-        log.status === 'failed' || log.attempts?.some(attempt => attempt.status === 'failed')
+        log.status === 'failed'
       ).length
       
       setStats(prev => ({ ...prev, failedOrders: failedCount }))
@@ -286,6 +322,7 @@ function DailyMeal() {
   }
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
@@ -294,12 +331,13 @@ function DailyMeal() {
   }
 
   const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString('en-IN')
   }
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      success: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-400' },
+      completed: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-400' },
       failed: { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-400' },
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-400' }
     }
@@ -414,8 +452,7 @@ function DailyMeal() {
         <div className="flex border-b border-gray-700">
           <button
             onClick={() => setActiveTab('meals')}
-            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'meals'
+            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'meals'
                 ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-gray-400 hover:text-gray-300'
             }`}
@@ -427,8 +464,7 @@ function DailyMeal() {
           </button>
           <button
             onClick={() => setActiveTab('logs')}
-            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'logs'
+            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'logs'
                 ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-gray-400 hover:text-gray-300'
             }`}
@@ -450,7 +486,7 @@ function DailyMeal() {
                 <h3 className="text-lg font-semibold text-white">Filters</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="flex gap-4">
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <input
@@ -471,18 +507,6 @@ function DailyMeal() {
                   />
                 </div>
 
-                <select
-                  value={filters.subscriptionId}
-                  onChange={(e) => handleFilterChange('subscriptionId', e.target.value)}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">All Subscriptions</option>
-                  {subscriptions.map(sub => (
-                    <option key={sub._id} value={sub._id}>
-                      {sub.title} - {sub.vendorType}
-                    </option>
-                  ))}
-                </select>
 
                 <select
                   value={filters.vendorType}
@@ -516,7 +540,7 @@ function DailyMeal() {
                       <Calendar className="w-5 h-5 text-blue-400" />
                       <span className="text-sm text-gray-400">Total Meals</span>
                     </div>
-                    <div className="text-2xl font-bold text-white">{dailyMeals.length}</div>
+                    <div className="text-2xl font-bold text-white">{mealPagination?.total || dailyMeals.length}</div>
                   </div>
                   <div className="bg-gray-700 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
@@ -570,121 +594,129 @@ function DailyMeal() {
                 </div>
               </div>
             ) : dailyMeals.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subscription</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Vendor</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Lunch Menus</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Dinner Menus</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {dailyMeals.map((meal) => (
-                      <tr key={meal._id} className="hover:bg-gray-700/50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-white">
-                              {formatDate(meal.mealDate)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-white">
-                            <div className="font-medium">{meal.subscriptionId?.planName || meal.subscriptionId?.title || 'N/A'}</div>
-                            <div className="text-xs text-gray-400 capitalize">
-                              {meal.subscriptionId?.category?.replace('_', ' ') || ''}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-white">
-                            <div className="font-medium capitalize">
-                              {meal.vendorType?.replace('_', ' ') || 'N/A'}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              Created by: {meal.createdBy?.name || 'N/A'}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-white">
-                            {meal.selectedMenus?.lunchMenus?.length > 0 ? (
-                              <div>
-                                <div className="font-medium">{meal.selectedMenus.lunchMenus[0].foodTitle}</div>
-                                <div className="text-xs text-orange-400">₹{meal.selectedMenus.lunchMenus[0].price} • {meal.selectedMenus.lunchMenus[0].cuisine}</div>
-                                {meal.selectedMenus.lunchMenus.length > 1 && (
-                                  <div className="text-xs text-gray-400">+{meal.selectedMenus.lunchMenus.length - 1} more</div>
-                                )}
-                              </div>
-                            ) : meal.lunchMenus?.length > 0 ? (
-                              <div>
-                                <div className="font-medium">{meal.lunchMenus[0].title}</div>
-                                {meal.lunchMenus.length > 1 && (
-                                  <div className="text-xs text-gray-400">+{meal.lunchMenus.length - 1} more</div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">Not set</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-white">
-                            {meal.selectedMenus?.dinnerMenus?.length > 0 ? (
-                              <div>
-                                <div className="font-medium">{meal.selectedMenus.dinnerMenus[0].foodTitle}</div>
-                                <div className="text-xs text-orange-400">₹{meal.selectedMenus.dinnerMenus[0].price} • {meal.selectedMenus.dinnerMenus[0].cuisine}</div>
-                                {meal.selectedMenus.dinnerMenus.length > 1 && (
-                                  <div className="text-xs text-gray-400">+{meal.selectedMenus.dinnerMenus.length - 1} more</div>
-                                )}
-                              </div>
-                            ) : meal.dinnerMenus?.length > 0 ? (
-                              <div>
-                                <div className="font-medium">{meal.dinnerMenus[0].title}</div>
-                                {meal.dinnerMenus.length > 1 && (
-                                  <div className="text-xs text-gray-400">+{meal.dinnerMenus.length - 1} more</div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">Not set</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            meal.isActive 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              meal.isActive ? 'bg-green-400' : 'bg-gray-400'
-                            }`}></span>
-                            {meal.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button 
-                            onClick={() => {
-                              setSelectedMeal(meal)
-                              setShowDetailsModal(true)
-                            }}
-                            className="text-orange-400 hover:text-orange-300 transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subscription</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Vendor</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Lunch Menus</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Dinner Menus</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-gray-800 divide-y divide-gray-700">
+                      {dailyMeals.map((meal) => (
+                        <tr key={meal._id} className="hover:bg-gray-700/50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-white">
+                                {formatDate(meal.mealDate)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-white">
+                              <div className="font-medium">{meal.subscriptionId?.planName || meal.subscriptionId?.title || 'N/A'}</div>
+                              <div className="text-xs text-gray-400 capitalize">
+                                {meal.subscriptionId?.category?.replace('_', ' ') || ''}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-white">
+                              <div className="font-medium capitalize">
+                                {meal.vendorType?.replace('_', ' ') || 'N/A'}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                Created by: {meal.createdBy?.name || 'N/A'}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-white">
+                              {meal.selectedMenus?.lunchMenus?.length > 0 ? (
+                                <div>
+                                  <div className="font-medium">{meal.selectedMenus.lunchMenus[0].foodTitle}</div>
+                                  <div className="text-xs text-orange-400">₹{meal.selectedMenus.lunchMenus[0].price} • {meal.selectedMenus.lunchMenus[0].cuisine}</div>
+                                  {meal.selectedMenus.lunchMenus.length > 1 && (
+                                    <div className="text-xs text-gray-400">+{meal.selectedMenus.lunchMenus.length - 1} more</div>
+                                  )}
+                                </div>
+                              ) : meal.lunchMenus?.length > 0 ? (
+                                <div>
+                                  <div className="font-medium">{meal.lunchMenus[0].title}</div>
+                                  {meal.lunchMenus.length > 1 && (
+                                    <div className="text-xs text-gray-400">+{meal.lunchMenus.length - 1} more</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">Not set</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-white">
+                              {meal.selectedMenus?.dinnerMenus?.length > 0 ? (
+                                <div>
+                                  <div className="font-medium">{meal.selectedMenus.dinnerMenus[0].foodTitle}</div>
+                                  <div className="text-xs text-orange-400">₹{meal.selectedMenus.dinnerMenus[0].price} • {meal.selectedMenus.dinnerMenus[0].cuisine}</div>
+                                  {meal.selectedMenus.dinnerMenus.length > 1 && (
+                                    <div className="text-xs text-gray-400">+{meal.selectedMenus.dinnerMenus.length - 1} more</div>
+                                  )}
+                                </div>
+                              ) : meal.dinnerMenus?.length > 0 ? (
+                                <div>
+                                  <div className="font-medium">{meal.dinnerMenus[0].title}</div>
+                                  {meal.dinnerMenus.length > 1 && (
+                                    <div className="text-xs text-gray-400">+{meal.dinnerMenus.length - 1} more</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">Not set</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${meal.isActive 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${meal.isActive ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+                              {meal.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button 
+                              onClick={() => {
+                                setSelectedMeal(meal)
+                                setShowDetailsModal(true)
+                              }}
+                              className="text-orange-400 hover:text-orange-300 transition-colors"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {mealPagination && mealPagination.pages > 1 && (
+                    <Pagination
+                        currentPage={mealPagination.current}
+                        totalPages={mealPagination.pages}
+                        totalItems={mealPagination.total}
+                        itemsPerPage={mealPagination.limit}
+                        onPageChange={(page) => handleFilterChange('page', page)}
+                    />
+                )}
+              </>
             ) : (
               <div className="text-center py-12">
                 <ChefHat className="w-12 h-12 text-gray-500 mx-auto mb-4" />
@@ -746,7 +778,7 @@ function DailyMeal() {
                   <option value="">All Subscriptions</option>
                   {subscriptions.map(sub => (
                     <option key={sub._id} value={sub._id}>
-                      {sub.title} - {sub.vendorType}
+                      {sub.planName} - {sub.category}
                     </option>
                   ))}
                 </select>
@@ -769,14 +801,14 @@ function DailyMeal() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h4 className="text-lg font-medium text-white">
-                            {log.subscriptionId?.title || 'Unknown Subscription'}
+                            {log.subscriptionId?.planName || 'System Triggered'}
                           </h4>
                           {getStatusBadge(log.status)}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-400">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            {formatDate(log.processDate)}
+                            {formatDate(log.triggerDate)}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-4 h-4" />
@@ -784,73 +816,42 @@ function DailyMeal() {
                           </span>
                           <span className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
-                            {log.totalUsers || 0} users
+                            {log.totalUsersFound || 0} users found
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Attempts */}
-                    {log.attempts?.length > 0 && (
-                      <div className="space-y-3">
-                        <h5 className="text-sm font-medium text-gray-300">Attempts:</h5>
-                        {log.attempts.map((attempt, index) => (
-                          <div key={index} className="bg-gray-800 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-400">Attempt {index + 1}</span>
-                                {getStatusBadge(attempt.status)}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">
-                                  {formatDateTime(attempt.timestamp)}
-                                </span>
-                                {attempt.status === 'failed' && (
-                                  <button
-                                    onClick={() => handleRetryFailedOrder(log._id, index)}
-                                    disabled={retryingLog === log._id}
-                                    className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors disabled:opacity-50"
-                                  >
-                                    {retryingLog === log._id ? (
-                                      <RefreshCw className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <RotateCcw className="w-3 h-3" />
-                                    )}
-                                    Retry
-                                  </button>
+                    {(log.successfulOrders?.length > 0 || log.failedOrders?.length > 0) && (
+                        <div className="mt-4">
+                            <h5 className="text-sm font-medium text-gray-300 mb-2">Order Creation Details:</h5>
+                            <div className="space-y-2 text-sm">
+                                {log.totalOrdersCreated > 0 && (
+                                    <div className="flex items-center gap-2 text-green-400">
+                                        <CheckCircle className="w-4 h-4" />
+                                        <span>{log.totalOrdersCreated} orders created successfully.</span>
+                                    </div>
                                 )}
-                              </div>
+                                {log.totalOrdersFailed > 0 && (
+                                     <div className="flex items-center gap-2 text-red-400">
+                                        <XCircle className="w-4 h-4" />
+                                        <span>{log.totalOrdersFailed} orders failed.</span>
+                                    </div>
+                                )}
                             </div>
-
-                            {attempt.error && (
-                              <div className="text-sm text-red-400 bg-red-900/20 p-2 rounded">
-                                {attempt.error}
-                              </div>
-                            )}
-
-                            {attempt.successfulOrders && (
-                              <div className="text-sm text-green-400">
-                                ✓ {attempt.successfulOrders} orders created successfully
-                              </div>
-                            )}
-
-                            {attempt.failedOrders && attempt.failedOrders.length > 0 && (
-                              <div className="text-sm text-red-400">
-                                ✗ {attempt.failedOrders.length} orders failed
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {log.notes && (
-                      <div className="mt-4 p-3 bg-gray-800 rounded-lg">
-                        <p className="text-sm text-gray-300">{log.notes}</p>
-                      </div>
+                        </div>
                     )}
                   </div>
                 ))}
+                {logPagination && logPagination.pages > 1 && (
+                    <Pagination
+                        currentPage={logPagination.current}
+                        totalPages={logPagination.pages}
+                        totalItems={logPagination.total}
+                        itemsPerPage={logPagination.limit}
+                        onPageChange={(page) => setLogFilters(prev => ({ ...prev, page }))}
+                    />
+                )}
               </div>
             ) : (
               <div className="text-center py-12">
@@ -1137,8 +1138,7 @@ function DailyMeal() {
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Status</p>
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedMeal.isActive 
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${selectedMeal.isActive 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-gray-100 text-gray-800'
                   }`}>
@@ -1206,8 +1206,7 @@ function DailyMeal() {
                                 <p className="text-gray-300 text-sm mt-1">{menu.description.short}</p>
                               )}
                             </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              menu.isAvailable 
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${menu.isAvailable 
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-red-100 text-red-800'
                             }`}>
@@ -1311,8 +1310,7 @@ function DailyMeal() {
                                 <p className="text-gray-300 text-sm mt-1">{menu.description.short}</p>
                               )}
                             </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              menu.isAvailable 
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${menu.isAvailable 
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-red-100 text-red-800'
                             }`}>

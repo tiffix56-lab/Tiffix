@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Search, Filter, Users, Ban, UserCheck, UserX, Trash2, 
   Eye, Activity, Calendar, Crown, Shield, RefreshCw,
-  TrendingUp, TrendingDown, BarChart3, PieChart
+  TrendingUp, TrendingDown, BarChart3, PieChart, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import {
   getUserOverviewApi,
@@ -17,6 +17,40 @@ import {
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
+const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+      <div className="flex items-center justify-between mt-8 text-gray-400">
+          <div>
+              <p>Showing <span className="font-semibold text-white">{startItem}</span> to <span className="font-semibold text-white">{endItem}</span> of <span className="font-semibold text-white">{totalItems}</span> results</p>
+          </div>
+          <div className="flex items-center space-x-2">
+              <button
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-700 text-white"
+              >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+              </button>
+              <span className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  {currentPage} / {totalPages}
+              </span>
+              <button
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-700 text-white"
+              >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+              </button>
+          </div>
+      </div>
+  );
+};
+
 function UserManagement() {
   const [users, setUsers] = useState([])
   const [overview, setOverview] = useState(null)
@@ -27,9 +61,10 @@ function UserManagement() {
   const [banReason, setBanReason] = useState('')
   const [showUserDetails, setShowUserDetails] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [pagination, setPagination] = useState(null)
   const [filters, setFilters] = useState({
     page: 1,
-    limit: 12,
+    limit: 20,
     role: '',
     status: '',
     hasSubscription: '',
@@ -52,10 +87,12 @@ function UserManagement() {
       )
       const response = await getAllUsersApi(cleanFilters)
       setUsers(Array.isArray(response.data.users) ? response.data.users : [])
+      setPagination(response.data.pagination)
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error fetching users')
       console.error('Error fetching users:', error)
       setUsers([])
+      setPagination(null)
     }
     setLoading(false)
   }
@@ -200,7 +237,7 @@ function UserManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Active Users</p>
-                  <p className="text-2xl font-bold text-white">{overview.activeUsers || 0}</p>
+                  <p className="text-2xl font-bold text-white">{overview.totalActiveUsers || 0}</p>
                 </div>
                 <UserCheck className="w-8 h-8 text-green-400" />
               </div>
@@ -210,7 +247,7 @@ function UserManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Premium Users</p>
-                  <p className="text-2xl font-bold text-white">{overview.premiumUsers || 0}</p>
+                  <p className="text-2xl font-bold text-white">{overview.totalPremiumUsers || 0}</p>
                 </div>
                 <Crown className="w-8 h-8 text-orange-400" />
               </div>
@@ -220,7 +257,7 @@ function UserManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Banned Users</p>
-                  <p className="text-2xl font-bold text-white">{overview.bannedUsers || 0}</p>
+                  <p className="text-2xl font-bold text-white">{overview.totalBannedUsers || 0}</p>
                 </div>
                 <Ban className="w-8 h-8 text-red-400" />
               </div>
@@ -426,6 +463,16 @@ function UserManagement() {
             </div>
           )}
         </div>
+        
+        {pagination && pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            itemsPerPage={pagination.itemsPerPage}
+            onPageChange={(page) => setFilters(prev => ({ ...prev, page }))}
+          />
+        )}
       </div>
 
       {/* Ban User Modal */}

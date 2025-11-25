@@ -80,7 +80,6 @@ const Menu = () => {
   const categories = ['all', 'home_chef', 'food_vendor'];
   const cuisines = ['all', 'Indian', 'Italian', 'Chinese', 'Mexican', 'Thai', 'American'];
   const sortOptions = [
-    { value: '', label: 'Default' },
     { value: 'price', label: 'Price' },
     { value: 'rating.average', label: 'Rating' },
     { value: 'prepTime', label: 'Prep Time' },
@@ -500,44 +499,34 @@ const Menu = () => {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          
-          <div className="flex gap-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const page = i + Math.max(1, currentPage - 2);
-              return (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "primary" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className="w-10"
-                >
-                  {page}
-                </Button>
-              );
-            })}
-          </div>
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-6">
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+            <span className="text-white text-sm px-3">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+
+          </div>
+        )}
+
 
       {/* Create/Edit Modal */}
       <Modal
