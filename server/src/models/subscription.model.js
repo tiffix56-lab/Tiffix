@@ -18,7 +18,6 @@ const subscriptionSchema = new mongoose.Schema(
             {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Menu',
-                unique: true
             }
         ],
         durationDays: {
@@ -126,16 +125,23 @@ subscriptionSchema.index({ category: 1, duration: 1 })
 subscriptionSchema.index({ isActive: 1, discountedPrice: 1 })
 
 subscriptionSchema.pre('save', function (next) {
+    if (this.planMenus && this.planMenus.length > 0) {
+        const uniqueMenuIds = [...new Set(this.planMenus.map(id => id.toString()))];
+
+        if (uniqueMenuIds.length !== this.planMenus.length) {
+            return next(new Error('Duplicate menu items are not allowed in the same subscription plan'));
+        }
+    }
     // Validate meal timing requirements
     if (!this.mealTimings.isLunchAvailable && !this.mealTimings.isDinnerAvailable) {
         return next(new Error('At least one meal timing (lunch or dinner) must be available'))
     }
-    
+
     // Validate pricing
     if (this.discountedPrice > this.originalPrice) {
         return next(new Error('Discounted price cannot be greater than original price'))
     }
-    
+
     next()
 })
 
