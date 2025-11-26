@@ -201,7 +201,7 @@ function Referals() {
               <div className="text-sm text-gray-400 space-y-1">
                 <p>🔑 Joined with code: <span className='font-bold text-orange-400'>{user.referral.usedReferralDetails.referralCode}</span></p>
                 <p>📅 Referral on: {user.referral.referralUsedAt}</p>
-                <p>👤 Referred by: {user.referrerDetails.name}</p>
+                <p>👤 Referred by: {user.referrerDetails?.name || 'Account deleted'}</p>
               </div>
             </div>
             <div className="p-4">
