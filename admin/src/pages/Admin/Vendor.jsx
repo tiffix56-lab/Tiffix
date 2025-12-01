@@ -283,14 +283,8 @@ function Vendor() {
             dailyOrders: Number(formData.vendorProfile.capacity.dailyOrders)
           }
         };
-        const updatedFields = getObjectDiff(editingVendor, vendorProfilePayload);
-
-        if (Object.keys(updatedFields).length > 0) {
-          await updateVendorApi(editingVendor._id, updatedFields);
-          toast.success('Vendor updated successfully');
-        } else {
-          toast('No changes to update.');
-        }
+        await updateVendorApi(editingVendor._id, vendorProfilePayload);
+        toast.success('Vendor updated successfully');
       } else {
         const payload = {
           ...formData,
@@ -703,13 +697,13 @@ function Vendor() {
                   <Star className="w-3 h-3" />
                   Rating
                 </button> */}
-                <button
+                {/* <button
                   onClick={() => handleEditAddress(vendor)}
                   className="flex items-center justify-center gap-1 px-3 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-300 rounded-lg transition-colors text-sm"
                 >
                   <MapPin className="w-3 h-3" />
                   Address
-                </button>
+                </button> */}
                 {/* <button
                   onClick={() => handleResetCapacity(vendor._id)}
                   className="flex items-center justify-center gap-1 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 rounded-lg transition-colors text-sm"
