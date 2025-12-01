@@ -71,7 +71,6 @@ function Orders() {
   const allStatuses = [
     { value: '', label: 'All Orders' },
     { value: 'upcoming', label: 'Upcoming' },
-    { value: 'confirmed', label: 'Confirmed' },
     { value: 'preparing', label: 'Preparing' },
     { value: 'out_for_delivery', label: 'Out for Delivery' },
     { value: 'delivered', label: 'Delivered' },
@@ -283,10 +282,10 @@ function Orders() {
           >
             <option value="">All Days</option>
             <option value="1">Today</option>
-            <option value="7">Next 7 Days</option>
-            <option value="30">Next 30 Days</option>
+            {/* <option value="7">Next 7 Days</option>
+            <option value="30">Next 30 Days</option> */}
           </select>
-          <div className="relative">
+          {/* <div className="relative">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
               type="date"
@@ -295,8 +294,8 @@ function Orders() {
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
               className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
-          </div>
-          <div className="relative">
+          </div> */}
+          {/* <div className="relative">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
               type="date"
@@ -305,7 +304,7 @@ function Orders() {
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
               className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
-          </div>
+          </div> */}
         </div>
       </div>
 

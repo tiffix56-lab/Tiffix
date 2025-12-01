@@ -41,11 +41,11 @@ function Profile() {
 
   const tabs = [
     { id: 'profile', label: 'Profile Info', icon: User },
-    { id: 'business', label: 'Business Details', icon: Building2 },
-    { id: 'operating', label: 'Operating Hours', icon: Clock },
+    // { id: 'business', label: 'Business Details', icon: Building2 },
+    // { id: 'operating', label: 'Operating Hours', icon: Clock },
     { id: 'documents', label: 'Documents', icon: FileText },
-    { id: 'preferences', label: 'Preferences', icon: Settings },
-    { id: 'security', label: 'Security', icon: Shield }
+    // { id: 'preferences', label: 'Preferences', icon: Settings },
+    // { id: 'security', label: 'Security', icon: Shield }
   ]
 
   const cuisineOptions = [
@@ -632,6 +632,7 @@ function Profile() {
                   <Input
                     label="Business License"
                     icon={FileText}
+                    disabled={true}
                     value={documentsForm.businessLicense}
                     onChange={(e) => setDocumentsForm(prev => ({ ...prev, businessLicense: e.target.value }))}
                     placeholder="Enter business license number"
@@ -640,6 +641,7 @@ function Profile() {
                   <Input
                     label="Food Safety License"
                     icon={Shield}
+                    disabled={true}
                     value={documentsForm.foodSafetyLicense}
                     onChange={(e) => setDocumentsForm(prev => ({ ...prev, foodSafetyLicense: e.target.value }))}
                     placeholder="Enter food safety license"
@@ -648,13 +650,14 @@ function Profile() {
                   <Input
                     label="Tax ID"
                     icon={CreditCard}
+                    disabled={true}
                     value={documentsForm.taxId}
                     onChange={(e) => setDocumentsForm(prev => ({ ...prev, taxId: e.target.value }))}
                     placeholder="Enter tax identification number"
                   />
                 </div>
 
-                <div className="mt-6">
+                {/* <div className="mt-6">
                   <h4 className="text-lg font-semibold text-white mb-4">Bank Account Details</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
@@ -697,9 +700,9 @@ function Profile() {
                       placeholder="Enter bank name"
                     />
                   </div>
-                </div>
+                </div> */}
 
-                <Card.Footer>
+                {/* <Card.Footer>
                   <Button
                     onClick={handleSaveDocuments}
                     loading={saving}
@@ -708,7 +711,7 @@ function Profile() {
                   >
                     Save Documents
                   </Button>
-                </Card.Footer>
+                </Card.Footer> */}
               </Card.Content>
             </Card>
           )}
