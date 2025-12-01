@@ -265,13 +265,7 @@ export const ValidateCreateVendorWithUser = Joi.object({
             businessName: Joi.string().required(),
             description: Joi.string().max(500).optional(),
             cuisineTypes: Joi.array().items(Joi.string()).optional(),
-            serviceArea: Joi.object({
-                radius: Joi.number().positive().max(50).optional(),
-                coordinates: Joi.object({
-                    lat: Joi.number().min(-90).max(90).required(),
-                    lng: Joi.number().min(-180).max(180).required()
-                }).required()
-            }).required()
+
         }).required(),
         operatingHours: Joi.array().items(
             Joi.object({
@@ -304,13 +298,7 @@ export const ValidateUpdateVendorWithUserInfo = Joi.object({
             businessName: Joi.string().optional(),
             description: Joi.string().max(500).optional(),
             cuisineTypes: Joi.array().items(Joi.string()).optional(),
-            serviceArea: Joi.object({
-                radius: Joi.number().positive().max(50).optional(),
-                coordinates: Joi.object({
-                    lat: Joi.number().min(-90).max(90).optional(),
-                    lng: Joi.number().min(-180).max(180).optional()
-                }).optional()
-            }).optional()
+
         }).optional(),
         operatingHours: Joi.array().items(
             Joi.object({
@@ -342,13 +330,7 @@ export const ValidateCreateVendorProfile = Joi.object({
         businessName: Joi.string().required(),
         description: Joi.string().max(500).optional(),
         cuisineTypes: Joi.array().items(Joi.string()).optional(),
-        serviceArea: Joi.object({
-            radius: Joi.number().positive().max(50).optional(),
-            coordinates: Joi.object({
-                lat: Joi.number().min(-90).max(90).required(),
-                lng: Joi.number().min(-180).max(180).required()
-            }).required()
-        }).required()
+
     }).required(),
     operatingHours: Joi.array().items(
         Joi.object({
@@ -374,13 +356,7 @@ export const ValidateUpdateVendorProfile = Joi.object({
         businessName: Joi.string().optional(),
         description: Joi.string().max(500).optional(),
         cuisineTypes: Joi.array().items(Joi.string()).optional(),
-        serviceArea: Joi.object({
-            radius: Joi.number().positive().max(50).optional(),
-            coordinates: Joi.object({
-                lat: Joi.number().min(-90).max(90).optional(),
-                lng: Joi.number().min(-180).max(180).optional()
-            }).optional()
-        }).optional()
+
     }).optional(),
     operatingHours: Joi.array().items(
         Joi.object({

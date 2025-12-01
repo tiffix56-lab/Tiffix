@@ -24,22 +24,7 @@ const vendorProfileSchema = new mongoose.Schema(
                 maxlength: 500
             },
             cuisineTypes: [String],
-            serviceArea: {
-                radius: {
-                    type: Number,
-                    default: 5
-                },
-                coordinates: {
-                    lat: {
-                        type: Number,
-                        required: true
-                    },
-                    lng: {
-                        type: Number,
-                        required: true
-                    }
-                }
-            },
+
             address: {
                 street: {
                     type: String,
@@ -129,7 +114,6 @@ const vendorProfileSchema = new mongoose.Schema(
 
 // Indexes
 vendorProfileSchema.index({ vendorType: 1 })
-vendorProfileSchema.index({ 'businessInfo.serviceArea.coordinates': '2dsphere' })
 vendorProfileSchema.index({ 'businessInfo.address.coordinates': '2dsphere' })
 vendorProfileSchema.index({ 'businessInfo.cuisineTypes': 1 })
 vendorProfileSchema.index({ 'rating.average': -1 })
@@ -190,13 +174,6 @@ vendorProfileSchema.methods.updateRating = function (newRating) {
     return this.save()
 }
 
-vendorProfileSchema.methods.isInServiceArea = function (coordinates) {
-    const distance = this.calculateDistance(
-        this.businessInfo.serviceArea.coordinates,
-        coordinates
-    )
-    return distance <= this.businessInfo.serviceArea.radius
-}
 
 vendorProfileSchema.methods.calculateDistance = function (coord1, coord2) {
     const R = 6371 // Earth's radius in km
@@ -224,13 +201,7 @@ vendorProfileSchema.methods.updateAddress = function (addressData) {
         }
     }
 
-    // Also update service area coordinates if provided
-    if (lat && lng) {
-        this.businessInfo.serviceArea.coordinates = {
-            lat: parseFloat(lat),
-            lng: parseFloat(lng)
-        }
-    }
+
 
     return this.save()
 }
@@ -244,21 +215,7 @@ vendorProfileSchema.statics.findByType = function (vendorType) {
     return this.find({ vendorType, isVerified: true, isAvailable: true })
 }
 
-vendorProfileSchema.statics.findNearby = function (coordinates, radius = 10) {
-    return this.find({
-        'businessInfo.serviceArea.coordinates': {
-            $near: {
-                $geometry: {
-                    type: 'Point',
-                    coordinates: [coordinates.lng, coordinates.lat]
-                },
-                $maxDistance: radius * 1000
-            }
-        },
-        isVerified: true,
-        isAvailable: true
-    })
-}
+
 
 vendorProfileSchema.statics.findByCuisine = function (cuisineType) {
     return this.find({
