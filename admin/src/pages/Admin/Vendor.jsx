@@ -283,6 +283,19 @@ function Vendor() {
             dailyOrders: Number(formData.vendorProfile.capacity.dailyOrders)
           }
         };
+        
+        // Remove fields that are not allowed in the update payload
+        delete vendorProfilePayload._id;
+        delete vendorProfilePayload.userId;
+        delete vendorProfilePayload.isVerified;
+        delete vendorProfilePayload.createdAt;
+        delete vendorProfilePayload.updatedAt;
+        delete vendorProfilePayload.__v;
+        delete vendorProfilePayload.rating;
+        if (vendorProfilePayload.businessInfo) {
+          delete vendorProfilePayload.businessInfo.address;
+        }
+
         await updateVendorApi(editingVendor._id, vendorProfilePayload);
         toast.success('Vendor updated successfully');
       } else {
