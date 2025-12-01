@@ -16,6 +16,29 @@ import {
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
+const getObjectDiff = (original, current) => {
+  const diff = {};
+  const ignoredKeys = new Set(['_id', 'user', 'createdAt', 'updatedAt', '__v', 'id', 'rating']);
+
+  for (const key in current) {
+    if (Object.prototype.hasOwnProperty.call(current, key) && !ignoredKeys.has(key)) {
+      const originalValue = original?.[key];
+      const currentValue = current[key];
+      const areObjects = (v) => v && typeof v === 'object' && !Array.isArray(v);
+
+      if (areObjects(currentValue) && areObjects(originalValue)) {
+        const nestedDiff = getObjectDiff(originalValue, currentValue);
+        if (Object.keys(nestedDiff).length > 0) {
+          diff[key] = nestedDiff;
+        }
+      } else if (JSON.stringify(originalValue) !== JSON.stringify(currentValue)) {
+        diff[key] = currentValue;
+      }
+    }
+  }
+  return diff;
+};
+
 const StatCard = ({ icon: Icon, title, value, color }) => {
   const colorClasses = {
       blue: 'text-blue-400',
@@ -108,13 +131,6 @@ function Vendor() {
         businessName: '',
         description: '',
         cuisineTypes: [],
-        serviceArea: {
-          radius: 5,
-          coordinates: {
-            lat: 28.6139,
-            lng: 77.2090
-          }
-        }
       },
       operatingHours: [
         { day: 'monday', isOpen: true, openTime: '10:00', closeTime: '20:00' },
@@ -123,7 +139,7 @@ function Vendor() {
         { day: 'thursday', isOpen: true, openTime: '10:00', closeTime: '20:00' },
         { day: 'friday', isOpen: true, openTime: '10:00', closeTime: '21:00' },
         { day: 'saturday', isOpen: true, openTime: '09:00', closeTime: '21:00' },
-        { day: 'sunday', isOpen: false, openTime: '', closeTime: '' }
+        { day: 'sunday', isOpen: false, openTime: '09:00', closeTime: '21:00' }
       ],
       capacity: {
         dailyOrders: 20
@@ -260,33 +276,48 @@ function Vendor() {
     e.preventDefault()
     setLoading(true)
     try {
-      const payload = {
-        ...formData,
-        vendorProfile: {
+      if (editingVendor) {
+        const vendorProfilePayload = {
           ...formData.vendorProfile,
           capacity: {
             dailyOrders: Number(formData.vendorProfile.capacity.dailyOrders)
           }
-        }
-      }
+        };
+        const updatedFields = getObjectDiff(editingVendor, vendorProfilePayload);
 
-      if (editingVendor) {
-        await updateVendorApi(editingVendor._id, payload.vendorProfile)
-        toast.success('Vendor updated successfully')
+        if (Object.keys(updatedFields).length > 0) {
+          await updateVendorApi(editingVendor._id, updatedFields);
+          toast.success('Vendor updated successfully');
+        } else {
+          toast('No changes to update.');
+        }
       } else {
-        await createVendorApi(payload)
-        toast.success('Vendor created successfully')
+        const payload = {
+          ...formData,
+          user: {
+            ...formData.user,
+            phoneNumber: "91" + String(formData.user.phoneNumber)
+          },
+          vendorProfile: {
+            ...formData.vendorProfile,
+            capacity: {
+              dailyOrders: Number(formData.vendorProfile.capacity.dailyOrders)
+            }
+          }
+        };
+        await createVendorApi(payload);
+        toast.success('Vendor created successfully');
       }
       
-      setShowModal(false)
-      setEditingVendor(null)
-      resetForm()
-      fetchVendors()
+      setShowModal(false);
+      setEditingVendor(null);
+      resetForm();
+      fetchVendors();
     } catch (error) {
-      console.error('Error saving vendor:', error)
-      toast.error(error.response?.data?.message || 'Error saving vendor')
+      console.error('Error saving vendor:', error);
+      toast.error(error.response?.data?.message || 'Error saving vendor');
     }
-    setLoading(false)
+    setLoading(false);
   }
 
   const handleAddressSubmit = async (e) => {
@@ -405,26 +436,18 @@ function Vendor() {
       },
       vendorProfile: {
         vendorType: 'home_chef',
-        businessInfo: {
-          businessName: '',
-          description: '',
-          cuisineTypes: [],
-          serviceArea: {
-            radius: 5,
-            coordinates: {
-              lat: 28.6139,
-              lng: 77.2090
-            }
-          }
-        },
-        operatingHours: [
+              businessInfo: {
+                businessName: '',
+                description: '',
+                cuisineTypes: [],
+              },        operatingHours: [
           { day: 'monday', isOpen: true, openTime: '10:00', closeTime: '20:00' },
           { day: 'tuesday', isOpen: true, openTime: '10:00', closeTime: '20:00' },
           { day: 'wednesday', isOpen: true, openTime: '10:00', closeTime: '20:00' },
           { day: 'thursday', isOpen: true, openTime: '10:00', closeTime: '20:00' },
           { day: 'friday', isOpen: true, openTime: '10:00', closeTime: '21:00' },
           { day: 'saturday', isOpen: true, openTime: '09:00', closeTime: '21:00' },
-          { day: 'sunday', isOpen: false, openTime: '', closeTime: '' }
+          { day: 'sunday', isOpen: false, openTime: '09:00', closeTime: '21:00' }
         ],
         capacity: {
           dailyOrders: 20
@@ -576,6 +599,9 @@ function Vendor() {
                     </h3>
                     <p className="text-sm text-gray-400 mt-1">
                       {vendor.businessInfo?.description || 'No description available'}
+                    </p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {vendor.userId?.phoneNumber.internationalNumber || 'No description available'}
                     </p>
                   </div>
                   <div className="flex gap-1 ml-2">
@@ -777,8 +803,9 @@ function Vendor() {
                     <input
                       type="tel"
                       name="user.phoneNumber"
-                      placeholder="Phone Number"
+                      placeholder="Enter 10 digit Phone Number"
                       value={formData.user.phoneNumber}
+                      maxLength={10}
                       onChange={handleInputChange}
                       className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
                       required
@@ -848,35 +875,7 @@ function Vendor() {
                   </div>
                 </div>
 
-                {/* Service Area */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <input
-                    type="number"
-                    name="vendorProfile.businessInfo.serviceArea.radius"
-                    placeholder="Service Radius (km)"
-                    value={formData.vendorProfile.businessInfo.serviceArea.radius}
-                    onChange={handleInputChange}
-                    className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                  />
-                  <input
-                    type="number"
-                    name="vendorProfile.businessInfo.serviceArea.coordinates.lat"
-                    placeholder="Latitude"
-                    step="any"
-                    value={formData.vendorProfile.businessInfo.serviceArea.coordinates.lat}
-                    onChange={handleInputChange}
-                    className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                  />
-                  <input
-                    type="number"
-                    name="vendorProfile.businessInfo.serviceArea.coordinates.lng"
-                    placeholder="Longitude"
-                    step="any"
-                    value={formData.vendorProfile.businessInfo.serviceArea.coordinates.lng}
-                    onChange={handleInputChange}
-                    className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
-                  />
-                </div>
+
               </div>
 
               {/* Operating Hours */}
