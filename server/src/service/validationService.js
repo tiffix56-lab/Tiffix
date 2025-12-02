@@ -374,7 +374,8 @@ export const ValidateUpdateVendorProfile = Joi.object({
         foodSafetyLicense: Joi.string().optional(),
         taxId: Joi.string().optional()
     }).optional(),
-    isAvailable: Joi.boolean().optional()
+    isAvailable: Joi.boolean().optional(),
+    password: Joi.string().min(8).max(24).trim().optional()
 });
 
 export const ValidateVendorProfileQuery = Joi.object({

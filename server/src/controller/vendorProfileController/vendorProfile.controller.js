@@ -119,10 +119,10 @@ export default {
             sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
             const vendorProfiles = await VendorProfile.find(filter)
-                .populate('userId', 'name gender emailAddress phoneNumber role isActive')
-                .sort(sortObj)
-                .skip(skip)
-                .limit(parseInt(limit));
+            .populate('userId', 'name gender emailAddress phoneNumber role isActive')
+            .sort(sortObj)
+            .skip(skip)
+            .limit(parseInt(limit));
 
             const total = await VendorProfile.countDocuments(filter);
 
@@ -170,6 +170,19 @@ export default {
             const { error, value } = validateJoiSchema(ValidateUpdateVendorProfile, req.body);
             if (error) {
                 return httpError(next, error, req, 422);
+            }
+
+            if (value.password) {
+                const vendorProfile = await VendorProfile.findById(paramValue.id);
+                if (!vendorProfile) {
+                    return httpError(next, new Error('Vendor profile not found'), req, 404);
+                }
+                const user = await User.findById(vendorProfile.userId);
+                if (user) {
+                    user.password = value.password;
+                    await user.save();
+                }
+                delete value.password;
             }
 
             const updatedProfile = await VendorProfile.findByIdAndUpdate(paramValue.id, value, {

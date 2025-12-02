@@ -198,7 +198,7 @@ export default {
                 promoCodeData = promoResult.promoCode;
             }
 
-            const gstRate = 0.18;
+            const gstRate = 0;
             const gstAmount = Math.round(finalPrice * gstRate);
             let finalPriceWithGST = finalPrice + gstAmount;
 
