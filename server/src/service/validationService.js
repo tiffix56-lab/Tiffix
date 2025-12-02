@@ -109,6 +109,7 @@ export const ValidateLocationQuery = Joi.object({
  */
 export const ValidateCreateSubscription = Joi.object({
     planName: Joi.string().min(3).max(100).trim().required(),
+    image: Joi.string().uri().optional(),
     duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom').required(),
     durationDays: Joi.number().positive().required(),
     mealTimings: Joi.object({
@@ -138,6 +139,7 @@ export const ValidateCreateSubscription = Joi.object({
 
 export const ValidateUpdateSubscription = Joi.object({
     planName: Joi.string().min(3).max(100).trim().optional(),
+    image: Joi.string().uri().optional(),
     duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom').optional(),
     durationDays: Joi.number().positive().optional(),
     mealTimings: Joi.object({
