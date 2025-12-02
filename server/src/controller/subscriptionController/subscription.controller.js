@@ -32,7 +32,7 @@ export default {
             }
 
             const subscriptions = await Subscription.find(query)
-                .select('planName duration durationDays mealTimings mealsPerPlan userSkipMealPerPlan originalPrice discountedPrice category freeDelivery description features')
+                .select('planName duration durationDays mealTimings mealsPerPlan userSkipMealPerPlan originalPrice discountedPrice category freeDelivery description features image')
                 .sort({ discountedPrice: 1 })
                 .skip(skip)
                 .limit(Number(limit));
@@ -99,7 +99,7 @@ export default {
             const subscription = await Subscription.findOne({
                 _id: subscriptionId,
                 isActive: true
-            }).select('planName duration durationDays mealTimings mealsPerPlan userSkipMealPerPlan originalPrice discountedPrice category freeDelivery description features terms');
+            }).select('planName duration durationDays mealTimings mealsPerPlan userSkipMealPerPlan originalPrice discountedPrice category freeDelivery description features terms image');
 
             if (!subscription) {
                 return httpError(next, new Error('Subscription not found or inactive'), req, 404);
@@ -151,7 +151,8 @@ export default {
                 features,
                 terms,
                 tags,
-                planMenus
+                planMenus,
+                image
             } = req.body;
 
             const existingSubscription = await Subscription.findOne({ planName });
@@ -174,7 +175,8 @@ export default {
                 features: features || [],
                 terms,
                 tags: tags || [],
-                planMenus: planMenus || []
+                planMenus: planMenus || [],
+                image
             });
 
             await newSubscription.save();
@@ -354,7 +356,7 @@ export default {
             const allowedUpdates = [
                 'planName', 'duration', 'durationDays', 'mealTimings', 'mealsPerPlan',
                 'userSkipMealPerPlan', 'originalPrice', 'discountedPrice', 'category',
-                'freeDelivery', 'description', 'features', 'terms', 'tags', 'planMenus'
+                'freeDelivery', 'description', 'features', 'terms', 'tags', 'planMenus', 'image'
             ];
 
             const updates = {};

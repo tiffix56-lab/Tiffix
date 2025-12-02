@@ -9,6 +9,10 @@ const subscriptionSchema = new mongoose.Schema(
             maxlength: 100,
             trim: true
         },
+        image: {
+            type: String,
+            trim: true
+        },
         duration: {
             type: String,
             enum: ['weekly', 'monthly', 'yearly', 'custom'],
