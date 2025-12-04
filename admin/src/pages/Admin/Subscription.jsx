@@ -38,6 +38,7 @@ function Subscription() {
   })
   const [formData, setFormData] = useState({
     planName: '',
+    image: '',
     duration: 'monthly',
     durationDays: 30,
     mealTimings: {
@@ -181,6 +182,7 @@ function Subscription() {
     // Only extract the fields we need, excluding MongoDB metadata
     setFormData({
       planName: subscription.planName || '',
+      image: subscription.image || '',
       duration: subscription.duration || 'monthly',
       durationDays: subscription.durationDays || 30,
       mealTimings: subscription.mealTimings || {
@@ -252,6 +254,7 @@ function Subscription() {
   const resetForm = () => {
     setFormData({
       planName: '',
+      image: '',
       duration: 'monthly',
       durationDays: 30,
       mealTimings: {
@@ -462,6 +465,11 @@ function Subscription() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {subscriptions && subscriptions.length > 0 ? subscriptions.map((subscription) => (
             <div key={subscription._id} className="rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 shadow-lg overflow-hidden hover:shadow-xl hover:border-orange-500/50 transition-all duration-300">
+              {subscription.image && (
+                <div className="h-40 w-full overflow-hidden">
+                  <img src={subscription.image} alt={subscription.planName} className="object-cover w-full h-full" />
+                </div>
+              )}
               {/* Header */}
               <div className="p-6 border-b border-gray-700">
                 <div className="flex items-start justify-between mb-3">
@@ -698,19 +706,32 @@ function Subscription() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="duration" className="block text-sm font-medium text-gray-300 mb-2">Duration</label>
-                    <select
-                      id="duration"
-                      name="duration"
-                      value={formData.duration}
+                    <label htmlFor="image" className="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
+                    <input
+                      type="text"
+                      id="image"
+                      name="image"
+                      placeholder="Enter image URL"
+                      value={formData.image}
                       onChange={handleInputChange}
-                      className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white w-full"
-                    >
-                      <option value="monthly" className="bg-gray-800">Monthly</option>
-                      <option value="weekly" className="bg-gray-800">Weekly</option>
-                      <option value="yearly" className="bg-gray-800">Yearly</option>
-                    </select>
+                      className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400 w-full"
+                    />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="duration" className="block text-sm font-medium text-gray-300 mb-2">Duration</label>
+                  <select
+                    id="duration"
+                    name="duration"
+                    value={formData.duration}
+                    onChange={handleInputChange}
+                    className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white w-full"
+                  >
+                    <option value="monthly" className="bg-gray-800">Monthly</option>
+                    <option value="weekly" className="bg-gray-800">Weekly</option>
+                    <option value="yearly" className="bg-gray-800">Yearly</option>
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-4">

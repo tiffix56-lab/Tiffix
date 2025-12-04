@@ -277,6 +277,11 @@ function Vendor() {
     setLoading(true)
     try {
       if (editingVendor) {
+        if (formData.user.password && formData.user.password.length < 8) {
+          toast.error('Password must be at least 8 characters long.');
+          setLoading(false);
+          return;
+        }
         const vendorProfilePayload = {
           ...formData.vendorProfile,
           capacity: {
@@ -296,7 +301,12 @@ function Vendor() {
           delete vendorProfilePayload.businessInfo.address;
         }
 
-        await updateVendorApi(editingVendor._id, vendorProfilePayload);
+        const payloadForUpdate = { ...vendorProfilePayload };
+        if (formData.user.password) {
+          payloadForUpdate.password = formData.user.password;
+        }
+
+        await updateVendorApi(editingVendor._id, payloadForUpdate);
         toast.success('Vendor updated successfully');
       } else {
         const payload = {
@@ -351,12 +361,9 @@ function Vendor() {
   const handleEdit = (vendor) => {
     setEditingVendor(vendor)
     setFormData({
-      user: vendor.user || {
-        name: '',
-        emailAddress: '',
-        phoneNumber: '',
+      user: {
+        ...(vendor.user || {}),
         password: '',
-        timezone: 'Asia/Kolkata'
       },
       vendorProfile: {
         ...vendor,
@@ -782,6 +789,24 @@ function Vendor() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-gray-800">
               {/* User Information */}
+              {editingVendor && (
+                <div>
+                  <h4 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-orange-400" />
+                    User Information
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <input
+                      type="string"
+                      name="user.password"
+                      placeholder="New Password (min 8 chars, leave blank to keep current)"
+                      value={formData.user.password}
+                      onChange={handleInputChange}
+                      className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
+                    />
+                  </div>
+                </div>
+              )}
               {!editingVendor && (
                 <div>
                   <h4 className="text-lg font-medium text-white mb-4 flex items-center gap-2">

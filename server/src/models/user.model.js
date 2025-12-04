@@ -213,8 +213,6 @@ const userSchema = new mongoose.Schema(
             _id: false,
             userReferralCode: {
                 type: String,
-                unique: true,
-                sparse: true,
                 default: null
             },
             referralCodeGeneratedAt: {
