@@ -130,7 +130,7 @@ export const ValidateCreateSubscription = Joi.object({
     discountedPrice: Joi.number().positive().required(),
     category: Joi.string().valid('home_chef', 'food_vendor').required(),
     freeDelivery: Joi.boolean().default(false),
-    description: Joi.string().max(500).trim().optional(),
+    description: Joi.string().max(3000).trim().optional(),
     features: Joi.array().items(Joi.string()).optional(),
     terms: Joi.string().max(1000).optional(),
     tags: Joi.array().items(Joi.string()).optional(),
@@ -160,7 +160,7 @@ export const ValidateUpdateSubscription = Joi.object({
     discountedPrice: Joi.number().positive().optional(),
     category: Joi.string().valid('home_chef', 'food_vendor').optional(),
     freeDelivery: Joi.boolean().optional(),
-    description: Joi.string().max(500).trim().optional(),
+    description: Joi.string().max(3000).trim().optional(),
     features: Joi.array().items(Joi.string()).optional(),
     terms: Joi.string().max(1000).optional(),
     tags: Joi.array().items(Joi.string()).optional(),
@@ -498,7 +498,7 @@ export const ValidateCreatePromoCode = Joi.object({
 
 export const ValidateUpdatePromoCode = Joi.object({
     code: Joi.string().min(3).max(20).trim().uppercase().optional(),
-    description: Joi.string().max(500).trim().optional(),
+    description: Joi.string().max(3000).trim().optional(),
     discountType: Joi.string().valid('percentage', 'flat').optional(),
     discountValue: Joi.number().positive().optional(),
     minOrderValue: Joi.number().min(0).optional(),

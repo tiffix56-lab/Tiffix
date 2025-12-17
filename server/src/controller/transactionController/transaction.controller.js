@@ -155,6 +155,7 @@ export default {
 
             const transactions = await Transaction.find(filter)
                 .populate('subscriptionId', 'planName duration category mealsPerPlan')
+                .populate('userSubscriptionId')
                 .populate('promoCodeUsed', 'code discountType discountValue')
                 .sort({ createdAt: -1 })
                 .skip(skip)

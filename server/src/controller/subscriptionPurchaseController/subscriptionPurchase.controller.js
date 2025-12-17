@@ -564,7 +564,7 @@ export default {
                 .populate('subscriptionId', 'planName category duration durationDays originalPrice discountedPrice features')
                 .populate('vendorDetails.currentVendor.vendorId', 'businessInfo')
                 .populate('promoCodeUsed', 'code discountType discountValue')
-                .populate('transactionId', 'amount finalAmount paymentId completedAt status')
+                .populate('transactionId', '_id amount finalAmount paymentId completedAt status')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit));

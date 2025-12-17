@@ -183,6 +183,7 @@ export default {
                     'vendorDetails.vendorSwitchUsed': 1,
                     'promoCodeUsed.code': 1,
                     'promoCodeUsed.discountValue': 1,
+                    'transactionId._id': 1,
                     'transactionId.paymentId': 1,
                     'transactionId.completedAt': 1,
                     'transactionId.status': 1

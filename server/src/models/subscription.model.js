@@ -95,7 +95,7 @@ const subscriptionSchema = new mongoose.Schema(
         },
         description: {
             type: String,
-            maxlength: 500,
+            maxlength: 3000,
             trim: true
         },
         features: [String],
