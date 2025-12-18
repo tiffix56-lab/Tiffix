@@ -7,11 +7,21 @@ export default {
     web: {
       favicon: "./src/assets/favicon.png",
     },
+
     experiments: {
       tsconfigPaths: true,
     },
     plugins: [
       "expo-router",
+      "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ],
       [
         "@react-native-google-signin/google-signin",
         {

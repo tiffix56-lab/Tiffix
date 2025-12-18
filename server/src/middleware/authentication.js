@@ -22,8 +22,6 @@ export default async (request, _res, next) => {
             }
         }
 
-        console.log("ACCESSTOKE", accessToken);
-
 
 
         if (!accessToken) {

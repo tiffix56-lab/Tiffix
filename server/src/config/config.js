@@ -90,7 +90,7 @@ const config = {
         apiEndpoint: "/campaign/t1/api/v2"
     },
     firebase: {
-        serviceAccount
+        serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT 
     }
 }
 

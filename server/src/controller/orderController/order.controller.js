@@ -7,6 +7,8 @@ import UserSubscription from '../../models/userSubscription.model.js';
 import VendorProfile from '../../models/vendorProfile.model.js';
 import TimezoneUtil from '../../util/timezone.js';
 import { EUserRole } from '../../constant/application.js';
+import notificationService from '../../service/notification.service.js';
+import User from '../../models/user.model.js';
 
 export default {
     // ############### USER CONTROLLERS ###############
@@ -446,6 +448,15 @@ export default {
 
             await order.updateStatus(status, userId, notes);
 
+            const user = await User.findById(order.userId);
+            if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+                const payload = {
+                    title: 'Order Status Updated',
+                    body: `Your order #${order.orderNumber} is now ${status}.`
+                };
+                await notificationService.sendNotification(user.fcmTokens, payload);
+            }
+
             const updatedOrder = await Order.findById(orderId)
                 .populate('selectedMenus', 'foodTitle')
                 .populate('vendorDetails.vendorId', 'businessInfo.businessName');
@@ -534,6 +545,15 @@ export default {
                 try {
                     await order.updateStatus(status, userId, notes);
                     results.success.push(orderId);
+
+                    const user = await User.findById(order.userId);
+                    if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+                        const payload = {
+                            title: 'Order Status Updated',
+                            body: `Your order #${order.orderNumber} is now ${status}.`
+                        };
+                        await notificationService.sendNotification(user.fcmTokens, payload);
+                    }
                 } catch (updateError) {
                     results.failed.push({ orderId, reason: updateError.message });
                 }
@@ -720,6 +740,15 @@ export default {
             userSubscription.creditsUsed += 1;
             await userSubscription.save();
 
+            const user = await User.findById(order.userId);
+            if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+                const payload = {
+                    title: 'Order Delivered',
+                    body: `Your order #${order.orderNumber} has been delivered. Enjoy your meal!`
+                };
+                await notificationService.sendNotification(user.fcmTokens, payload);
+            }
+
             const updatedOrder = await Order.findById(orderId)
                 .populate('selectedMenus', 'foodTitle')
                 .populate('vendorDetails.vendorId', 'businessInfo.businessName');
@@ -770,6 +799,15 @@ export default {
                     userSubscription.creditsUsed += 1;
                     await userSubscription.save();
                     results.success.push(orderId);
+
+                    const user = await User.findById(order.userId);
+                    if (user && user.fcmTokens && user.fcmTokens.length > 0) {
+                        const payload = {
+                            title: 'Order Delivered',
+                            body: `Your order #${order.orderNumber} has been delivered. Enjoy your meal!`
+                        };
+                        await notificationService.sendNotification(user.fcmTokens, payload);
+                    }
                 } catch (updateError) {
                     results.failed.push({ orderId, reason: updateError.message });
                 }

@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
+import { notificationService } from '@/services/notification.service';
 
 // Import all components
 import Header from '@/components/home/Header';
@@ -18,6 +19,25 @@ import ReferEarn from '@/components/home/ReferEarn';
 const Home = () => {
   const { colorScheme } = useColorScheme();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const requestPermission = async () => {
+      const enabled = await notificationService.requestUserPermission();
+      if (enabled) {
+        console.log('Notification permission granted.');
+        const fcmToken = await notificationService.getFCMToken();
+        if (fcmToken) {
+          const res = await notificationService.sendTokenToServer(fcmToken);
+          console.log(res);
+          
+        }
+      } else {
+        console.log('Notification permission denied.');
+      }
+    };
+
+    requestPermission();
+  }, []);
 
   // Log when home screen renders
   useEffect(() => {
@@ -51,5 +71,7 @@ const Home = () => {
     </View>
   );
 };
+
+
 
 export default Home;

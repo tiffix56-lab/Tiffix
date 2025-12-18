@@ -18,7 +18,7 @@ api.interceptors.request.use(
     console.log('🌐 [AXIOS] Request method:', config.method?.toUpperCase());
     
     const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    console.log('🔑 [AXIOS] Token from storage:', token ? `${token.substring(0, 20)}...` : 'No token found');
+    console.log('🔑 [AXIOS] Token from storage:', token ? `${token}...` : 'No token found');
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

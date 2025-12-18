@@ -15,7 +15,7 @@ class NotificationService {
         };
 
         try {
-            const response = await admin.messaging().sendMulticast(message);
+            const response = await admin.messaging().sendEachForMulticast(message);
             console.log('Successfully sent message:', response);
         } catch (error) {
             console.log('Error sending message:', error);

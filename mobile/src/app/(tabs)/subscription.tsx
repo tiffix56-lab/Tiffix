@@ -133,8 +133,7 @@ const Subscription = () => {
             // Try to get more comprehensive order data
             const ordersResponse = await orderService.getUserOrders({
               page: 1,
-              limit: 100, // Get more orders
-              days: 30    // Get orders from last 30 days (API limit)
+              limit: 100,  
             });
             console.log('📡 [SUBSCRIPTION_TAB] Orders response:', ordersResponse);
             
@@ -312,7 +311,7 @@ const Subscription = () => {
       const ordersResponse = await orderService.getUserOrders({
         page: 1,
         limit: 100,
-        days: 30
+        // days: 30
       });
 
       if (ordersResponse.success && ordersResponse.data) {
@@ -581,19 +580,33 @@ const Subscription = () => {
             )}
           </View>
           {subscription.analytics?.remainingDays !== undefined && subscription.analytics.remainingDays > 0 && (
-                                        <View className="flex-row items-center mt-1">
-                                          <Feather
-                                            name="clock"
-                                            size={16}
-                                            color={colorScheme === 'dark' ? '#3B82F6' : '#2563EB'}
-                                          />
-                                          <Text
-                                            className="ml-2 text-sm text-blue-600 dark:text-blue-400"
-                                            style={{ fontFamily: 'Poppins_500Medium' }}>
-                                            {subscription.analytics.remainingDays} Days Left
-                                          </Text>
-                                        </View>
-                                      )}
+            <View className="flex-row items-center mt-1">
+              <Feather
+                name="skip-forward"
+                size={16}
+                color={colorScheme === 'dark' ? '#3B82F6' : '#2563EB'}
+              />
+              <Text
+                className="ml-2 text-sm text-blue-600 dark:text-blue-400"
+                style={{ fontFamily: 'Poppins_500Medium' }}>
+                {subscription.skipCreditAvailable} skip available
+              </Text>
+            </View>
+          )}
+          {subscription.analytics?.remainingDays !== undefined && subscription.analytics.remainingDays > 0 && (
+            <View className="flex-row items-center mt-1">
+              <Feather
+                name="clock"
+                size={16}
+                color={colorScheme === 'dark' ? '#3B82F6' : '#2563EB'}
+              />
+              <Text
+                className="ml-2 text-sm text-blue-600 dark:text-blue-400"
+                style={{ fontFamily: 'Poppins_500Medium' }}>
+                {subscription.analytics.remainingDays - 1} Days Left
+              </Text>
+            </View>
+          )}
 
           {/* Credits Info */}
           <View className="mb-3">
@@ -671,11 +684,15 @@ const Subscription = () => {
     const formatTime = (timeString: string) => {
       // Handle both "HH:MM" format and full datetime
       if (timeString.includes(':') && timeString.length <= 5) {
-        return timeString;
+        const [hours, minutes] = timeString.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = hours % 12 || 12;
+        return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
       }
-      return new Date(timeString).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      return new Date(timeString).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
       });
     };
 
@@ -768,7 +785,7 @@ const Subscription = () => {
             </View>
 
             {/* Price Display (if available) */}
-            {order.selectedMenus?.[0]?.price && (
+            {/* {order.selectedMenus?.[0]?.price && (
               <View className="mt-1 flex-row items-center">
                 <Feather
                   name="tag"
@@ -781,7 +798,7 @@ const Subscription = () => {
                   ₹{order.selectedMenus[0].price}
                 </Text>
               </View>
-            )}
+            )} */}
           </View>
         </View>
 

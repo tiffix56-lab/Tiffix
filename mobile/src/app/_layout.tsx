@@ -22,6 +22,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { AddressProvider } from '@/context/AddressContext';
 import { PaymentProvider } from '@/context/PaymentContext';
 import { toastConfig } from '@/components/ui/ToastConfig';
+import { notificationService } from '@/services/notification.service';
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -42,6 +43,10 @@ export default function RootLayout() {
   });
   
   const [isRouterReady, setIsRouterReady] = useState(false);
+
+  useEffect(() => {
+    notificationService.initializeNotificationListeners();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
