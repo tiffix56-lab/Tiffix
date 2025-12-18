@@ -71,8 +71,8 @@ const subscriptionSchema = new mongoose.Schema(
         userSkipMealPerPlan: {
             type: Number,
             required: true,
-            min: 6,
-            default: 6,
+            min: 0,
+            default: 0,
         },
         originalPrice: {
             type: Number,

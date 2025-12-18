@@ -166,7 +166,7 @@ export default {
                 durationDays,
                 mealTimings,
                 mealsPerPlan,
-                userSkipMealPerPlan: userSkipMealPerPlan || 6,
+                userSkipMealPerPlan: userSkipMealPerPlan || 0,
                 originalPrice,
                 discountedPrice,
                 category,

@@ -125,7 +125,7 @@ export const ValidateCreateSubscription = Joi.object({
         }).optional()
     }).required(),
     mealsPerPlan: Joi.number().positive().required(),
-    userSkipMealPerPlan: Joi.number().positive().default(6),
+    userSkipMealPerPlan: Joi.number().min(0).default(0),
     originalPrice: Joi.number().positive().required(),
     discountedPrice: Joi.number().positive().required(),
     category: Joi.string().valid('home_chef', 'food_vendor').required(),
@@ -155,7 +155,7 @@ export const ValidateUpdateSubscription = Joi.object({
         }).optional()
     }).optional(),
     mealsPerPlan: Joi.number().positive().optional(),
-    userSkipMealPerPlan: Joi.number().positive().optional(),
+    userSkipMealPerPlan: Joi.number().min(0).optional(),
     originalPrice: Joi.number().positive().optional(),
     discountedPrice: Joi.number().positive().optional(),
     category: Joi.string().valid('home_chef', 'food_vendor').optional(),
