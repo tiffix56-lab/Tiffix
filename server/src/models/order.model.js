@@ -336,7 +336,7 @@ orderSchema.methods.cancelOrder = function (cancelReason = '', userId) {
     return this.save()
 }
 
-orderSchema.methods.confirmDelivery = function (confirmedBy, notes = '', photos = []) {
+orderSchema.methods.confirmDelivery = function (confirmedBy) {
     if (this.status !== EOrderStatus.OUT_FOR_DELIVERY) {
         throw new Error('Order must be out for delivery to confirm')
     }
@@ -345,8 +345,8 @@ orderSchema.methods.confirmDelivery = function (confirmedBy, notes = '', photos 
     this.deliveryConfirmation = {
         confirmedAt: TimezoneUtil.now(),
         confirmedBy: confirmedBy,
-        deliveryNotes: notes,
-        deliveryPhotos: photos
+        deliveryNotes: '',
+        deliveryPhotos: []
     }
 
     this.statusHistory.push({

@@ -1,6 +1,23 @@
 import dotenvFlow from 'dotenv-flow'
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 dotenvFlow.config()
+
+let serviceAccount = null;
+try {
+    const serviceAccountPath = join(__dirname, '../../firebase-service-account.json');
+    if (fs.existsSync(serviceAccountPath)) {
+        serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    }
+} catch (error) {
+    console.error("Could not read firebase-service-account.json:", error);
+}
+
 
 const config = {
     env: process.env.ENV || 'development',
@@ -71,6 +88,9 @@ const config = {
         baseUrl: process.env.AI_SENSY_API_URL || "https://backend.aisensy.com",
         campaignName: process.env.AI_SENSY_CAMPAIGN_NAME || "OTP_VERIFICATION_TEMPLATE",
         apiEndpoint: "/campaign/t1/api/v2"
+    },
+    firebase: {
+        serviceAccount
     }
 }
 

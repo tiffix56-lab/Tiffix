@@ -376,6 +376,11 @@ export const updateOrderStatusApi = async (orderId, body) => {
     return response.data;
 }
 
+export const bulkUpdateOrderStatusApi = async (body) => {
+    const response = await servicesAxiosInstance.patch('/orders/bulk-status', body);
+    return response.data;
+}
+
 export const getOrderByIdApi = async (orderId) => {
     const response = await servicesAxiosInstance.get(`/orders/${orderId}`);
     return response.data;
@@ -391,8 +396,13 @@ export const getAdminOrdersApi = async (params) => {
     return response.data;
 }
 
-export const confirmOrderDeliveryApi = async (orderId, body) => {
-    const response = await servicesAxiosInstance.post(`/admin/orders/${orderId}/confirm-delivery`, body);
+export const confirmOrderDeliveryApi = async (orderId) => {
+    const response = await servicesAxiosInstance.post(`/admin/orders/${orderId}/confirm-delivery`);
+    return response.data;
+}
+
+export const bulkConfirmOrderDeliveryApi = async (orderIds) => {
+    const response = await servicesAxiosInstance.post('/admin/orders/bulk-confirm-delivery', { orderIds });
     return response.data;
 }
 

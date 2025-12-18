@@ -8,7 +8,8 @@ import {
   getAdminOrdersApi,
   confirmOrderDeliveryApi,
   getOrderByIdApi,
-  getVendorsApi
+  getVendorsApi,
+  bulkConfirmOrderDeliveryApi
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
@@ -17,8 +18,8 @@ function Order() {
   const [vendors, setVendors] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [selectedOrders, setSelectedOrders] = useState([])
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [showDeliveryModal, setShowDeliveryModal] = useState(false)
   const [confirmingDelivery, setConfirmingDelivery] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -31,12 +32,6 @@ function Order() {
     startDate: '',
     endDate: '',
     days: '',
-  })
-
-  // Delivery confirmation form
-  const [deliveryForm, setDeliveryForm] = useState({
-    notes: '',
-    photos: []
   })
 
   // Stats
@@ -127,22 +122,50 @@ function Order() {
     }
   }
 
-  const handleConfirmDelivery = async () => {
-    if (!selectedOrder) return
-
+  const handleConfirmDelivery = async (orderId) => {
     setConfirmingDelivery(true)
     try {
-      await confirmOrderDeliveryApi(selectedOrder._id, deliveryForm)
+      await confirmOrderDeliveryApi(orderId)
       toast.success('Order delivery confirmed successfully!')
-      setShowDeliveryModal(false)
-      setShowDetailsModal(false)
-      setDeliveryForm({ notes: '', photos: [] })
       fetchOrders() // Refresh the orders list
     } catch (error) {
       console.error('Error confirming delivery:', error)
       toast.error(error.response?.data?.message || 'Error confirming delivery')
     } finally {
       setConfirmingDelivery(false)
+    }
+  }
+
+  const handleBulkConfirmDelivery = async () => {
+    setConfirmingDelivery(true)
+    try {
+      await bulkConfirmOrderDeliveryApi(selectedOrders)
+      toast.success('Selected orders confirmed successfully!')
+      setSelectedOrders([])
+      fetchOrders() // Refresh the orders list
+    } catch (error) {
+      console.error('Error confirming delivery:', error)
+      toast.error(error.response?.data?.message || 'Error confirming delivery')
+    } finally {
+      setConfirmingDelivery(false)
+    }
+  }
+
+  const handleSelectOrder = (orderId) => {
+    setSelectedOrders((prevSelected) => {
+      if (prevSelected.includes(orderId)) {
+        return prevSelected.filter((id) => id !== orderId)
+      } else {
+        return [...prevSelected, orderId]
+      }
+    })
+  }
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedOrders(orders.map((order) => order._id))
+    } else {
+      setSelectedOrders([])
     }
   }
 
@@ -496,11 +519,21 @@ function Order() {
 
       {/* Orders List */}
       <div className="bg-[#1E2938] rounded-xl border border-orange-500/30 overflow-hidden">
-        <div className="px-6 py-4 border-b border-orange-500/30">
+        <div className="px-6 py-4 border-b border-orange-500/30 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-orange-400" />
             <h3 className="text-lg font-semibold text-white">Orders List</h3>
           </div>
+          {selectedOrders.length > 0 && (
+            <button
+              onClick={handleBulkConfirmDelivery}
+              disabled={confirmingDelivery}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              <CheckCircle className="w-4 h-4" />
+              {confirmingDelivery ? 'Confirming...' : `Confirm ${selectedOrders.length} Orders`}
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -515,6 +548,13 @@ function Order() {
             <table className="w-full">
               <thead className="bg-orange-500/10">
                 <tr>
+                  <th className="px-6 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      onChange={handleSelectAll}
+                      checked={selectedOrders.length === orders.length && orders.length > 0}
+                    />
+                  </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Order Details</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Customer</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Menu Items</th>
@@ -528,14 +568,11 @@ function Order() {
                 {orders.map((order) => (
                   <tr key={order._id} className="hover:bg-orange-500/10">
                     <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <div className="text-white font-mono font-medium">
-                          {order.orderNumber || `#${order._id?.slice(-6)}`}
-                        </div>
-                        <div className="text-orange-300 text-xs mt-1">
-                          {formatDateTime(order.createdAt)}
-                        </div>
-                      </div>
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.includes(order._id)}
+                        onChange={() => handleSelectOrder(order._id)}
+                      />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -616,14 +653,12 @@ function Order() {
                         
                         {order.status === 'out_for_delivery' && !order.skipDetails?.isSkipped && !order.cancellationDetails?.isCancelled && (
                           <button
-                            onClick={() => {
-                              setSelectedOrder(order)
-                              setShowDeliveryModal(true)
-                            }}
-                            className="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            onClick={() => handleConfirmDelivery(order._id)}
+                            disabled={confirmingDelivery}
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50"
                           >
                             <CheckCircle className="w-3 h-3" />
-                            Confirm Delivery
+                            {confirmingDelivery ? 'Confirming...' : 'Confirm Delivery'}
                           </button>
                         )}
                       </div>
@@ -1020,117 +1055,6 @@ function Order() {
                   </div>
                 </div>
               )}
-
-              {/* Action Buttons */}
-              {selectedOrder.status === 'out_for_delivery' && !selectedOrder.skipDetails?.isSkipped && !selectedOrder.cancellationDetails?.isCancelled && (
-                <div className="flex gap-3 pt-4 border-t border-orange-500/30">
-                  <button
-                    onClick={() => {
-                      setShowDetailsModal(false)
-                      setShowDeliveryModal(true)
-                    }}
-                    className="flex items-center gap-2 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Confirm Delivery
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Delivery Modal */}
-      {showDeliveryModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1E2938] rounded-xl p-6 w-full max-w-lg border border-orange-500/30">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white">Confirm Order Delivery</h3>
-              <button
-                onClick={() => setShowDeliveryModal(false)}
-                className="text-orange-300 hover:text-white"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <p className="text-white mb-2">Order: {selectedOrder.orderNumber || `#${selectedOrder._id?.slice(-8)}`}</p>
-                <p className="text-orange-300 text-sm">Customer: {selectedOrder.userId?.name}</p>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Delivery Notes (Optional)
-                </label>
-                <textarea
-                  value={deliveryForm.notes}
-                  onChange={(e) => setDeliveryForm(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={3}
-                  placeholder="Add delivery confirmation notes..."
-                  className="w-full px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white placeholder-orange-300/50 focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-
-              {/* Photo URLs */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Delivery Photo URLs (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter photo URL..."
-                  className="w-full px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white placeholder-orange-300/50 focus:ring-2 focus:ring-orange-500"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.target.value.trim()) {
-                      setDeliveryForm(prev => ({
-                        ...prev,
-                        photos: [...prev.photos, e.target.value.trim()]
-                      }))
-                      e.target.value = ''
-                    }
-                  }}
-                />
-                {deliveryForm.photos.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {deliveryForm.photos.map((photo, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm text-white">
-                        <Camera className="w-4 h-4" />
-                        <span className="flex-1 truncate">{photo}</span>
-                        <button
-                          onClick={() => setDeliveryForm(prev => ({
-                            ...prev,
-                            photos: prev.photos.filter((_, i) => i !== index)
-                          }))}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowDeliveryModal(false)}
-                  className="flex-1 bg-[#1E2938] border border-orange-500/30 text-white py-2 px-4 rounded-lg hover:bg-orange-500/20 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmDelivery}
-                  disabled={confirmingDelivery}
-                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                >
-                  {confirmingDelivery ? 'Confirming...' : 'Confirm Delivery'}
-                </button>
-              </div>
             </div>
           </div>
         </div>

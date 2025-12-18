@@ -7,6 +7,7 @@ import {
 import {
   getVendorOrdersApi,
   updateOrderStatusApi,
+  bulkUpdateOrderStatusApi,
   getOrderByIdApi
 } from '../../service/api.service';
 import toast from 'react-hot-toast';
@@ -48,6 +49,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPe
 
 function Orders() {
   const [orders, setOrders] = useState([]);
+  const [selectedOrders, setSelectedOrders] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState(null);
@@ -188,6 +190,39 @@ function Orders() {
     return nextStatuses[0] || null;
   };
 
+  const handleSelectOrder = (orderId) => {
+    setSelectedOrders(prev => 
+        prev.includes(orderId) 
+            ? prev.filter(id => id !== orderId) 
+            : [...prev, orderId]
+    );
+  };
+
+  const handleSelectAll = (e) => {
+      if (e.target.checked) {
+          setSelectedOrders(orders.map(o => o._id));
+      } else {
+          setSelectedOrders([]);
+      }
+  };
+
+  const handleBulkStatusChange = async (e) => {
+    const newStatus = e.target.value;
+    if (!newStatus) return;
+
+    if (window.confirm(`Are you sure you want to change status of ${selectedOrders.length} orders to "${newStatus}"?`)) {
+        try {
+            await bulkUpdateOrderStatusApi({ orderIds: selectedOrders, status: newStatus });
+            toast.success('Orders updated successfully');
+            setSelectedOrders([]);
+            fetchOrders();
+        } catch (error) {
+            toast.error('Failed to update orders');
+        }
+    }
+    e.target.value = "";
+  };
+
   const formatTime = (dateString) => {
     return new Date(dateString).toLocaleTimeString('en-IN', {
       hour: '2-digit',
@@ -309,11 +344,21 @@ function Orders() {
       </div>
 
       <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-gray-400" />
             <h3 className="text-lg font-semibold text-white">Orders List</h3>
           </div>
+          {selectedOrders.length > 0 && (
+            <div className='flex items-center gap-4'>
+              <span className='text-sm text-gray-300'>{selectedOrders.length} selected</span>
+              <select onChange={handleBulkStatusChange} className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500">
+                  <option value="">Bulk Actions</option>
+                  <option value="preparing">Change to Preparing</option>
+                  <option value="out_for_delivery">Change to Out for Delivery</option>
+              </select>
+            </div>
+          )}
         </div>
         {loading ? (
           <div className="flex items-center justify-center h-64">
@@ -327,6 +372,9 @@ function Orders() {
             <table className="w-full">
               <thead className="bg-gray-700">
                 <tr>
+                  <th className="px-6 py-3 text-left">
+                    <input type="checkbox" onChange={handleSelectAll} className='bg-gray-800 border-gray-600 rounded' />
+                  </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Order ID</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Customer</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Meal</th>
@@ -339,6 +387,14 @@ function Orders() {
               <tbody className="bg-gray-800 divide-y divide-gray-700">
                 {orders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-700/50">
+                    <td className="px-6 py-4">
+                      <input 
+                          type="checkbox" 
+                          checked={selectedOrders.includes(order._id)}
+                          onChange={() => handleSelectOrder(order._id)}
+                          className='bg-gray-800 border-gray-600 rounded'
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{order.orderNumber || `#${order._id?.slice(-6)}`}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">

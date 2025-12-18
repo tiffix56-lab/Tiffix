@@ -5,6 +5,7 @@ import { validateJoiSchema, ValidateAddAddress, ValidateUserPreferences, Validat
 import UserProfile from '../../models/userProfile.model.js';
 import User from '../../models/user.model.js';
 import quicker from '../../util/quicker.js';
+import notificationService from '../../service/notification.service.js';
 
 export default {
 
@@ -75,8 +76,9 @@ export default {
 
             if (value.preferences !== undefined) userProfileFields.preferences = value.preferences;
 
+            let updatedUser;
             if (Object.keys(userFields).length > 0) {
-                await User.findByIdAndUpdate(userId, userFields, {
+                updatedUser = await User.findByIdAndUpdate(userId, userFields, {
                     new: true,
                     runValidators: true
                 });
@@ -94,6 +96,14 @@ export default {
 
             if (!updatedProfile) {
                 return httpError(next, new Error('Failed to update user profile'), req, 500);
+            }
+
+            if (updatedUser && updatedUser.fcmTokens && updatedUser.fcmTokens.length > 0) {
+                const payload = {
+                    title: 'Profile Updated',
+                    body: 'Your profile has been successfully updated.'
+                };
+                await notificationService.sendNotification(updatedUser.fcmTokens, payload);
             }
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
@@ -265,6 +275,34 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 userProfile,
                 message: 'Preferences updated successfully'
+            });
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    addFCMToken: async (req, res, next) => {
+        try {
+            const { userId } = req.authenticatedUser;
+            const { token } = req.body;
+
+            if (!token) {
+                return httpError(next, new Error('FCM token is required'), req, 422);
+            }
+
+            const user = await User.findById(userId);
+            if (!user) {
+                return httpError(next, new Error('User not found'), req, 404);
+            }
+
+            if (!user.fcmTokens.includes(token)) {
+                user.fcmTokens.push(token);
+                await user.save();
+            }
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                message: 'FCM token registered successfully'
             });
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';

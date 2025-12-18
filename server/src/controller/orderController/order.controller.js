@@ -1,7 +1,7 @@
 import httpResponse from '../../util/httpResponse.js';
 import responseMessage from '../../constant/responseMessage.js';
 import httpError from '../../util/httpError.js';
-import { validateJoiSchema, ValidateSkipOrder, ValidateCancelOrder, ValidateUpdateOrderStatus, ValidateConfirmDelivery, ValidateOrderQuery } from '../../service/validationService.js';
+import { validateJoiSchema, ValidateSkipOrder, ValidateCancelOrder, ValidateUpdateOrderStatus, ValidateConfirmDelivery, ValidateOrderQuery, ValidateBulkUpdateOrderStatus, ValidateBulkConfirmDelivery } from '../../service/validationService.js';
 import Order, { EOrderStatus } from '../../models/order.model.js';
 import UserSubscription from '../../models/userSubscription.model.js';
 import VendorProfile from '../../models/vendorProfile.model.js';
@@ -458,6 +458,98 @@ export default {
         }
     },
 
+    bulkUpdateOrderStatus: async (req, res, next) => {
+        try {
+            const { userId, role } = req.authenticatedUser;
+    
+            if (role !== EUserRole.VENDOR && role !== EUserRole.ADMIN) {
+                return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
+            }
+
+            const { error, value } = validateJoiSchema(ValidateBulkUpdateOrderStatus, req.body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+    
+            const { orderIds, status, notes } = value;
+            
+            const results = {
+                success: [],
+                failed: []
+            };
+    
+            const vendorProfile = role === EUserRole.VENDOR ? await VendorProfile.findOne({ userId }) : null;
+    
+            const statusProgression = {
+                [EOrderStatus.UPCOMING]: [EOrderStatus.PREPARING],
+                [EOrderStatus.PREPARING]: [EOrderStatus.OUT_FOR_DELIVERY],
+                [EOrderStatus.OUT_FOR_DELIVERY]: [EOrderStatus.DELIVERED],
+                [EOrderStatus.DELIVERED]: []
+            };
+            const finalStates = [EOrderStatus.SKIPPED, EOrderStatus.CANCELLED];
+    
+            for (const orderId of orderIds) {
+                const order = await Order.findById(orderId);
+                if (!order) {
+                    results.failed.push({ orderId, reason: 'Order not found' });
+                    continue;
+                }
+    
+                if (role === EUserRole.VENDOR) {
+                    if (!vendorProfile || order.vendorDetails.vendorId.toString() !== vendorProfile._id.toString()) {
+                        results.failed.push({ orderId, reason: 'Permission denied. Not your order.' });
+                        continue;
+                    }
+    
+                    if (status === EOrderStatus.DELIVERED) {
+                        results.failed.push({ orderId, reason: 'Vendors cannot mark orders as delivered.' });
+                        continue;
+                    }
+    
+                    const allowedVendorStatuses = [EOrderStatus.PREPARING, EOrderStatus.OUT_FOR_DELIVERY];
+                    if (!allowedVendorStatuses.includes(status)) {
+                        results.failed.push({ orderId, reason: `Vendors can only set status to: ${allowedVendorStatuses.join(', ')}` });
+                        continue;
+                    }
+                }
+                
+                if (finalStates.includes(order.status)) {
+                    results.failed.push({ orderId, reason: `Cannot update order status. Order is already ${order.status}.` });
+                    continue;
+                }
+    
+                if (finalStates.includes(status)) {
+                    results.failed.push({ orderId, reason: `Cannot set order status to ${status} via bulk update.` });
+                    continue;
+                }
+                
+                if (order.status !== status) {
+                    const allowedNextStates = statusProgression[order.status] || [];
+                    if (!allowedNextStates.includes(status)) {
+                        results.failed.push({ orderId, reason: `Invalid status transition from ${order.status} to ${status}.` });
+                        continue;
+                    }
+                }
+    
+                try {
+                    await order.updateStatus(status, userId, notes);
+                    results.success.push(orderId);
+                } catch (updateError) {
+                    results.failed.push({ orderId, reason: updateError.message });
+                }
+            }
+    
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                message: 'Bulk order status update processed.',
+                results
+            });
+    
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
     // ############### ADMIN CONTROLLERS ###############
 
     getAdminOrders: async (req, res, next) => {
@@ -606,25 +698,22 @@ export default {
         try {
             const { userId, role } = req.authenticatedUser;
             const { orderId } = req.params;
-            const { body } = req;
 
             if (role !== EUserRole.ADMIN) {
                 return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
             }
 
-            const { error, value } = validateJoiSchema(ValidateConfirmDelivery, body);
+            const { error } = validateJoiSchema(ValidateConfirmDelivery, req.body);
             if (error) {
                 return httpError(next, error, req, 422);
             }
-
-            const { notes, photos } = value;
 
             const order = await Order.findById(orderId);
             if (!order) {
                 return httpError(next, new Error(responseMessage.ERROR.NOT_FOUND('Order')), req, 404);
             }
 
-            await order.confirmDelivery(userId, notes, photos);
+            await order.confirmDelivery(userId);
 
             // Increment creditsUsed on successful delivery
             const userSubscription = await UserSubscription.findById(order.userSubscriptionId);
@@ -637,6 +726,60 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, { order: updatedOrder });
 
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    bulkConfirmDelivery: async (req, res, next) => {
+        try {
+            const { userId, role } = req.authenticatedUser;
+    
+            if (role !== EUserRole.ADMIN) {
+                return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
+            }
+    
+            const { error, value } = validateJoiSchema(ValidateBulkConfirmDelivery, req.body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+    
+            const { orderIds } = value;
+            
+            const results = {
+                success: [],
+                failed: []
+            };
+    
+            for (const orderId of orderIds) {
+                const order = await Order.findById(orderId);
+                if (!order) {
+                    results.failed.push({ orderId, reason: 'Order not found' });
+                    continue;
+                }
+    
+                if (order.status !== EOrderStatus.OUT_FOR_DELIVERY) {
+                    results.failed.push({ orderId, reason: `Order status is not 'out_for_delivery'` });
+                    continue;
+                }
+    
+                try {
+                    await order.confirmDelivery(userId);
+                    const userSubscription = await UserSubscription.findById(order.userSubscriptionId);
+                    userSubscription.creditsUsed += 1;
+                    await userSubscription.save();
+                    results.success.push(orderId);
+                } catch (updateError) {
+                    results.failed.push({ orderId, reason: updateError.message });
+                }
+            }
+    
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                message: 'Bulk order delivery confirmation processed.',
+                results
+            });
+    
         } catch (err) {
             const errorMessage = err.message || 'Internal server error';
             httpError(next, new Error(errorMessage), req, 500);

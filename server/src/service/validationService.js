@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { EOrderStatus } from '../models/order.model.js'; 
 
 /**
  * ************ AUTHENTICATION VALIDATION ***********************
@@ -781,13 +782,20 @@ export const ValidateCancelOrder = Joi.object({
 });
 
 export const ValidateUpdateOrderStatus = Joi.object({
-    status: Joi.string().valid('upcoming', 'preparing', 'out_for_delivery', 'delivered', 'skipped', 'cancelled').required(),
+    status: Joi.string().valid(...Object.values(EOrderStatus)).required(),
     notes: Joi.string().max(500).trim().optional().default('')
 });
 
-export const ValidateConfirmDelivery = Joi.object({
-    notes: Joi.string().max(500).trim().optional().default(''),
-    photos: Joi.array().items(Joi.string().uri()).optional().default([])
+export const ValidateBulkUpdateOrderStatus = Joi.object({
+    orderIds: Joi.array().items(Joi.string().hex().length(24)).min(1).required(),
+    status: Joi.string().valid(...Object.values(EOrderStatus)).required(),
+    notes: Joi.string().optional().allow('')
+});
+
+export const ValidateConfirmDelivery = Joi.object({});
+
+export const ValidateBulkConfirmDelivery = Joi.object({
+    orderIds: Joi.array().items(Joi.string().hex().length(24)).min(1).required(),
 });
 
 export const ValidateOrderQuery = Joi.object({

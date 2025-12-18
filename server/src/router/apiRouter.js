@@ -72,6 +72,7 @@ router.route('/auth/google/mobile').post(authController.googleMobileAuth)
 // User profile routes
 router.route('/user-profiles').get(authentication, userProfileController.getUserProfile)
 router.route('/user-profiles').put(authentication, userProfileController.updateUserProfile)
+router.route('/users/fcm-token').post(authentication, userProfileController.addFCMToken);
 
 // Address management
 router.route('/user-profiles/addresses').post(authentication, userProfileController.addAddress)
@@ -256,10 +257,12 @@ router.route('/orders/:orderId/cancel').post(authentication, orderController.can
 // Vendor order management (role checked in controller)
 router.route('/vendor/orders').get(authentication, authorization([EUserRole.VENDOR]), orderController.getVendorOrders)
 router.route('/orders/:orderId/status').patch(authentication, orderController.updateOrderStatus)
+router.route('/orders/bulk-status').patch(authentication, orderController.bulkUpdateOrderStatus)
 
 // Admin order management (role checked in controller)
 router.route('/admin/orders').get(authentication, authorization([EUserRole.ADMIN]), orderController.getAdminOrders)
 router.route('/admin/orders/:orderId/confirm-delivery').post(authentication, orderController.confirmDelivery)
+router.route('/admin/orders/bulk-confirm-delivery').post(authentication, authorization([EUserRole.ADMIN]), orderController.bulkConfirmDelivery)
 
 // Common route (role checked in controller)
 router.route('/orders/:orderId').get(authentication, orderController.getOrderById)
