@@ -3,13 +3,10 @@ import { API_ENDPOINTS } from '../constants/api';
 import { ApiResponse } from '../types/auth.types';
 
 export interface ReferralStats {
-  totalReferrals: number;
-  successfulReferrals: number;
-  pendingReferrals: number;
-  totalCreditsEarned: number;
-  availableCredits: number;
-  referralCode: string;
-  referralLink: string;
+  referral: {
+    userReferralCode: string;
+
+  }
 }
 
 export interface ReferralLeaderboard {

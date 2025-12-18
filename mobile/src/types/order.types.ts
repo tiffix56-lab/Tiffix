@@ -10,6 +10,7 @@ export interface OrderData {
   subscriptionId: string;
   lunchEnabled: boolean;
   lunchTime: string;
+  referralCode?: string;
   dinnerEnabled: boolean;
   dinnerTime: string;
   promoCode?: string;

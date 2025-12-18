@@ -9,7 +9,9 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://app.tiffix.com/api/v1",
-        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
+        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "736730550506-95n99j459bvrlbcmgkghaor55pll7eu8.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "736730550506-cl0sfsqanqsilb96c7cjnaehni8vea16.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -22,19 +24,24 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://app.tiffix.com/api/v1",
-        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
+        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "736730550506-95n99j459bvrlbcmgkghaor55pll7eu8.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "736730550506-cl0sfsqanqsilb96c7cjnaehni8vea16.apps.googleusercontent.com"
       }
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "autoIncrement": true
       },
       "ios": {
-        "buildConfiguration": "Release"
+        "simulator": false
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://app.tiffix.com/api/v1",
-        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH"
+        "EXPO_PUBLIC_OLA_MAPS_API_KEY": "KJhRIDOFrvjn56seDTpqQcpIAjpCx5AsHw9oniBH",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "736730550506-95n99j459bvrlbcmgkghaor55pll7eu8.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "736730550506-cl0sfsqanqsilb96c7cjnaehni8vea16.apps.googleusercontent.com"
       }
     }
   },

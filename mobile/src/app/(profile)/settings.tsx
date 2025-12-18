@@ -80,12 +80,12 @@ const Settings = () => {
       icon: 'phone',
       route: '/contact-us',
     },
-    // {
-    //   id: 'delete-account',
-    //   title: 'Delete Account',
-    //   icon: 'trash-2',
-    //   route: '/delete-account',
-    // },
+    {
+      id: 'delete-account',
+      title: 'Delete Account',
+      icon: 'trash-2',
+      route: '/delete-account',
+    },
   ];
 
   const handleMenuPress = (route: string) => {
@@ -117,7 +117,7 @@ const Settings = () => {
             <Text
               className="text-xl font-semibold text-black dark:text-white"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Setting
+              Settings
             </Text>
           </View>
           <View className="h-10 w-10" />

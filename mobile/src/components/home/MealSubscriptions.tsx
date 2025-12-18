@@ -2,72 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { menuService } from '@/services/menu.service';
-import { MenuItem } from '@/types/menu.types';
+import { subscriptionService, Subscription } from '@/services/subscription.service';
 import { useAddress } from '@/context/AddressContext';
 import { Feather } from '@expo/vector-icons';
 
 const MealSubscriptions = () => {
   const { colorScheme } = useColorScheme();
   const { selectedAddress, savedAddresses, isServiceableAddress } = useAddress();
-  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [filteredMenus, setFilteredMenus] = useState<MenuItem[]>([]);
 
   useEffect(() => {
-    fetchTopMenus();
+    fetchSubscriptionPlans();
   }, []);
 
-  useEffect(() => {
-    filterMenusByAddress();
-  }, [menus, selectedAddress]);
-
-  const fetchTopMenus = async () => {
+  const fetchSubscriptionPlans = async () => {
     try {
       setLoading(true);
-      const response = await menuService.getMenus({
-        isAvailable: true,
-        sortBy: 'rating.average',
-        sortOrder: 'desc',
-        limit: 12 // Increase limit to account for filtering
+      const response = await subscriptionService.getActiveSubscriptions({
+        category: 'food_vendor',
       });
-      
-      if (response.success && response.data?.menus) {
-        setMenus(response.data.menus);
+
+      if (response.success && response.data?.subscriptions) {
+        setSubscriptions(response.data.subscriptions);
       } else {
-        setError('Failed to load meals');
+        setError('Failed to load subscriptions');
       }
     } catch (err) {
-      console.error('Error fetching menus:', err);
-      setError('Failed to load meals');
+      console.error('Error fetching subscriptions:', err);
+      setError('Failed to load subscriptions');
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterMenusByAddress = () => {
-    if (!selectedAddress) {
-      // If no address selected, show first 6 meals with location prompt
-      setFilteredMenus(menus.slice(0, 6));
-      return;
-    }
-
-    // Check if selected address is serviceable
-    if (!isServiceableAddress(selectedAddress)) {
-      setFilteredMenus([]);
-      return;
-    }
-
-    // For now, show all menus since we don't have location-based filtering in API
-    // In a real app, you would filter based on delivery zones or coordinates
-    const availableMenus = menus.filter(menu => {
-      // Simple distance-based filtering (placeholder logic)
-      // In production, this would be handled by the backend
-      return menu.isAvailable;
-    });
-
-    setFilteredMenus(availableMenus.slice(0, 6));
   };
 
   if (loading) {
@@ -141,7 +108,7 @@ const MealSubscriptions = () => {
     );
   }
 
-  if (error || filteredMenus.length === 0) {
+  if (error || subscriptions.length === 0) {
     return (
       <View className="pb-6">
         <View className="mb-6 flex-row items-center justify-center">
@@ -153,7 +120,7 @@ const MealSubscriptions = () => {
         </View>
         <View className="items-center justify-center py-8">
           <Text className="text-center text-base text-zinc-500 dark:text-zinc-400">
-            {error || (selectedAddress ? `No meals available in ${selectedAddress.city}` : 'No meals available at the moment')}
+            {error || (selectedAddress ? `No subscriptions available in ${selectedAddress.city}` : 'No subscriptions available at the moment')}
           </Text>
         </View>
       </View>
@@ -171,10 +138,10 @@ const MealSubscriptions = () => {
       </View>
 
       <View className="px-6">
-        <View className="flex-row flex-wrap justify-between">
-          {filteredMenus.map((menu, index) => (
-            <View key={menu._id + index} className="mb-6 w-[30%] items-center">
-              <TouchableOpacity 
+        <View className="flex-row flex-wrap gap-3 border-white">
+          {subscriptions.slice(0, 6).map((plan, index) => (
+            <View key={plan._id + index} className="mb-6 w-[30%] items-center border-white">
+              <TouchableOpacity
                 className="items-center"
                 onPress={() => {
                   if (!selectedAddress) {
@@ -182,37 +149,23 @@ const MealSubscriptions = () => {
                     return;
                   }
                   router.push({
-                    pathname: '/(home)/meal-details',
-                    params: { id: menu._id }
+                    pathname: '/(home)/subscription',
+                    params: { menuId: plan._id },
                   });
                 }}>
                 <View className="relative">
-                  <Image 
-                    source={{ uri: menu.foodImage }} 
+                  <Image
+                    source={plan.image ? { uri: plan.image } : require('@/assets/category-1.png')}
                     style={{ height: 80, width: 80, borderRadius: 40 }}
                     defaultSource={require('@/assets/category-1.png')}
                   />
                   <View className="absolute inset-0 rounded-full bg-black/10" />
-                  
-                  {/* Rating Badge */}
-                  <View className="absolute -top-1 -right-1 rounded-full bg-yellow-500 px-1.5 py-0.5">
-                    <Text 
-                      className="text-xs font-medium text-white" 
-                      style={{ fontSize: 8, fontFamily: 'Poppins_600SemiBold' }}>
-                      ★{menu.rating.average.toFixed(1)}
-                    </Text>
-                  </View>
                 </View>
                 <Text
                   className="mt-2 text-center text-sm font-medium text-black dark:text-white"
                   style={{ fontFamily: 'Poppins_500Medium' }}
                   numberOfLines={2}>
-                  {menu.foodTitle}
-                </Text>
-                <Text
-                  className="text-xs text-green-600 dark:text-green-400"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  ₹{menu.price}
+                  {plan.planName}
                 </Text>
               </TouchableOpacity>
             </View>

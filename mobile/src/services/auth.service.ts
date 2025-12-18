@@ -106,6 +106,39 @@ class AuthService {
     return `${API_BASE_URL}${provider === 'google' ? API_ENDPOINTS.AUTH.GOOGLE : API_ENDPOINTS.AUTH.FACEBOOK}`;
   }
 
+  async handleSocialLoginCallback(tokenOrCode: string): Promise<AuthResponse> {
+    const response = await apiService.post<{ accessToken: string; user: User }>(
+      API_ENDPOINTS.AUTH.GOOGLE_CALLBACK,
+      { token: tokenOrCode }
+    );
+
+    return {
+      success: response.success,
+      message: response.message,
+      data: response.data ? {
+        user: response.data.user,
+        accessToken: response.data.accessToken,
+      } : undefined,
+    };
+  }
+
+  async googleMobileLogin(idToken: string): Promise<AuthResponse> {
+    const response = await apiService.post<{ accessToken: string; user: User; needsProfileCompletion?: boolean }>(
+      API_ENDPOINTS.AUTH.GOOGLE_MOBILE,
+      { idToken }
+    );
+
+    return {
+      success: response.success,
+      message: response.message,
+      data: response.data ? {
+        user: response.data.user,
+        accessToken: response.data.accessToken,
+        needsProfileCompletion: response.data.needsProfileCompletion,
+      } : undefined,
+    };
+  }
+
   async deleteAccount(): Promise<ApiResponse> {
     return await apiService.post(API_ENDPOINTS.AUTH.DELETE_ACCOUNT);
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, Image, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
@@ -7,11 +7,16 @@ import { MenuItem } from '@/types/menu.types';
 import { Subscription } from '@/services/subscription.service';
 import { Address } from '@/types/address.types';
 import { orderStore, OrderData } from '@/utils/order-store';
+import LottieView from 'lottie-react-native';
 
 const OrderInformation = () => {
   const { colorScheme } = useColorScheme();
   const [parsedOrderData, setParsedOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   useEffect(() => {
     const loadOrderData = async () => {
@@ -41,10 +46,51 @@ const OrderInformation = () => {
     return Math.round(price * 0.18); // 18% GST
   };
 
-  const handleProceedToPayment = () => {
+  // Helper function to convert 24-hour time to 12-hour format for display
+  const format12Hour = (time24: string): string => {
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      Alert.alert('Error', 'Please enter a coupon code');
+      return;
+    }
+
+    setApplyingCoupon(true);
+
+    try {
+
+
+      const upperCoupon = couponCode.toUpperCase();
+      setAppliedCoupon(upperCoupon);
+
+    } catch (error) {
+      Alert.alert('Error', 'Failed to apply coupon');
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setDiscount(0);
+  };
+
+  const handleProceedToPayment = async () => {
     if (!parsedOrderData) {
       return;
     }
+
+    // Save updated order data with coupon info
+    await orderStore.saveOrderData({
+      ...parsedOrderData,
+      referralCode: appliedCoupon || undefined,
+    });
 
     router.push('/(home)/payment');
   };
@@ -88,10 +134,11 @@ const OrderInformation = () => {
       <View className="flex-1 rounded-t-3xl bg-white dark:bg-black">
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Illustration Section */}
-          <Image
-            source={require('../../assets/order-information.png')}
-            className="my-8 h-48 w-full"
-            resizeMode="contain"
+          <LottieView
+            source={{ uri: "https://lottie.host/fbce4b64-8b86-4f3e-88e2-263b5a52640c/8r9mra6RuK.json" }}
+            autoPlay
+            loop
+            style={{ width: '100%', height: 200 }}
           />
 
           {/* Order Details Card */}
@@ -176,8 +223,8 @@ const OrderInformation = () => {
                   numberOfLines={2}
                   ellipsizeMode="tail">
                   {[
-                    parsedOrderData.lunchEnabled ? `Lunch: ${parsedOrderData.lunchTime}` : null,
-                    parsedOrderData.dinnerEnabled ? `Dinner: ${parsedOrderData.dinnerTime}` : null
+                    parsedOrderData.lunchEnabled ? `Lunch: ${format12Hour(parsedOrderData.lunchTime)}` : null,
+                    parsedOrderData.dinnerEnabled ? `Dinner: ${format12Hour(parsedOrderData.dinnerTime)}` : null
                   ].filter(Boolean).join(', ')}
                 </Text>
               </View>
@@ -192,9 +239,76 @@ const OrderInformation = () => {
                   style={{ fontFamily: 'Poppins_600SemiBold' }}
                   numberOfLines={3}
                   ellipsizeMode="tail">
-                  {parsedOrderData.deliveryAddress.label}
+                  {parsedOrderData.deliveryAddress.street}, {parsedOrderData.deliveryAddress.city}, {parsedOrderData.deliveryAddress.state}, {parsedOrderData.deliveryAddress.zipCode}
                 </Text>
               </View>
+            </View>
+
+            {/* Divider */}
+            <View className="mb-4 h-px bg-zinc-200 dark:bg-zinc-700" />
+
+            {/* Coupon Code Section */}
+            <View className="mb-4">
+              <Text
+                className="mb-3 text-base font-semibold text-black dark:text-white"
+                style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                Have a Referral Code?
+              </Text>
+
+              {!appliedCoupon ? (
+                <View className="flex-row items-center gap-2">
+                  <TextInput
+                    className="flex-1 rounded-xl border border-zinc-200 uppercase bg-white px-4 py-3 text-black dark:border-zinc-600 dark:bg-zinc-800 dark:text-white"
+                    placeholder="Enter referral code"
+                    placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+                    value={couponCode}
+                    onChangeText={setCouponCode}
+                    style={{ fontFamily: 'Poppins_400Regular', fontSize: 14 }}
+                    autoCapitalize="characters"
+                    editable={!applyingCoupon}
+                  />
+                  <TouchableOpacity
+                    onPress={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    className={`rounded-xl px-6 py-3 ${
+                      applyingCoupon || !couponCode.trim()
+                        ? 'bg-zinc-300 dark:bg-zinc-600'
+                        : 'bg-green-500'
+                    }`}>
+                    {applyingCoupon ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text
+                        className="text-sm font-semibold text-white"
+                        style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                        Apply
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-600 dark:bg-green-900/20">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1 flex-row items-center">
+                      <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-green-500">
+                        <Feather name="check" size={20} color="#FFFFFF" />
+                      </View>
+                      <View className="flex-1">
+                        <Text
+                          className="text-sm font-semibold text-green-700 dark:text-green-300"
+                          style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                          {appliedCoupon} Applied
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleRemoveCoupon}
+                      className="ml-2 rounded-full bg-red-100 p-2 dark:bg-red-900/30">
+                      <Feather name="x" size={16} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Divider */}
@@ -214,18 +328,23 @@ const OrderInformation = () => {
                   {formatCurrency(parsedOrderData.selectedSubscription.discountedPrice)}
                 </Text>
               </View>
-              <View className="flex-row justify-between">
-                <Text
-                  className="text-base text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  Tax (18% GST):
-                </Text>
-                <Text
-                  className="text-base text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                  {formatCurrency(calculateTax(parsedOrderData.selectedSubscription.discountedPrice))}
-                </Text>
-              </View>
+
+              {discount > 0 && (
+                <View className="mb-3 flex-row justify-between">
+                  <Text
+                    className="text-base text-green-600 dark:text-green-400"
+                    style={{ fontFamily: 'Poppins_500Medium' }}>
+                    Discount:
+                  </Text>
+                  <Text
+                    className="text-base text-green-600 dark:text-green-400"
+                    style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                    - {formatCurrency(discount)}
+                  </Text>
+                </View>
+              )}
+
+              
             </View>
 
             {/* Divider */}
@@ -242,8 +361,7 @@ const OrderInformation = () => {
                 className="text-lg font-semibold text-black dark:text-white"
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
                 {formatCurrency(
-                  parsedOrderData.selectedSubscription.discountedPrice + 
-                  calculateTax(parsedOrderData.selectedSubscription.discountedPrice)
+                  (parsedOrderData.selectedSubscription.discountedPrice - discount)
                 )}
               </Text>
             </View>

@@ -154,18 +154,13 @@ const Signup = () => {
                 name="phoneNumber"
                 control={control}
                 label="Phone Number"
+                maxLength={10}
                 placeholder="Enter 10-digit phone number"
                 keyboardType="phone-pad"
                 error={errors.phoneNumber}
               />
 
-              <FormInput
-                name="referralCode"
-                control={control}
-                label="Referral Code (Optional)"
-                placeholder="Enter referral code"
-                error={errors.referralCode}
-              />
+              
 
               <LoadingButton
                 title="Sign Up"

@@ -12,6 +12,7 @@ import { Poppins_500Medium } from '@expo-google-fonts/poppins/500Medium';
 import { Poppins_500Medium_Italic } from '@expo-google-fonts/poppins/500Medium_Italic';
 import { Poppins_600SemiBold } from '@expo-google-fonts/poppins/600SemiBold';
 import { Poppins_600SemiBold_Italic } from '@expo-google-fonts/poppins/600SemiBold_Italic';
+import { DancingScript_400Regular, DancingScript_700Bold } from '@expo-google-fonts/dancing-script';
 
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack, Slot } from 'expo-router';
@@ -36,6 +37,8 @@ export default function RootLayout() {
     Poppins_500Medium_Italic,
     Poppins_600SemiBold,
     Poppins_600SemiBold_Italic,
+    DancingScript_400Regular,
+    DancingScript_700Bold
   });
   
   const [isRouterReady, setIsRouterReady] = useState(false);

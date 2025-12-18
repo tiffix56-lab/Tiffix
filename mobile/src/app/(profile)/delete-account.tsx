@@ -79,7 +79,7 @@ const DeleteAccount = () => {
           </View>
 
           {/* Delete Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleDeleteAccount}
             disabled={isLoading}
             className={`rounded-lg py-4 ${

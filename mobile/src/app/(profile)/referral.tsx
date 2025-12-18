@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { referralService, ReferralStats } from '../../services/referral.service';
 import Toast from 'react-native-toast-message';
+import LottieView from 'lottie-react-native';
 
 const Referral = () => {
   const { colorScheme } = useColorScheme();
@@ -30,6 +31,8 @@ const Referral = () => {
   const loadReferralData = async () => {
     try {
       const response = await referralService.getReferralStats();
+      console.log(response.data?.referral.userReferralCode);
+      
       if (response.success && response.data) {
         setReferralData(response.data);
       }
@@ -41,9 +44,9 @@ const Referral = () => {
   };
 
   const copyToClipboard = async () => {
-    if (!referralData?.referralCode) return;
+    if (!referralData?.referral.userReferralCode) return;
     
-    Clipboard.setString(referralData.referralCode);
+    Clipboard.setString(referralData.referral.userReferralCode);
     Toast.show({
       type: 'success',
       text1: 'Copied',
@@ -51,24 +54,6 @@ const Referral = () => {
     });
   };
 
-  const handleSendInvite = async () => {
-    if (!email) return;
-    if (!referralData?.referralLink) {
-      Alert.alert('Error', 'Referral link not available');
-      return;
-    }
-
-    // For now, just copy the referral link and show success
-    // In a real app, you'd integrate with sharing/email APIs
-    Clipboard.setString(referralData.referralLink);
-    
-    Toast.show({
-      type: 'success',
-      text1: 'Referral Link Copied',
-      text2: 'Share this link with your friend',
-    });
-    setEmail('');
-  };
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -105,10 +90,11 @@ const Referral = () => {
         <ScrollView className="flex-1 px-6 pt-10" showsVerticalScrollIndicator={false}>
           {/* Central Illustration */}
           <View className="mb-8 items-center">
-            <Image
-              source={require('@/assets/referal-img.png')}
-              className="h-80 w-80"
-              resizeMode="contain"
+            <LottieView
+              source={{ uri: "https://lottie.host/354ac5ac-267a-4085-a321-878c9242551b/Vpo1AbIdqP.json" }}
+              autoPlay
+              loop
+              style={{ width: 300, height: 300, marginTop: 20 }}
             />
           </View>
 
@@ -124,12 +110,12 @@ const Referral = () => {
             <View className="mb-4 w-full">
               <View className="flex-row items-center rounded-lg border border-zinc-200 bg-zinc-100 px-4 py-3 dark:border-zinc-600 dark:bg-black ">
                 <TextInput
-                  value={isLoading ? 'Loading...' : (referralData?.referralCode || 'N/A')}
+                  value={isLoading ? 'Loading...' : (referralData?.referral.userReferralCode || 'N/A')}
                   editable={false}
                   className="flex-1 text-base font-semibold text-black dark:text-white"
                   style={{ fontFamily: 'Poppins_600SemiBold' }}
                 />
-                <TouchableOpacity onPress={copyToClipboard} className="ml-2" disabled={isLoading || !referralData?.referralCode}>
+                <TouchableOpacity onPress={copyToClipboard} className="ml-2" disabled={isLoading || !referralData?.referral.userReferralCode}>
                   <Feather
                     name="copy"
                     size={20}
@@ -138,50 +124,130 @@ const Referral = () => {
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Email Input for Invite */}
-            <View className="mb-4 w-full">
-              <View className="rounded-lg border border-zinc-200 bg-zinc-100 px-4 py-3 dark:border-zinc-600 dark:bg-black">
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Enter friend's email"
-                  placeholderTextColor={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                  keyboardType="email-address"
-                  className="text-base text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_400Regular' }}
-                />
-              </View>
-            </View>
-
-            <Text
-              className="text-center text-sm text-zinc-600 dark:text-zinc-400"
-              style={{ fontFamily: 'Poppins_400Regular' }}>
-              Total Referrals: {referralData?.totalReferrals || 0} | Earnings: ₹{referralData?.totalCreditsEarned || 0}\n\nInvite your friends to join TIFFIX and get up to 10% on each friend order
-            </Text>
           </View>
+          {/* How It Works Section */}
+<View className="mt-1">
+  <Text
+    className="text-xl font-semibold text-black dark:text-white mb-6"
+    style={{ fontFamily: 'Poppins_600SemiBold' }}
+  >
+    Tiffix Refer & Earn — How It Works
+  </Text>
 
-          {/* Invite Now Button */}
-          <View className="mb-8">
-            <TouchableOpacity 
-              onPress={handleSendInvite}
-              disabled={!email || isSendingInvite}
-              className={`rounded-lg py-4 ${
-                email && !isSendingInvite 
-                  ? 'bg-black dark:bg-white' 
-                  : 'bg-gray-300 dark:bg-gray-600'
-              }`}>
-              <Text
-                className={`text-center text-base font-bold ${
-                  email && !isSendingInvite
-                    ? 'text-white dark:text-black'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-                style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                {isSendingInvite ? 'SENDING...' : 'INVITE NOW'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+  {/* Step 1 */}
+  <View className="mb-8 rounded-2xl bg-zinc-50 dark:bg-neutral-900 p-4">
+    <View className="flex-row items-center mb-4">
+      <View className="bg-orange-500 rounded-full w-8 h-8 items-center justify-center mr-3">
+        <Text className="text-white font-bold text-base" style={{ fontFamily: 'Poppins_600SemiBold' }}>1</Text>
+      </View>
+      <Text
+        className="text-lg font-semibold text-black dark:text-white flex-1"
+        style={{ fontFamily: 'Poppins_600SemiBold' }}
+      >
+        Share Your Code
+      </Text>
+    </View>
+
+    <View className="items-center mb-4">
+      <Image
+        source={require('@/assets/step1.png')}
+        className="w-40 h-40"
+        resizeMode="contain"
+      />
+    </View>
+
+    <Text className="text-zinc-700 dark:text-zinc-300 leading-6 text-center">
+      You (the Referrer) share your referral code with your friend.{"\n"}
+      They purchase a new Tiffix subscription using your code.{"\n"}
+      (Referral friend does not get a discount — the reward is yours!)
+    </Text>
+  </View>
+
+  {/* Step 2 */}
+  <View className="mb-8 rounded-2xl bg-zinc-50 dark:bg-neutral-900 p-4">
+    <View className="flex-row items-center mb-4">
+      <View className="bg-orange-500 rounded-full w-8 h-8 items-center justify-center mr-3">
+        <Text className="text-white font-bold text-base" style={{ fontFamily: 'Poppins_600SemiBold' }}>2</Text>
+      </View>
+      <Text
+        className="text-lg font-semibold text-black dark:text-white flex-1"
+        style={{ fontFamily: 'Poppins_600SemiBold' }}
+      >
+        Send Referral Proof
+      </Text>
+    </View>
+
+    <View className="items-center mb-4">
+      <Image
+        source={require('@/assets/step2.png')}
+        className="w-40 h-40"
+        resizeMode="contain"
+      />
+    </View>
+
+    <Text className="text-zinc-700 dark:text-zinc-300 leading-6 mb-3 text-center">
+      After your friend subscribes, ask them for their Order ID and send the
+      following details to Tiffix via WhatsApp or Email:
+    </Text>
+
+    <View className="bg-white dark:bg-black rounded-xl p-4">
+      <Text className="text-zinc-700 dark:text-zinc-300 leading-6">• Full Name</Text>
+      <Text className="text-zinc-700 dark:text-zinc-300 leading-6">• Registered Mobile Number</Text>
+      <Text className="text-zinc-700 dark:text-zinc-300 leading-6">• Referral Friend's Order ID</Text>
+      <Text className="text-zinc-700 dark:text-zinc-300 leading-6">• Bank Account Number</Text>
+      <Text className="text-zinc-700 dark:text-zinc-300 leading-6">• IFSC Code</Text>
+      <Text className="text-zinc-700 dark:text-zinc-300 leading-6">
+        • (Optional) Screenshot of your friend's order confirmation
+      </Text>
+    </View>
+  </View>
+
+  {/* Step 3 */}
+  <View className="mb-6 rounded-2xl bg-zinc-50 dark:bg-neutral-900 p-4">
+    <View className="flex-row items-center mb-4">
+      <View className="bg-orange-500 rounded-full w-8 h-8 items-center justify-center mr-3">
+        <Text className="text-white font-bold text-base" style={{ fontFamily: 'Poppins_600SemiBold' }}>3</Text>
+      </View>
+      <Text
+        className="text-lg font-semibold text-black dark:text-white flex-1"
+        style={{ fontFamily: 'Poppins_600SemiBold' }}
+      >
+        Get ₹200 in Your Bank
+      </Text>
+    </View>
+
+    <View className="items-center mb-4">
+      <Image
+        source={require('@/assets/step3.png')}
+        className="w-40 h-40"
+        resizeMode="contain"
+      />
+    </View>
+
+    <Text className="text-zinc-700 dark:text-zinc-300 leading-6 text-center">
+      Once verified, Tiffix will credit ₹200 directly to your bank account{" "}
+      within 2–5 working days.{"\n"}
+      Clean. Quick. Direct to bank.
+    </Text>
+  </View>
+
+  {/* Contact Link */}
+  <View className="bg-blue-50 dark:bg-blue-950 rounded-2xl p-4 mt-4">
+    <Text className="text-zinc-800 dark:text-zinc-200 text-center mb-2" style={{ fontFamily: 'Poppins_500Medium' }}>
+      Need help or want to submit your referral details?
+    </Text>
+    <TouchableOpacity
+      onPress={() => router.push("https://tiffix.com/contact-us/")}
+      className="bg-blue-600 rounded-xl py-3 px-6"
+    >
+      <Text className="text-white text-center font-semibold" style={{ fontFamily: 'Poppins_600SemiBold' }}>
+        Contact Us via WhatsApp/Email
+      </Text>
+    </TouchableOpacity>
+  </View>
+</View>
+
+          
 
           {/* Bottom Spacing */}
           <View className="h-20" />

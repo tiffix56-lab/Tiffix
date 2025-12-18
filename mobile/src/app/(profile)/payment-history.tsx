@@ -19,6 +19,7 @@ const PaymentHistory = () => {
     try {
       setLoading(true);
       const response = await transactionService.getUserTransactions();
+      console.log(response.data?.transactions);
       
       if (response.success && response.data) {
         setTransactions(response.data.transactions);
@@ -159,12 +160,12 @@ const PaymentHistory = () => {
             <View className="space-y-6">
               {Object.entries(groupedTransactions).map(([month, monthTransactions]) => (
                 <View key={month}>
-                  {/* Month Header */}
+                  {/* Month Header
                   <Text
                     className="mb-4 text-lg font-semibold text-black dark:text-white"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
                     {month}
-                  </Text>
+                  </Text> */}
 
                   {/* Transactions */}
                   <View className="mb-6 space-y-4 border-b border-zinc-200 pb-6 dark:border-zinc-800">
@@ -177,7 +178,12 @@ const PaymentHistory = () => {
                               <Text
                                 className="mb-1 text-base font-semibold text-black dark:text-white"
                                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                                {transaction.subscription?.planName || 'Subscription Purchase'}
+                                Txn Id: {transaction.transactionId}
+                              </Text>
+                              <Text
+                                className="mb-1 text-base font-semibold text-black dark:text-white"
+                                style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                                {transaction.subscriptionId?.planName || 'Subscription Purchase'}
                               </Text>
                               <View className="flex-row items-center">
                                 <Feather name={statusInfo.name as any} size={16} color={statusInfo.color} />

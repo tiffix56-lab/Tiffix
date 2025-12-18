@@ -123,7 +123,7 @@ function Purchases() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
               className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
@@ -275,7 +275,7 @@ function Purchases() {
                   <tbody className="bg-gray-800 divide-y divide-gray-700">
                     {purchases.map((purchase) => (
                       <tr key={purchase._id} className="hover:bg-gray-700/50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{purchase._id?.slice(-6) || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{purchase.transactionId.transactionId || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-gray-400" />

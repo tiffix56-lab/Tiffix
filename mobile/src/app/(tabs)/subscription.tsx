@@ -17,45 +17,11 @@ import { useColorScheme } from 'nativewind';
 import { subscriptionService } from '@/services/subscription.service';
 import { orderService } from '@/services/order.service';
 import { reviewService } from '@/services/review.service';
+import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
 
-interface UserSubscription {
-  _id: string;
-  userId: string;
-  subscriptionId: {
-    _id: string;
-    planName: string;
-    category: string;
-    description: string;
-    originalPrice: number;
-    discountedPrice: number;
-    durationDays: number;
-  };
-  startDate: string;
-  endDate: string;
-  status: 'active' | 'paused' | 'cancelled' | 'expired';
-  remainingCredits: number;
-  totalCredits: number;
-  deliveryAddress: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  mealTiming: {
-    lunch: {
-      enabled: boolean;
-      time: string;
-    };
-    dinner: {
-      enabled: boolean;
-      time: string;
-    };
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import { UserSubscription } from '@/types/userSubscription.types';
 
 interface Order {
   _id: string;
@@ -546,7 +512,7 @@ const Subscription = () => {
         {/* Subscription Image - Full Height */}
         <View className="mr-2">
           <Image 
-            source={require('@/assets/category-2.png')} 
+            source={subscription.subscriptionId.category === 'food_vendor' ? require('@/assets/category-1.png') : require('@/assets/category-2.png')} 
             className="h-52 w-36 rounded-lg" 
             resizeMode="cover" 
           />
@@ -583,7 +549,7 @@ const Subscription = () => {
             {subscription.subscriptionId.category.replace('_', ' ').toUpperCase()} • {subscription.subscriptionId.durationDays} days
           </Text>
 
-          <View className="mb-4">
+          <View className="mb-0">
             <View className="flex-row items-center">
               <Feather
                 name="calendar"
@@ -614,15 +580,55 @@ const Subscription = () => {
               </TouchableOpacity>
             )}
           </View>
+          {subscription.analytics?.remainingDays !== undefined && subscription.analytics.remainingDays > 0 && (
+                                        <View className="flex-row items-center mt-1">
+                                          <Feather
+                                            name="clock"
+                                            size={16}
+                                            color={colorScheme === 'dark' ? '#3B82F6' : '#2563EB'}
+                                          />
+                                          <Text
+                                            className="ml-2 text-sm text-blue-600 dark:text-blue-400"
+                                            style={{ fontFamily: 'Poppins_500Medium' }}>
+                                            {subscription.analytics.remainingDays} Days Left
+                                          </Text>
+                                        </View>
+                                      )}
 
           {/* Credits Info */}
-          <View className="mb-4">
+          <View className="mb-3">
             <Text
               className="text-sm text-gray-600 dark:text-gray-300"
               style={{ fontFamily: 'Poppins_400Regular' }}>
-              Credits: {(subscription.creditsGranted - subscription.creditsUsed) ?? 'N/A'}/{subscription.creditsGranted ?? 'N/A'} • {formatCurrency(subscription.subscriptionId.discountedPrice)}
+              Credits: {subscription.analytics?.remainingCredits || (subscription.creditsGranted - subscription.creditsUsed)}/{subscription.creditsGranted} • {formatCurrency(subscription.subscriptionId?.discountedPrice || subscription.finalPrice)}
             </Text>
           </View>
+          
+                                    {/* Progress Bar */}
+                                    {subscription.analytics && (
+                                      <View className="mb-4">
+                                        <View className="mb-2 flex-row items-center justify-between">
+                                          <Text
+                                            className="text-xs text-gray-600 dark:text-gray-400"
+                                            style={{ fontFamily: 'Poppins_400Regular' }}>
+                                            Meals Used
+                                          </Text>
+                                          <Text
+                                            className="text-xs text-gray-600 dark:text-gray-400"
+                                            style={{ fontFamily: 'Poppins_500Medium' }}>
+                                            {Math.round(subscription.analytics.creditsUsedPercentage)}%
+                                          </Text>
+                                        </View>
+                                        <View className="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+                                          <View 
+                                            className="h-2 rounded-full bg-green-500"
+                                            style={{ 
+                                              width: `${Math.min(100, Math.max(0, subscription.analytics.creditsUsedPercentage))}%` 
+                                            }}
+                                          />
+                                        </View>
+                                      </View>
+                                    )}
 
           {/* Action Buttons */}
           {isActive && (
@@ -675,13 +681,13 @@ const Subscription = () => {
 
     const getStatusColor = () => {
       switch (order.status) {
-        case 'upcoming': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-        case 'preparing': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-        case 'out_for_delivery': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
-        case 'delivered': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-        case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-        case 'skipped': return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-        default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+        case 'upcoming': return 'bg-blue-500 text-white dark:bg-blue-400 dark:text-blue-950';
+        case 'preparing': return 'bg-orange-500 text-white dark:bg-orange-400 dark:text-orange-950';
+        case 'out_for_delivery': return 'bg-purple-500 text-white dark:bg-purple-400 dark:text-purple-950';
+        case 'delivered': return 'bg-green-500 text-white dark:bg-green-400 dark:text-green-950';
+        case 'cancelled': return 'bg-red-500 text-white dark:bg-red-400 dark:text-red-950';
+        case 'skipped': return 'bg-gray-500 text-white dark:bg-gray-400 dark:text-gray-950';
+        default: return 'bg-gray-500 text-white dark:bg-gray-400 dark:text-gray-950';
       }
     };
 
@@ -698,7 +704,7 @@ const Subscription = () => {
             </Text>
           </View>
           <View className={`rounded-full px-3 py-1 ${getStatusColor()}`}>
-            <Text className="text-xs font-semibold capitalize" style={{ fontFamily: 'Poppins_600SemiBold' }}>
+            <Text className="text-xs font-semibold capitalize dark:text-white" style={{ fontFamily: 'Poppins_600SemiBold' }}>
               {order.status.replace('_', ' ')}
             </Text>
           </View>
@@ -938,8 +944,13 @@ const Subscription = () => {
                   />
                 ))
               ) : (
-                <View className="py-20 items-center px-6">
-                  <Feather name="calendar" size={48} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
+                <View className="py-0 items-center px-6">
+                  <LottieView
+                    source={{ uri: 'https://lottie.host/b29dbe63-8669-4f7c-9b29-8402f9e0cc67/WhrRi7aLnS.json' }}
+                    autoPlay
+                    loop
+                    style={{ width: 300, height: 300, marginTop: 20 }}
+                  />
                   <Text 
                     className="mt-4 text-center text-lg font-medium text-gray-600 dark:text-gray-300"
                     style={{ fontFamily: 'Poppins_500Medium' }}>
@@ -951,7 +962,7 @@ const Subscription = () => {
                     Start your meal journey by choosing a subscription plan
                   </Text>
                   <TouchableOpacity
-                    onPress={() => router.push('/(home)/home-chef')}
+                    onPress={() => router.push('/(home)/vendor-food')}
                     className="mt-6 rounded-lg bg-black px-6 py-3 dark:bg-white">
                     <Text
                       className="text-sm font-medium text-white dark:text-black"
@@ -963,7 +974,7 @@ const Subscription = () => {
               )}
 
               {/* Information Notes */}
-              <View className="mb-6 gap-2">
+              {/* <View className="mb-6 gap-2">
                 <View className="flex-row items-start">
                   <Feather
                     name="alert-triangle"
@@ -977,7 +988,7 @@ const Subscription = () => {
                     Cancelled subscriptions don't have any refund
                   </Text>
                 </View>
-              </View>
+              </View> */}
             </View>
           ) : (
             <View>

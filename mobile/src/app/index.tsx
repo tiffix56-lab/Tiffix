@@ -18,7 +18,12 @@ const SplashScreen = () => {
 
       const timer = setTimeout(async () => {
         if (isAuthenticated) {
-          router.replace('/(tabs)/home');
+          const needsProfileCompletion = await storageService.getNeedsProfileCompletion();
+          if (needsProfileCompletion) {
+            router.replace('/(profile)/edit-profile?requirePhone=true');
+          } else {
+            router.replace('/(tabs)/home');
+          }
         } else {
           const onboardingCompleted = await storageService.getOnboardingCompleted();
           if (onboardingCompleted) {
@@ -27,7 +32,7 @@ const SplashScreen = () => {
             router.replace('/onboarding');
           }
         }
-      }, 2500);
+      }, 2000);
 
       return () => clearTimeout(timer);
     };
@@ -48,10 +53,9 @@ const SplashScreen = () => {
       <Video
         ref={videoRef}
         source={require('@/assets/tiffix_sc.mp4')}
-        style={{ width: 384, height: 384 }}
+        style={{ width: 344, height: 344 }}
         resizeMode={ResizeMode.CONTAIN}
         shouldPlay
-        isLooping
         isMuted
       />
       {/* <Text className="absolute bottom-20 text-2xl font-normal text-black dark:text-white">

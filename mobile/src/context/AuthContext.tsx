@@ -1,20 +1,21 @@
 import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
 import { authService } from '../services/auth.service';
 import { storageService } from '../services/storage.service';
-import { 
-  AuthState, 
-  User, 
-  LoginCredentials, 
-  RegisterCredentials, 
+import {
+  AuthState,
+  User,
+  LoginCredentials,
+  RegisterCredentials,
   VerifyEmailData,
   ForgotPasswordData,
   ResetPasswordData,
-  ChangePasswordData 
+  ChangePasswordData
 } from '../types/auth.types';
 import Toast from 'react-native-toast-message';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; message: string }>;
+  googleLogin: (idToken: string) => Promise<{ success: boolean; message: string; needsProfileCompletion?: boolean }>;
   register: (credentials: RegisterCredentials) => Promise<{ success: boolean; message: string; requiresVerification?: boolean }>;
   verifyEmail: (data: VerifyEmailData) => Promise<{ success: boolean; message: string }>;
   resendOTP: (email: string) => Promise<{ success: boolean; message: string }>;
@@ -24,6 +25,7 @@ interface AuthContextType extends AuthState {
   deleteAccount: () => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  needsPhoneNumber: () => boolean;
 }
 
 type AuthAction = 
@@ -103,6 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (token && user) {
         const profileResponse = await authService.getProfile();
+        console.log("PROFILE RES", profileResponse);
         
         if (profileResponse.success && profileResponse.data) {
           dispatch({
@@ -126,26 +129,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginCredentials) => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    
+
     try {
       const response = await authService.login(credentials);
-      
+
       if (response.success && response.data) {
         await storageService.setToken(response.data.accessToken);
         await storageService.setUserData(response.data.user);
-        
+
         if (credentials.rememberMe) {
           await storageService.setRememberMe(true);
         }
 
         initializeAuth();
-        
+
         Toast.show({
           type: 'success',
           text1: 'Success',
           text2: 'Logged in successfully',
         });
-        
+
         return { success: true, message: response.message };
       } else {
         Toast.show({
@@ -153,7 +156,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           text1: 'Login Failed',
           text2: response.message,
         });
-        
+
         return { success: false, message: response.message };
       }
     } catch (error) {
@@ -162,8 +165,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         text1: 'Login Failed',
         text2: 'Something went wrong',
       });
-      
+
       return { success: false, message: 'Login failed' };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const googleLogin = async (idToken: string) => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    try {
+      const response = await authService.googleMobileLogin(idToken);
+
+      if (response.success && response.data) {
+        await storageService.setToken(response.data.accessToken);
+        await storageService.setUserData(response.data.user);
+
+        // Save needsProfileCompletion flag to storage
+        if (response.data.needsProfileCompletion) {
+          await storageService.setNeedsProfileCompletion(true);
+        } else {
+          await storageService.removeNeedsProfileCompletion();
+        }
+
+        initializeAuth();
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Logged in with Google successfully',
+        });
+
+        return {
+          success: true,
+          message: response.message,
+          needsProfileCompletion: response.data.needsProfileCompletion
+        };
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Google Login Failed',
+          text2: response.message,
+        });
+
+        return { success: false, message: response.message };
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Google Login Failed',
+        text2: 'Something went wrong',
+      });
+
+      return { success: false, message: 'Google login failed' };
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -397,17 +452,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const deleteAccount = async () => {
     try {
       const response = await authService.deleteAccount();
-      
+
       if (response.success) {
         await storageService.clearAll();
         dispatch({ type: 'LOGOUT' });
-        
+
         Toast.show({
           type: 'success',
           text1: 'Account Deleted',
           text2: 'Your account has been permanently deleted',
         });
-        
+
         return { success: true, message: response.message };
       } else {
         Toast.show({
@@ -415,7 +470,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           text1: 'Delete Failed',
           text2: response.message,
         });
-        
+
         return { success: false, message: response.message };
       }
     } catch (error) {
@@ -424,7 +479,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         text1: 'Delete Failed',
         text2: 'Something went wrong',
       });
-      
+
       return { success: false, message: 'Account deletion failed' };
     }
   };
@@ -441,9 +496,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const needsPhoneNumber = () => {
+    if (!state.user) return false;
+
+    console.log(state.user, "State user");
+    
+    const phoneNumber = state.user.phoneNumber;
+
+    if (!phoneNumber) return true;
+
+    // Check based on the type of phoneNumber - use explicit type guards
+    const phoneStr = phoneNumber as string | { internationalNumber?: string };
+
+    if (typeof phoneStr === 'string') {
+      return phoneStr.trim().length === 0;
+    } else if (typeof phoneStr === 'object' && phoneStr !== null && 'internationalNumber' in phoneStr) {
+      const internationalNumber = phoneStr.internationalNumber;
+      return !internationalNumber || internationalNumber.length === 0;
+    }
+
+    return true;
+  };
+
   const value: AuthContextType = {
     ...state,
     login,
+    googleLogin,
     register,
     verifyEmail,
     resendOTP,
@@ -453,6 +531,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     deleteAccount,
     logout,
     refreshProfile,
+    needsPhoneNumber,
   };
 
   return (

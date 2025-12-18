@@ -37,8 +37,8 @@ const Information = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   
   const [selectedDate, setSelectedDate] = useState('');
-  const [lunchTime, setLunchTime] = useState('12:00 PM');
-  const [dinnerTime, setDinnerTime] = useState('8:00 PM');
+  const [lunchTime, setLunchTime] = useState('12:00');
+  const [dinnerTime, setDinnerTime] = useState('20:00');
   const [lunchEnabled, setLunchEnabled] = useState(false);
   const [dinnerEnabled, setDinnerEnabled] = useState(false);
   
@@ -160,6 +160,14 @@ const Information = () => {
     return date;
   };
 
+  // Helper function to convert 24-hour time to 12-hour format for display
+  const format12Hour = (time24: string): string => {
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
   // Helper function to check if a time is within a window
   const isTimeInWindow = (selectedTime: Date, startTimeStr: string, endTimeStr: string): boolean => {
     const startTime = parseTimeString(startTimeStr);
@@ -194,11 +202,10 @@ const Information = () => {
       }
 
       setLunchDateTime(selectedTime);
-      const formattedTime = selectedTime.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
+      // Format as 24-hour time (HH:MM)
+      const hours = selectedTime.getHours().toString().padStart(2, '0');
+      const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+      const formattedTime = `${hours}:${minutes}`;
       setLunchTime(formattedTime);
     }
   };
@@ -215,13 +222,12 @@ const Information = () => {
         );
         return;
       }
-
       setDinnerDateTime(selectedTime);
-      const formattedTime = selectedTime.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
+      // Format as 24-hour time (HH:MM)
+      const hours = selectedTime.getHours().toString().padStart(2, '0');
+      const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+      const formattedTime = `${hours}:${minutes}`;
+      console.log('🕐 [DINNER_TIME] Selected time:', formattedTime);
       setDinnerTime(formattedTime);
     }
   };
@@ -454,7 +460,7 @@ const Information = () => {
                         <Text
                           className="ml-2 text-base text-black dark:text-white"
                           style={{ fontFamily: 'Poppins_500Medium' }}>
-                          {lunchTime}
+                          {format12Hour(lunchTime)}
                         </Text>
                         <View className="ml-auto">
                           <Feather
@@ -506,7 +512,7 @@ const Information = () => {
                         <Text
                           className="ml-2 text-base text-black dark:text-white"
                           style={{ fontFamily: 'Poppins_500Medium' }}>
-                          {dinnerTime}
+                          {format12Hour(dinnerTime)}
                         </Text>
                         <View className="ml-auto">
                           <Feather
@@ -570,13 +576,9 @@ const Information = () => {
           <TouchableOpacity
             onPress={async () => {
               console.log('🚀 Continue to Order button pressed');
-              console.log('📍 Selected Address:', selectedAddress);
-              console.log('📅 Selected Date:', selectedDate);
               console.log('🍽️ Lunch Enabled:', lunchEnabled, 'Time:', lunchTime);
               console.log('🍽️ Dinner Enabled:', dinnerEnabled, 'Time:', dinnerTime);
-              console.log('📋 Subscription ID:', subscriptionId);
-              console.log('🍔 Menu ID:', menuId);
-              
+
               // Use selected address from context
               const deliveryAddress = selectedAddress;
 

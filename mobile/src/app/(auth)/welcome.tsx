@@ -6,6 +6,7 @@ import { useColorScheme } from 'nativewind';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { LoadingButton } from '@/components/common/LoadingButton';
 import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
+import LottieView from 'lottie-react-native';
 
 const Welcome = () => {
   const { colorScheme } = useColorScheme();
@@ -24,30 +25,48 @@ const Welcome = () => {
       <View className="h-12" />
 
       {/* Logo Section */}
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center ">
         <Image
           source={
             colorScheme === 'dark'
               ? require('@/assets/logo-dark.png')
               : require('@/assets/logo.png')
           }
-          className="h-96 w-96"
+          className="h-26 w-96 "
           resizeMode="contain"
+        />
+        <LottieView
+          source={{ uri: 'https://lottie.host/371f1391-74a7-48fc-929d-9a1dfd1d5080/bxNlLgj9MM.json' }}
+          autoPlay
+          loop
+          style={{ width: 250, height: 250, marginTop: 30 }}
+          
         />
       </View>
 
       {/* Content Section */}
       <View className="flex-1 justify-center px-8">
         <View className="items-center">
+          <View className="flex-row mb-6">
           <Text
-            className="mb-6 text-3xl font-semibold text-black dark:text-white"
-            style={{ fontFamily: 'Poppins_600SemiBold' }}>
-            Welcome to TIFFIX
+            className="text-3xl  font-semibold text-black dark:text-white"
+            style={{ fontFamily: 'DancingScript_400Regular' }}
+          >
+            Welcome
           </Text>
+
           <Text
-            className="mb-12 text-center text-base leading-6 text-zinc-500 dark:text-zinc-400"
+            className="text-3xl font-semibold text-black dark:text-white ml-2"
+            style={{ fontFamily: 'Poppins_600SemiBold' }}
+          >
+            to TIFFIX
+          </Text>
+        </View>
+
+          <Text
+            className="mb-12 text-center text-lg leading-6 text-zinc-500 dark:text-zinc-400"
             style={{ fontFamily: 'Poppins_400Regular' }}>
-            Amet minim mollit non deserunt{'\n'}ullamco est sit aliqua dolor do amet.
+            Tiffix Tiffin ki problem fix
           </Text>
 
           <LoadingButton

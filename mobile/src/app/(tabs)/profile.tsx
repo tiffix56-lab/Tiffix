@@ -7,12 +7,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { userService } from '@/services/user.service';
 import { uploadService } from '@/services/upload.service';
 import { User } from '@/types/user.types';
+import { useAuth } from '@/context/AuthContext';
 
 const Profile = () => {
   const { colorScheme } = useColorScheme();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const { logout } = useAuth();
 
   useEffect(() => {
     fetchUserData();
@@ -138,7 +140,10 @@ const Profile = () => {
           {
             text: 'Logout',
             style: 'destructive',
-            onPress: () => router.push(`/(profile)${route}`),
+            onPress: async () => {
+              await logout();
+              router.replace('/');
+            },
           },
         ]
       );

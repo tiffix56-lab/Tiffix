@@ -7,11 +7,13 @@ import { addressService } from '@/services/address.service';
 import { Address as AddressType } from '@/types/address.types';
 import { mapsService, AutocompleteResult, ParsedAddress } from '@/services/maps.service';
 import * as Location from 'expo-location';
+import { useAddress } from '@/context/AddressContext';
 
 const Address = () => {
   console.log('🏠 Address component mounted');
-  
+
   const { colorScheme } = useColorScheme();
+  const { setSelectedAddress, refreshAddresses: refreshAddressContext } = useAddress();
   const [addresses, setAddresses] = useState<AddressType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -25,6 +27,8 @@ const Address = () => {
     isDefault: false,
     coordinates: { latitude: 0, longitude: 0 }
   });
+  const [houseNo, setHouseNo] = useState('');
+  const [apartmentArea, setApartmentArea] = useState('');
   const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [addressSearchQuery, setAddressSearchQuery] = useState('');
   const [addressSearchResults, setAddressSearchResults] = useState<AutocompleteResult[]>([]);
@@ -34,6 +38,7 @@ const Address = () => {
 
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
   useEffect(() => {
     console.log('🔄 useEffect triggered - calling fetchAddresses');
@@ -121,15 +126,17 @@ const Address = () => {
     if (!prediction) {
       try {
         console.log('📍 [ADDRESS] Starting current location fetch...');
-        
+        setDetectingLocation(true);
+
         // Request location permissions
         const { status } = await Location.requestForegroundPermissionsAsync();
         console.log('📍 [ADDRESS] Permission status:', status);
         
         if (status !== 'granted') {
           console.log('❌ [ADDRESS] Permission denied');
+          setDetectingLocation(false);
           Alert.alert(
-            'Permission Required', 
+            'Permission Required',
             'Location permission is required to get your current location. Please enable location access in your device settings.',
             [
               { text: 'Cancel', style: 'cancel' },
@@ -143,8 +150,9 @@ const Address = () => {
         const hasLocationServices = await Location.hasServicesEnabledAsync();
         if (!hasLocationServices) {
           console.log('❌ [ADDRESS] Location services disabled');
+          setDetectingLocation(false);
           Alert.alert(
-            'Location Services Disabled', 
+            'Location Services Disabled',
             'Please enable location services in your device settings to use current location.',
             [
               { text: 'Cancel', style: 'cancel' },
@@ -206,6 +214,7 @@ const Address = () => {
           setShowAddressSearch(false);
           setAddressSearchQuery('');
           setAddressSearchResults([]);
+          setDetectingLocation(false);
           Alert.alert('Success', 'Current location detected successfully!');
         } else {
           console.log('⚠️ [ADDRESS] Expo reverse geocoding failed, trying maps service fallback...');
@@ -231,6 +240,7 @@ const Address = () => {
               setShowAddressSearch(false);
               setAddressSearchQuery('');
               setAddressSearchResults([]);
+              setDetectingLocation(false);
               Alert.alert('Success', 'Current location detected successfully!');
             } else {
               throw new Error('Maps service returned no results');
@@ -266,13 +276,15 @@ const Address = () => {
             setShowAddressSearch(false);
             setAddressSearchQuery('');
             setAddressSearchResults([]);
+            setDetectingLocation(false);
             Alert.alert('Location Detected', 'Location coordinates detected. You may need to manually enter the full address details.');
           }
         }
 
       } catch (error) {
         console.error('❌ [ADDRESS] Error getting current location:', error);
-        
+        setDetectingLocation(false);
+
         let errorMessage = 'Unable to get current location. ';
         if (error instanceof Error) {
           if (error.message.includes('timeout')) {
@@ -287,7 +299,7 @@ const Address = () => {
         } else {
           errorMessage += 'Please try again or enter your address manually.';
         }
-        
+
         Alert.alert('Location Error', errorMessage);
       }
     } else {
@@ -340,6 +352,16 @@ const Address = () => {
       return;
     }
 
+    if (!houseNo.trim()) {
+      Alert.alert('Error', 'Please enter House No/Block No/Floor No');
+      return;
+    }
+
+    if (!apartmentArea.trim()) {
+      Alert.alert('Error', 'Please enter Apartment/Road/Area');
+      return;
+    }
+
     if (!newAddress.coordinates || newAddress.coordinates.latitude === 0 || newAddress.coordinates.longitude === 0) {
       Alert.alert('Error', 'Invalid address coordinates. Please select again.');
       return;
@@ -363,8 +385,11 @@ const Address = () => {
 
     try {
       setAdding(true);
+      // Combine houseNo and apartmentArea into street field
+      const combinedStreet = `${houseNo}, ${apartmentArea}, ${newAddress.street}`;
       const addressPayload = {
         ...newAddress,
+        street: combinedStreet,
         coordinates: {
           latitude: newAddress.coordinates.latitude,
           longitude: newAddress.coordinates.longitude
@@ -376,6 +401,21 @@ const Address = () => {
       
       if (response.success) {
         Alert.alert('Success', 'Address added successfully');
+
+        // Create the address object to select
+        const addedAddress: AddressType = {
+          label: newAddress.label,
+          street: combinedStreet,
+          city: newAddress.city,
+          state: newAddress.state,
+          zipCode: newAddress.zipCode,
+          isDefault: newAddress.isDefault,
+          coordinates: newAddress.coordinates
+        };
+
+        // Select the newly added address
+        await setSelectedAddress(addedAddress);
+
         setShowAddForm(false);
         setNewAddress({
           label: '',
@@ -387,7 +427,12 @@ const Address = () => {
           coordinates: { latitude: 0, longitude: 0 }
         });
         setSelectedPlace(null);
-        fetchAddresses();
+        setHouseNo('');
+        setApartmentArea('');
+
+        // Refresh both local and context addresses
+        await fetchAddresses();
+        await refreshAddressContext();
       } else {
         console.log('❌ Backend error:', response.message);
         Alert.alert('Error', response.message || 'Failed to add address');
@@ -566,7 +611,7 @@ const Address = () => {
                   </TouchableOpacity>
 
                   {showAddressSearch && (
-                    <View className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-600 dark:bg-zinc-800 max-h-80 shadow-lg">
+                    <View className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-600 dark:bg-zinc-800 max-h-80 shadow-lg mt-1">
                       <View className="flex-row items-center border-b border-zinc-200 p-3 dark:border-zinc-600">
                         <Feather name="search" size={16} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
                         <TextInput
@@ -598,20 +643,27 @@ const Address = () => {
                       <ScrollView className="max-h-64" showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
                         <TouchableOpacity
                           onPress={() => handleAddressSelect()}
+                          disabled={detectingLocation}
                           className="flex-row items-center border-b border-zinc-100 p-4 hover:bg-green-50 dark:border-zinc-700 dark:hover:bg-green-900/10"
                           activeOpacity={0.7}>
                           <View className="h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                            <Feather name="navigation" size={18} color="#22C55E" />
+                            {detectingLocation ? (
+                              <ActivityIndicator size="small" color="#22C55E" />
+                            ) : (
+                              <Feather name="navigation" size={18} color="#22C55E" />
+                            )}
                           </View>
                           <View className="ml-4 flex-1">
                             <Text className="text-base font-medium text-green-600 dark:text-green-400" style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                              Use Current Location
+                              {detectingLocation ? 'Detecting Location...' : 'Use Current Location'}
                             </Text>
                             <Text className="text-sm text-zinc-500 dark:text-zinc-400" style={{ fontFamily: 'Poppins_400Regular' }}>
-                              Detect your location automatically using GPS
+                              {detectingLocation ? 'Please wait while we get your location' : 'Detect your location automatically using GPS'}
                             </Text>
                           </View>
-                          <Feather name="chevron-right" size={16} color="#22C55E" />
+                          {!detectingLocation && (
+                            <Feather name="chevron-right" size={16} color="#22C55E" />
+                          )}
                         </TouchableOpacity>
 
                         {addressSearchResults.map((prediction, index) => (
@@ -647,21 +699,63 @@ const Address = () => {
                   )}
 
                   {selectedPlace && (
-                    <View className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-600 dark:bg-green-900/20">
-                      <View className="flex-row items-start">
-                        <View className="mr-3 mt-0.5">
-                          <Feather name="map-pin" size={16} color="#22C55E" />
+                    <>
+                      {/* <View className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-600 dark:bg-green-900/20 mt-2">
+                        <View className="flex-row items-start">
+                          <View className="mr-3 mt-0.5">
+                            <Feather name="map-pin" size={16} color="#22C55E" />
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-sm font-medium text-green-700 dark:text-green-400" style={{ fontFamily: 'Poppins_500Medium' }}>
+                              Selected Address:
+                            </Text>
+                            <Text className="mt-1 text-sm text-green-600 dark:text-green-300 leading-5" style={{ fontFamily: 'Poppins_400Regular' }}>
+                              {[newAddress.street, newAddress.city, newAddress.state, newAddress.zipCode].filter(Boolean).join(', ')}
+                            </Text>
+                          </View>
                         </View>
-                        <View className="flex-1">
-                          <Text className="text-sm font-medium text-green-700 dark:text-green-400" style={{ fontFamily: 'Poppins_500Medium' }}>
-                            Selected Address:
-                          </Text>
-                          <Text className="mt-1 text-sm text-green-600 dark:text-green-300 leading-5" style={{ fontFamily: 'Poppins_400Regular' }}>
-                            {[newAddress.street, newAddress.city, newAddress.state, newAddress.zipCode].filter(Boolean).join(', ')}
-                          </Text>
-                        </View>
+                      </View> */}
+
+                      {/* House No/Block No/Floor No Input */}
+                      <View>
+                        <Text className="mb-2 mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300" style={{ fontFamily: 'Poppins_500Medium' }}>
+                          House No/Block No/Floor No *
+                        </Text>
+                        <TextInput
+                          className={`rounded-xl border bg-white px-4 py-4 text-black dark:bg-zinc-800 dark:text-white ${
+                            !houseNo.trim() && houseNo !== ''
+                              ? 'border-red-300 dark:border-red-600'
+                              : 'border-zinc-200 dark:border-zinc-600 focus:border-blue-500 dark:focus:border-blue-400'
+                          }`}
+                          placeholder="e.g., House #123, Block A, Floor 2"
+                          placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+                          value={houseNo}
+                          onChangeText={setHouseNo}
+                          style={{ fontFamily: 'Poppins_400Regular', fontSize: 16 }}
+                          maxLength={100}
+                        />
                       </View>
-                    </View>
+
+                      {/* Apartment/Road/Area Input */}
+                      <View>
+                        <Text className="mb-2 mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300" style={{ fontFamily: 'Poppins_500Medium' }}>
+                          Apartment/Road/Area *
+                        </Text>
+                        <TextInput
+                          className={`rounded-xl border bg-white px-4 py-4 text-black dark:bg-zinc-800 dark:text-white ${
+                            !apartmentArea.trim() && apartmentArea !== ''
+                              ? 'border-red-300 dark:border-red-600'
+                              : 'border-zinc-200 dark:border-zinc-600 focus:border-blue-500 dark:focus:border-blue-400'
+                          }`}
+                          placeholder="e.g., Greenfield Apartments, MG Road"
+                          placeholderTextColor={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
+                          value={apartmentArea}
+                          onChangeText={setApartmentArea}
+                          style={{ fontFamily: 'Poppins_400Regular', fontSize: 16 }}
+                          maxLength={100}
+                        />
+                      </View>
+                    </>
                   )}
 
                   {/* Default Address Toggle */}
@@ -708,6 +802,8 @@ const Address = () => {
                         isDefault: false,
                         coordinates: { latitude: 0, longitude: 0 }
                       });
+                      setHouseNo('');
+                      setApartmentArea('');
                       setShowAddressSearch(false);
                       setAddressSearchQuery('');
                       setAddressSearchResults([]);
@@ -722,10 +818,10 @@ const Address = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleAddAddress}
-                    disabled={adding || !newAddress.label.trim() || !selectedPlace}
+                    disabled={adding || !newAddress.label.trim() || !selectedPlace || !houseNo.trim() || !apartmentArea.trim()}
                     className={`flex-1 rounded-xl py-4 ${
-                      adding || !newAddress.label.trim() || !selectedPlace
-                        ? 'bg-zinc-300 dark:bg-zinc-600' 
+                      adding || !newAddress.label.trim() || !selectedPlace || !houseNo.trim() || !apartmentArea.trim()
+                        ? 'bg-zinc-300 dark:bg-zinc-600'
                         : 'bg-black dark:bg-white shadow-lg'
                     }`}
                     activeOpacity={0.8}>
@@ -741,7 +837,7 @@ const Address = () => {
                     ) : (
                       <Text
                         className={`text-center text-base font-medium ${
-                          !newAddress.label.trim() || !selectedPlace
+                          !newAddress.label.trim() || !selectedPlace || !houseNo.trim() || !apartmentArea.trim()
                             ? 'text-zinc-500 dark:text-zinc-400'
                             : 'text-white dark:text-black'
                         }`}

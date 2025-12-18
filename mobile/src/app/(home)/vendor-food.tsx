@@ -57,7 +57,7 @@ const VendorFood = () => {
             <Text
               className="text-xl font-semibold text-black dark:text-white"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Vendor Food
+              Tiffix Signature Meals
             </Text>
           </View>
           <View className="h-10 w-10" />
@@ -128,12 +128,13 @@ const VendorFood = () => {
                             <Text
                               className="ml-1 text-sm text-zinc-500 dark:text-zinc-400"
                               style={{ fontFamily: 'Poppins_400Regular' }}>
-                              4.5 (0 reviews)
+                              {plan.avgRating || 0} ({plan.totalReviews || 0} ratings)
                             </Text>
                           </View>
                           <Text
                             className="mt-1 text-xs text-zinc-500 dark:text-zinc-400"
-                            style={{ fontFamily: 'Poppins_400Regular' }}>
+                            style={{ fontFamily: 'Poppins_400Regular' }}
+                            numberOfLines={4}>
                             {plan.description}
                           </Text>
                         </View>

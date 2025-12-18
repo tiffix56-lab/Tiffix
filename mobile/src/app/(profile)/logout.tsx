@@ -34,7 +34,7 @@ const Logout = () => {
         console.log('Logout successful, clearing storage and redirecting');
         
         // Navigate to auth screen
-        router.replace('/(auth)/login');
+        router.replace('/');
       } else {
         // Even if API call fails, clear local storage and redirect
         console.log('Logout API failed, but clearing local data anyway');

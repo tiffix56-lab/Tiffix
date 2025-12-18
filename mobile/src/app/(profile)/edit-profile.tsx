@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,18 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import * as ImagePicker from 'expo-image-picker';
 import { userService } from '@/services/user.service';
 import { uploadService } from '@/services/upload.service';
+import { storageService } from '@/services/storage.service';
 import { User } from '@/types/user.types';
 
 const EditProfile = () => {
   const { colorScheme } = useColorScheme();
+  const { requirePhone } = useLocalSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
@@ -32,6 +34,17 @@ const EditProfile = () => {
   useEffect(() => {
     fetchUserData();
   }, []);
+
+  useEffect(() => {
+    // Show alert if user is required to add phone number
+    if (requirePhone === 'true' && !loading) {
+      Alert.alert(
+        'Phone Number Required',
+        'Please add your mobile number to continue using the app.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [requirePhone, loading]);
 
   const fetchUserData = async () => {
     try {
@@ -56,11 +69,12 @@ const EditProfile = () => {
         // Merge profile data if available (includes avatar)
         if (profileResponse.success && profileResponse.data?.userProfile?.userId) {
           const profile = profileResponse.data.userProfile.userId;
-          console.log('📞 Profile user phone number:', profile.phoneNumber);
+          console.log('📞 Profile user phone number:', typeof profile === 'object' && profile !== null ? (profile as any).phoneNumber : undefined);
+          // Type assertion to handle different user type structures
           userData = {
             ...authUser,
-            ...profile, // This should include avatar, phoneNumber, gender, etc.
-          };
+            ...(typeof profile === 'object' ? profile : {}), // This should include avatar, phoneNumber, gender, etc.
+          } as User;
           console.log('✅ Merged user data with profile:', userData);
         }
 
@@ -68,7 +82,7 @@ const EditProfile = () => {
         setName(userData.name || userData.fullName || '');
 
         // Try multiple possible phone number fields
-        const phoneData = userData.phoneNumber || userData.phone || authUser.phoneNumber;
+        const phoneData = userData.phoneNumber || authUser.phoneNumber;
         console.log('📞 Final phone number to display:', phoneData);
 
         // Handle phone number - it might be an object or a string
@@ -76,9 +90,10 @@ const EditProfile = () => {
         if (phoneData) {
           if (typeof phoneData === 'string') {
             phone = phoneData;
-          } else if (typeof phoneData === 'object' && phoneData.internationalNumber) {
+          } else if (typeof phoneData === 'object' && 'internationalNumber' in phoneData) {
             // Extract just the number part from "+91 83086 57425"
-            phone = phoneData.internationalNumber.replace(/^\+91\s*/, '').replace(/\s/g, '');
+            const internationalNumber = (phoneData as { internationalNumber: string }).internationalNumber;
+            phone = internationalNumber.replace(/^\+91\s*/, '').replace(/\s/g, '');
           }
         }
         console.log('📞 Extracted phone number:', phone);
@@ -102,19 +117,48 @@ const EditProfile = () => {
       return;
     }
 
+    // If phone number is required, validate it
+    if (requirePhone === 'true' && !mobileNumber.trim()) {
+      Alert.alert('Error', 'Mobile number is required to use the app');
+      return;
+    }
+
+    // Validate phone number format if provided
+    if (mobileNumber.trim() && mobileNumber.trim().length !== 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
+      return;
+    }
+
     try {
       setSaving(true);
       const updateData = {
         name: name.trim(),
-        phoneNumber: mobileNumber.trim() || undefined,
+        phoneNumber: "91" + String(mobileNumber.trim()) || undefined,
         gender: gender,
       };
 
+      console.log(updateData);
       const response = await userService.updateUserProfile(updateData);
-      
+
       if (response.success) {
-        Alert.alert('Success', 'Profile updated successfully');
-        router.back();
+        // Clear the needsProfileCompletion flag if it was required
+        if (requirePhone === 'true') {
+          await storageService.removeNeedsProfileCompletion();
+        }
+
+        Alert.alert('Success', 'Profile updated successfully', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // If phone was required, navigate to home instead of going back
+              if (requirePhone === 'true') {
+                router.replace('/(tabs)/home');
+              } else {
+                router.back();
+              }
+            }
+          }
+        ]);
       } else {
         Alert.alert('Error', response.message || 'Failed to update profile');
       }
@@ -249,65 +293,6 @@ const EditProfile = () => {
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-      {/* Header */}
-      <View className="bg-zinc-50 px-6 pb-6 pt-24 dark:bg-neutral-900">
-        <View className="flex-row items-start">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-800">
-            <Feather
-              name="arrow-left"
-              size={20}
-              color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'}
-            />
-          </TouchableOpacity>
-          {/* Profile Picture */}
-          <View className="mx-auto mb-8 items-center">
-            <View className="relative mb-4">
-              <Image
-                key={user?.avatar || 'default'} // Force re-render when avatar changes
-                source={{
-                  uri: user?.avatar || user?.profilePicture || 'https://plus.unsplash.com/premium_photo-1689568126014-06fea9d5d341?q=80&w=1170&auto=format&fit=crop',
-                }}
-                className="h-28 w-28 rounded-full border-4 border-white dark:border-zinc-800"
-                resizeMode="cover"
-              />
-              <TouchableOpacity 
-                onPress={handleImagePick}
-                disabled={uploading}
-                className="absolute bottom-1 right-1 h-10 w-10 items-center justify-center rounded-full bg-black shadow-lg dark:bg-white"
-                activeOpacity={0.7}>
-                {uploading ? (
-                  <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'} />
-                ) : (
-                  <Feather
-                    name="camera"
-                    size={18}
-                    color={colorScheme === 'dark' ? '#000000' : '#FFFFFF'}
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
-            <Text
-              className="text-xl font-semibold text-black dark:text-white"
-              style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              {user?.name || user?.fullName || 'User'}
-            </Text>
-            <TouchableOpacity 
-              onPress={handleImagePick}
-              disabled={uploading}
-              className="mt-2 rounded-lg bg-zinc-100 px-4 py-2 dark:bg-zinc-800"
-              activeOpacity={0.7}>
-              <Text
-                className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
-                style={{ fontFamily: 'Poppins_500Medium' }}>
-                {uploading ? 'Uploading...' : 'Change Photo'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View className="h-10 w-10" />
-        </View>
-      </View>
 
       {/* Main Content */}
       <View className="flex-1 rounded-t-3xl bg-white dark:bg-black">
@@ -332,6 +317,23 @@ const EditProfile = () => {
         ) : (
           <View className="flex-1">
             <ScrollView className="flex-1 px-6 pt-12" showsVerticalScrollIndicator={false}>
+              {/* Phone Required Warning Banner */}
+              {requirePhone === 'true' && !mobileNumber && (
+                <View className="mb-6 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
+                  <View className="flex-row items-start">
+                    <Feather name="alert-circle" size={20} color="#F59E0B" className="mr-2 mt-0.5" />
+                    <View className="flex-1 ml-3">
+                      <Text className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1" style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                        Mobile Number Required
+                      </Text>
+                      <Text className="text-sm text-amber-700 dark:text-amber-300" style={{ fontFamily: 'Poppins_400Regular' }}>
+                        Please add your mobile number to continue using the app
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
               {/* Form Fields */}
               <View className="gap-6">
                 {/* Name Field */}
@@ -350,11 +352,11 @@ const EditProfile = () => {
                 <View className="min-h-14 flex-row items-center rounded-md border border-zinc-100 bg-zinc-50 px-4 dark:border-zinc-400 dark:bg-black">
                   <View className="mr-3 flex-row items-center">
                     <Text className="mr-1 text-lg">🇮🇳</Text>
-                    <Feather
+                    {/* <Feather
                       name="chevron-down"
                       size={16}
                       color={colorScheme === 'dark' ? '#71717A' : '#A1A1AA'}
-                    />
+                    /> */}
                   </View>
                   <Text
                     className="mr-2 text-base text-zinc-500 dark:text-zinc-400"

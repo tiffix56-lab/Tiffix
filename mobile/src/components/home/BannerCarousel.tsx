@@ -1,56 +1,24 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, Image, FlatList, Dimensions, TouchableOpacity } from 'react-native';
-import { useColorScheme } from 'nativewind';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, FlatList, Dimensions, TouchableOpacity } from 'react-native';
+import { Video } from 'expo-av';
 
 const { width } = Dimensions.get('window');
 
 interface BannerItem {
   id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: any;
-  discount: string;
+  video: any;
 }
 
 const BannerCarousel = () => {
-  const { colorScheme } = useColorScheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
   const banners: BannerItem[] = [
-    {
-      id: '1',
-      title: 'Up to 50% Off',
-      subtitle: 'For Breakfast',
-      description:
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-      image: require('@/assets/banner-1.png'),
-      discount: '50%',
-    },
-    {
-      id: '2',
-      title: 'BRUNCH',
-      subtitle: 'Weekend Special',
-      description: 'Enjoy our special weekend brunch with amazing discounts and fresh ingredients.',
-      image: require('@/assets/banner-1.png'),
-      discount: '30%',
-    },
-    {
-      id: '3',
-      title: 'Lunch Special',
-      subtitle: 'Healthy Meals',
-      description: 'Nutritious lunch options delivered fresh to your doorstep every day.',
-      image: require('@/assets/banner-1.png'),
-      discount: '40%',
-    },
+    { id: '1', video: require('@/assets/banner1.mp4') },
+    { id: '2', video: require('@/assets/banner2.mp4') },
+    { id: '3', video: require('@/assets/banner3.mp4') },
+    { id: '4', video: require('@/assets/banner4.mp4') }
   ];
-
-  const renderBanner = ({ item }: { item: BannerItem }) => (
-    <View className="relative mx-3 overflow-hidden rounded-xl" style={{ width: width - 48 }}>
-      <Image source={item.image} style={{ height: 200, width: '100%', resizeMode: 'cover' }} />
-    </View>
-  );
 
   const onScroll = (event: any) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
@@ -58,21 +26,52 @@ const BannerCarousel = () => {
     setCurrentIndex(index);
   };
 
+  // Auto Slide
+  useEffect(() => {
+    const interval = setInterval(() => {
+      let nextIndex = currentIndex + 1;
+
+      if (nextIndex >= banners.length) {
+        nextIndex = 0; // loop back
+      }
+
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setCurrentIndex(nextIndex);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [currentIndex]);
+
   return (
     <View className="pb-6">
       <FlatList
-        ref={flatListRef}
-        data={banners}
-        renderItem={renderBanner}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScroll}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 12 }}
+  ref={flatListRef}
+  data={banners}
+  keyExtractor={(item) => item.id}
+  renderItem={({ item }) => (
+    <View
+      className="relative mx-3 overflow-hidden rounded-xl "
+      style={{ width: width - 48 }}
+    >
+      <Video
+        source={item.video}
+        style={{ width: '100%', height: 200 }}
+        className=''
+        shouldPlay
+        isLooping
+        isMuted
       />
+    </View>
+  )}
+  horizontal
+  showsHorizontalScrollIndicator={false}
+  snapToInterval={width - 48}   // ⭐ important
+  decelerationRate="fast"       // ⭐ smooth snapping
+  onMomentumScrollEnd={onScroll}
+  contentContainerStyle={{ paddingHorizontal: 12 }}
+/>
 
-      {/* Pagination Dots */}
+
       <View className="mt-4 flex-row justify-center">
         {banners.map((_, index) => (
           <TouchableOpacity

@@ -4,4 +4,5 @@ export const STORAGE_KEYS = {
   REMEMBER_ME: 'remember_me',
   THEME_PREFERENCE: 'theme_preference',
   ONBOARDING_COMPLETED: 'onboarding_completed',
+  NEEDS_PROFILE_COMPLETION: 'needs_profile_completion',
 } as const;

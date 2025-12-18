@@ -47,12 +47,26 @@ class StorageService {
     return completed ? JSON.parse(completed) : false;
   }
 
+  async setNeedsProfileCompletion(needs: boolean): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.NEEDS_PROFILE_COMPLETION, JSON.stringify(needs));
+  }
+
+  async getNeedsProfileCompletion(): Promise<boolean> {
+    const needs = await AsyncStorage.getItem(STORAGE_KEYS.NEEDS_PROFILE_COMPLETION);
+    return needs ? JSON.parse(needs) : false;
+  }
+
+  async removeNeedsProfileCompletion(): Promise<void> {
+    await AsyncStorage.removeItem(STORAGE_KEYS.NEEDS_PROFILE_COMPLETION);
+  }
+
   async clearAll(): Promise<void> {
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.ACCESS_TOKEN,
       STORAGE_KEYS.USER_DATA,
       STORAGE_KEYS.REMEMBER_ME,
       STORAGE_KEYS.ONBOARDING_COMPLETED,
+      STORAGE_KEYS.NEEDS_PROFILE_COMPLETION,
       '@order_data',
     ]);
   }
@@ -61,6 +75,7 @@ class StorageService {
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.ACCESS_TOKEN,
       STORAGE_KEYS.USER_DATA,
+      STORAGE_KEYS.NEEDS_PROFILE_COMPLETION,
     ]);
   }
 

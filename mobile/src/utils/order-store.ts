@@ -13,6 +13,7 @@ export interface OrderData {
   dinnerTime: string;
   lunchEnabled: boolean;
   dinnerEnabled: boolean;
+  referralCode?: string;
   orderId?: string;
   userSubscriptionId?: string;
   paymentAmount?: number;

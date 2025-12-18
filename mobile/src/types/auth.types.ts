@@ -63,6 +63,7 @@ export interface AuthResponse {
     user: User;
     accessToken: string;
     requiresVerification?: boolean;
+    needsProfileCompletion?: boolean;
   };
 }
 

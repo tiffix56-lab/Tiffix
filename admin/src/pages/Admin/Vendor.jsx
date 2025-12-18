@@ -615,7 +615,10 @@ function Vendor() {
                       {vendor.businessInfo?.description || 'No description available'}
                     </p>
                     <p className="text-sm text-gray-400 mt-1">
-                      {vendor.userId?.phoneNumber.internationalNumber || 'No description available'}
+                      {vendor.userId?.phoneNumber.internationalNumber || 'No phone available'}
+                    </p>
+                     <p className="text-sm text-gray-400 mt-1">
+                      {vendor.userId?.emailAddress || 'No email available'}
                     </p>
                   </div>
                   <div className="flex gap-1 ml-2">

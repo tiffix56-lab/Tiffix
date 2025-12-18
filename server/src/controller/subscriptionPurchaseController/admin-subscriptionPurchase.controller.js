@@ -43,6 +43,7 @@ export default {
                     { 'userId.name': { $regex: new RegExp(search, 'i') } },
                     { 'userId.emailAddress': { $regex: new RegExp(search, 'i') } },
                     { 'userId.phoneNumber': { $regex: new RegExp(search, 'i') } },
+                    { 'transactionId.transactionId': { $regex: new RegExp(search, 'i') } },
                     { 'subscriptionId.planName': { $regex: new RegExp(search, 'i') } },
                     { 'deliveryAddress.city': { $regex: new RegExp(search, 'i') } },
                     { 'deliveryAddress.zipCode': { $regex: new RegExp(search, 'i') } }

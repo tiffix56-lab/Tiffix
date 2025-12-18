@@ -4,6 +4,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { subscriptionService } from '@/services/subscription.service';
+import LottieView from 'lottie-react-native';
+import { orderStore } from '@/utils/order-store';
+import { OrderData } from '@/types/order.types';
 
 interface OrderConfirmationData {
   subscriptionId: string;
@@ -16,7 +19,7 @@ interface OrderConfirmationData {
 const OrderConfirmed = () => {
   const { colorScheme } = useColorScheme();
   const { subscriptionId, userSubscriptionId, paymentId } = useLocalSearchParams();
-  const [orderData, setOrderData] = useState<OrderConfirmationData | null>(null);
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,21 +31,11 @@ const OrderConfirmed = () => {
       setLoading(true);
       
       // Fetch user subscriptions to get the confirmed order details
-      const response = await subscriptionService.getUserSubscriptions();
-      
-      if (response.success && response.data) {
-        // Find the subscription that was just created
-        const latestSubscription = response.data.subscriptions.find(
-          (sub: any) => sub._id === subscriptionId || sub.subscriptionId === subscriptionId
-        );
-        
-        setOrderData({
-          subscriptionId: subscriptionId as string,
-          userSubscriptionId: userSubscriptionId as string,
-          paymentId: paymentId as string,
-          userSubscription: latestSubscription,
-        });
-      }
+      const response = await orderStore.getOrderData();
+      console.log("Purchases Res", response);
+
+      setOrderData(response);
+
     } catch (error) {
       console.error('Error fetching order details:', error);
     } finally {
@@ -52,6 +45,15 @@ const OrderConfirmed = () => {
 
   const formatCurrency = (amount: number) => {
     return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  // Helper function to convert 24-hour time to 12-hour format for display
+  const format12Hour = (time24: string): string => {
+    if (!time24) return ''; // Handle cases where time might be empty
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
   return (
@@ -93,9 +95,12 @@ const OrderConfirmed = () => {
             {/* Success Message */}
             <View className="items-center px-6 pb-8 pt-8">
               {/* Checkmark Icon */}
-              <View className="mb-8 h-24 w-24 items-center justify-center rounded-full bg-green-500">
-                <Feather name="check" size={48} color="#FFFFFF" />
-              </View>
+              <LottieView
+                source={{uri: 'https://lottie.host/cf27b534-e29e-4da7-8407-e7eb75a986d8/aDl1f0fX06.json'}}
+                autoPlay
+                loop={true}
+                style={{ width: '100%', height: 220 }}
+              />
 
               {/* Thank You Text */}
               <Text
@@ -111,7 +116,7 @@ const OrderConfirmed = () => {
             </View>
 
             {/* Order Details */}
-            {orderData?.userSubscription && (
+            {orderData && (
               <View className="mx-6 mb-8 rounded-2xl bg-white p-6 shadow-sm dark:bg-zinc-900">
                 <Text
                   className="mb-4 text-lg font-semibold text-black dark:text-white"
@@ -128,20 +133,7 @@ const OrderConfirmed = () => {
                   <Text
                     className="text-base text-black dark:text-white"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    #{orderData.userSubscription._id.slice(-8).toUpperCase()}
-                  </Text>
-                </View>
-
-                <View className="mb-3 flex-row justify-between">
-                  <Text
-                    className="text-base text-zinc-600 dark:text-zinc-400"
-                    style={{ fontFamily: 'Poppins_500Medium' }}>
-                    Payment ID:
-                  </Text>
-                  <Text
-                    className="text-base text-black dark:text-white"
-                    style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    #{paymentId?.toString().slice(-8).toUpperCase()}
+                    #{orderData.selectedSubscription._id.slice(0, 12).toUpperCase()}
                   </Text>
                 </View>
 
@@ -154,7 +146,7 @@ const OrderConfirmed = () => {
                   <Text
                     className="text-base text-green-600 dark:text-green-400"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    {formatCurrency(orderData.userSubscription.finalPrice)}
+                    {formatCurrency(orderData.selectedSubscription.discountedPrice || 0)}
                   </Text>
                 </View>
 
@@ -167,7 +159,7 @@ const OrderConfirmed = () => {
                   <Text
                     className="text-base text-black dark:text-white"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    {new Date(orderData.userSubscription.startDate).toLocaleDateString('en-IN')}
+                    {orderData.deliveryDate}
                   </Text>
                 </View>
 
@@ -175,12 +167,12 @@ const OrderConfirmed = () => {
                   <Text
                     className="text-base text-zinc-600 dark:text-zinc-400"
                     style={{ fontFamily: 'Poppins_500Medium' }}>
-                    End Date:
+                    Time
                   </Text>
                   <Text
                     className="text-base text-black dark:text-white"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    {new Date(orderData.userSubscription.endDate).toLocaleDateString('en-IN')}
+                    {orderData.lunchEnabled ? `Lunch: ${format12Hour(orderData.lunchTime)}` : ''} {orderData.dinnerEnabled ? `Dinner: ${format12Hour(orderData.dinnerTime)}` : ''}
                   </Text>
                 </View>
 
@@ -193,44 +185,27 @@ const OrderConfirmed = () => {
                   <Text
                     className="text-base text-black dark:text-white"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    {orderData.userSubscription.creditsGranted} meals
+                    {orderData.selectedSubscription.mealsPerPlan} meals
                   </Text>
                 </View>
+                {
+                  orderData.referralCode && (
+                  <View className="flex-row justify-between">
+                    <Text
+                      className="text-base text-zinc-600 dark:text-zinc-400"
+                      style={{ fontFamily: 'Poppins_500Medium' }}>
+                      Referral Code:
+                    </Text>
+                    <Text
+                      className="text-base text-black dark:text-white"
+                      style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                      {orderData.referralCode} 
+                    </Text>
+                  </View> )
+                }
               </View>
             )}
 
-            {/* Next Steps */}
-            <View className="mx-6 mb-8 rounded-2xl bg-green-50 p-6 dark:bg-green-900/20">
-              <Text
-                className="mb-4 text-lg font-semibold text-green-800 dark:text-green-200"
-                style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                What's Next?
-              </Text>
-              <View className="flex-row items-start">
-                <View className="mr-3 mt-1 h-2 w-2 rounded-full bg-green-600" />
-                <Text
-                  className="flex-1 text-sm text-green-700 dark:text-green-300"
-                  style={{ fontFamily: 'Poppins_400Regular' }}>
-                  You'll receive meal deliveries as per your selected schedule
-                </Text>
-              </View>
-              <View className="mt-2 flex-row items-start">
-                <View className="mr-3 mt-1 h-2 w-2 rounded-full bg-green-600" />
-                <Text
-                  className="flex-1 text-sm text-green-700 dark:text-green-300"
-                  style={{ fontFamily: 'Poppins_400Regular' }}>
-                  Track your subscription and manage deliveries in the app
-                </Text>
-              </View>
-              <View className="mt-2 flex-row items-start">
-                <View className="mr-3 mt-1 h-2 w-2 rounded-full bg-green-600" />
-                <Text
-                  className="flex-1 text-sm text-green-700 dark:text-green-300"
-                  style={{ fontFamily: 'Poppins_400Regular' }}>
-                  Contact support if you have any questions
-                </Text>
-              </View>
-            </View>
           </ScrollView>
         )}
       </View>

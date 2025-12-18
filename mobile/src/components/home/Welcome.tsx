@@ -78,8 +78,8 @@ const Welcome = () => {
             Hi! {displayName},
           </Text>
           <Text
-            className="text-2xl font-bold text-black dark:text-white"
-            style={{ fontFamily: 'Poppins_600SemiBold' }}>
+            className="text-2xl  text-black dark:text-white"
+            style={{ fontFamily: 'DancingScript_700Bold' }}>
             {currentMealTime}
           </Text>
         </View>

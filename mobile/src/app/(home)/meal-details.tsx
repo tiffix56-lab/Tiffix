@@ -42,6 +42,8 @@ const MealDetails = () => {
       try {
         const menuResponse = await menuService.getMenuById(itemId);
         if (menuResponse.success && menuResponse.data) {
+          console.log(menuResponse, "sdfgsdgf");
+          
           setMenu(menuResponse.data.menu);
           return;
         }
@@ -53,6 +55,8 @@ const MealDetails = () => {
       try {
         const subscriptionResponse = await subscriptionService.getSubscriptionById(itemId);
         if (subscriptionResponse.success && subscriptionResponse.data) {
+          console.log(subscriptionResponse, 'sdafa');
+          
           setSubscription(subscriptionResponse.data.subscription);
           return;
         }
@@ -145,7 +149,7 @@ const MealDetails = () => {
         {/* Hero Image */}
         <View className="h-[500px] w-full">
           <Image
-            source={menu?.foodImage ? { uri: menu.foodImage } : require('@/assets/category-1.png')}
+            source={subscription?.image ? { uri: subscription.image } : require('@/assets/category-1.png')}
             className="h-full w-full"
             resizeMode="cover"
           />
@@ -179,13 +183,13 @@ const MealDetails = () => {
                   <Text
                     className="text-base font-semibold text-yellow-600 dark:text-yellow-400"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    {menu?.rating?.average?.toFixed(1) || '4.5'}
+                    {subscription?.avgRating?.toFixed(1) || '4.5'}
                   </Text>
                 </View>
                 <Text
                   className="text-base text-gray-500 dark:text-gray-400"
                   style={{ fontFamily: 'Poppins_400Regular' }}>
-                  ({menu?.rating?.totalReviews || 0} reviews)
+                  ({subscription?.totalRatings || 0} reviews)
                 </Text>
               </View>
 
@@ -234,11 +238,11 @@ const MealDetails = () => {
 
             {/* Meal Components or Features */}
             <View className="mb-6">
-              <Text
+              { (menu || subscription?.features && subscription?.features.length > 0) && <Text
                 className="mb-4 text-xl font-semibold text-black dark:text-white"
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
                 {menu ? "What's Included" : "Plan Features"}
-              </Text>
+              </Text>}
 
               {menu && mealComponents.map((section, sectionIndex) => (
                 <View key={sectionIndex} className="mb-6">
@@ -309,7 +313,7 @@ const MealDetails = () => {
             <View className="mb-6 h-px bg-gray-200 dark:bg-gray-700" />
 
             {/* Action Button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => router.push({
                 pathname: '/subscription',
                 params: { menuId: subscription?._id || menu?._id }
@@ -320,7 +324,7 @@ const MealDetails = () => {
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
                 {menu ? 'Add to Subscription' : 'Subscribe Now'}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Bottom spacing for safe area */}
             <View className="h-8" />

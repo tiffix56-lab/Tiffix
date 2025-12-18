@@ -19,12 +19,6 @@ const Subscription = () => {
     fetchSubscriptions();
   }, []);
 
-  // Show warning if no address is selected
-  useEffect(() => {
-    if (!selectedAddress) {
-      setError('Please select a delivery address first to view available plans');
-    }
-  }, [selectedAddress]);
 
   const fetchSubscriptions = async () => {
     try {
@@ -326,16 +320,7 @@ const Subscription = () => {
                   </Text>
                 </View>
                 <View className="mb-2 flex-row justify-between">
-                  <Text
-                    className="text-base text-black dark:text-white"
-                    style={{ fontFamily: 'Poppins_500Medium' }}>
-                    Tax (18% GST):
-                  </Text>
-                  <Text
-                    className="text-base text-black dark:text-white"
-                    style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    {formatCurrency(calculateTax(selectedPlanData.discountedPrice))}
-                  </Text>
+                  
                 </View>
                 <View className="border-t border-zinc-200 pt-2 dark:border-zinc-700">
                   <View className="flex-row justify-between">
@@ -347,7 +332,7 @@ const Subscription = () => {
                     <Text
                       className="text-lg font-semibold text-black dark:text-white"
                       style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                      {formatCurrency(selectedPlanData.discountedPrice + calculateTax(selectedPlanData.discountedPrice))}
+                      {formatCurrency(selectedPlanData.discountedPrice)}
                     </Text>
                   </View>
                 </View>

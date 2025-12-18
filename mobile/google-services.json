@@ -1,0 +1,78 @@
+{
+  "project_info": {
+    "project_number": "736730550506",
+    "project_id": "tiffix-58224",
+    "storage_bucket": "tiffix-58224.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:736730550506:android:199b07380ababe2a75c793",
+        "android_client_info": {
+          "package_name": "com.rutwik187.tiffix"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "736730550506-cl0sfsqanqsilb96c7cjnaehni8vea16.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutwik187.tiffix",
+            "certificate_hash": "0aef55283ec0bf60e915a8ca8581408612c6605a"
+          }
+        },
+        {
+          "client_id": "736730550506-r5orccgdbhft08lcamgdftq3a24bene0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutwik187.tiffix",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "736730550506-suac744jej76cqvbb9v50iacee04jm6q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutwik187.tiffix",
+            "certificate_hash": "c974d0c46bea11e5e3271bb25e9812c112e467d0"
+          }
+        },
+        {
+          "client_id": "736730550506-t6pnsqm0ao3cko2i6cm1teclhphcnmq8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutwik187.tiffix",
+            "certificate_hash": "1ab639ad99106843b88b8853589ae7e934ab383c"
+          }
+        },
+        {
+          "client_id": "736730550506-95n99j459bvrlbcmgkghaor55pll7eu8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBanvWu8RgjOb_mqcYG49W5EN1-IHuafhs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "736730550506-95n99j459bvrlbcmgkghaor55pll7eu8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "736730550506-ir73hfdskggdq4telt6912aehcjjv9j3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rutwik187.tiffix"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

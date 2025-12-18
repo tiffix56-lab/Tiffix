@@ -51,35 +51,57 @@ const Payment = () => {
     return Math.round(price * 0.18); // 18% GST
   };
 
-  const convertTo24Hour = (time12h: string): string => {
+  const convertTo24Hour = (timeStr: string): string => {
     try {
-      console.log('🕐 Converting time from 12h to 24h:', time12h);
-      
+      console.log('🕐 Converting time to 24h format:', timeStr);
+
       // Handle potential formatting issues
-      const trimmedTime = time12h.trim();
-      const parts = trimmedTime.split(' ');
-      
-      if (parts.length !== 2) {
-        console.error('❌ Invalid time format:', time12h);
-        throw new Error(`Invalid time format: ${time12h}`);
+      const trimmedTime = timeStr.trim();
+
+      // Check if already in 24-hour format (HH:MM without AM/PM)
+      if (!trimmedTime.includes(' ')) {
+        // Already in 24-hour format, just validate it
+        const timeParts = trimmedTime.split(':');
+        if (timeParts.length === 2) {
+          const [hours, minutes] = timeParts;
+          const hour24 = parseInt(hours, 10);
+          const min = parseInt(minutes, 10);
+
+          if (!isNaN(hour24) && !isNaN(min) && hour24 >= 0 && hour24 <= 23 && min >= 0 && min <= 59) {
+            // Valid 24-hour format, ensure proper padding
+            const result = `${hour24.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+            console.log('✅ Time already in 24h format:', timeStr, '→', result);
+            return result;
+          }
+        }
+        console.error('❌ Invalid 24-hour time format:', timeStr);
+        throw new Error(`Invalid time format: ${timeStr}`);
       }
-      
+
+      // Handle 12-hour format with AM/PM
+      const parts = trimmedTime.split(' ');
+
+      if (parts.length !== 2) {
+        console.error('❌ Invalid time format:', timeStr);
+        throw new Error(`Invalid time format: ${timeStr}`);
+      }
+
       const [time, modifier] = parts;
       const timeParts = time.split(':');
-      
+
       if (timeParts.length !== 2) {
         console.error('❌ Invalid time parts:', time);
         throw new Error(`Invalid time parts: ${time}`);
       }
-      
+
       let [hours, minutes] = timeParts;
       let hour24 = parseInt(hours, 10);
-      
+
       if (isNaN(hour24) || hour24 < 1 || hour24 > 12) {
         console.error('❌ Invalid hour value:', hours);
         throw new Error(`Invalid hour value: ${hours}`);
       }
-      
+
       if (modifier.toUpperCase() === 'AM') {
         if (hour24 === 12) {
           hour24 = 0; // 12:00 AM = 00:00
@@ -92,13 +114,13 @@ const Payment = () => {
         console.error('❌ Invalid modifier:', modifier);
         throw new Error(`Invalid time modifier: ${modifier}`);
       }
-      
+
       // Ensure two-digit format for both hours and minutes
       const formattedHour = hour24.toString().padStart(2, '0');
       const formattedMinutes = minutes.padStart(2, '0');
       const result = `${formattedHour}:${formattedMinutes}`;
-      
-      console.log('✅ Time conversion successful:', time12h, '→', result);
+
+      console.log('✅ Time conversion successful:', timeStr, '→', result);
       return result;
     } catch (error) {
       console.error('❌ Time conversion failed:', error);
@@ -115,7 +137,6 @@ const Payment = () => {
 
       const subscriptionData: SubscriptionPurchaseData = {
         subscriptionId: orderData.subscriptionId,
-        promoCode: orderData.promoCode,
         deliveryAddress: {
           street: orderData.deliveryAddress.street || orderData.deliveryAddress.label || "",
           city: orderData.deliveryAddress.city || "",
@@ -168,8 +189,10 @@ const Payment = () => {
           return new Date(dateStr).toISOString();
         })(),
       };
+      if(orderData.referralCode) {
+        subscriptionData.referralCode = orderData.referralCode
 
-      console.log('📦 Complete subscription data being sent:', JSON.stringify(subscriptionData, null, 2));
+      }
       
       const result = await initiateSubscriptionPurchase(subscriptionData);
 
@@ -216,9 +239,17 @@ const Payment = () => {
   const handlePaymentSuccess = async (paymentData: any) => {
     try {
       if (!orderData || !razorpayOptions) return;
-      
+
       await verifySubscriptionPayment(paymentData, razorpayOptions.userSubscriptionId);
-      
+
+      // Save complete order data with payment info for order-confirmed page
+      await orderStore.saveOrderData({
+        ...orderData,
+        orderId: razorpayOptions.orderId,
+        userSubscriptionId: razorpayOptions.userSubscriptionId,
+        paymentAmount: finalTotal
+      });
+
       // Navigate to order confirmation
       router.push({
         pathname: '/(home)/order-confirmed',
@@ -241,9 +272,11 @@ const Payment = () => {
     );
   }
 
-  const totalPrice = orderData.selectedSubscription.discountedPrice;
-  const tax = calculateTax(totalPrice);
-  const finalTotal = totalPrice + tax;
+  const basePrice = orderData.selectedSubscription.discountedPrice;
+  const discount = orderData.discount || 0;
+  const priceAfterDiscount = basePrice - discount;
+  const tax = calculateTax(priceAfterDiscount);
+  const finalTotal = priceAfterDiscount + tax;
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-neutral-900">
@@ -293,22 +326,27 @@ const Payment = () => {
                 <Text
                   className="text-base font-medium text-black dark:text-white"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
-                  {formatCurrency(totalPrice)}
+                  {formatCurrency(basePrice)}
                 </Text>
               </View>
 
-              <View className="flex-row justify-between">
-                <Text
-                  className="text-base text-zinc-600 dark:text-zinc-400"
-                  style={{ fontFamily: 'Poppins_400Regular' }}>
-                  Tax (18% GST)
-                </Text>
-                <Text
-                  className="text-base font-medium text-black dark:text-white"
-                  style={{ fontFamily: 'Poppins_500Medium' }}>
-                  {formatCurrency(tax)}
-                </Text>
-              </View>
+              {discount > 0 && (
+                <>
+                  <View className="flex-row justify-between">
+                    <Text
+                      className="text-base text-green-600 dark:text-green-400"
+                      style={{ fontFamily: 'Poppins_400Regular' }}>
+                      Discount {orderData.promoCode && `(${orderData.promoCode})`}
+                    </Text>
+                    <Text
+                      className="text-base font-medium text-green-600 dark:text-green-400"
+                      style={{ fontFamily: 'Poppins_500Medium' }}>
+                      - {formatCurrency(discount)}
+                    </Text>
+                  </View>
+                  <View className="h-px bg-zinc-200 dark:bg-zinc-700" />
+                </>
+              )}
 
               <View className="h-px bg-zinc-200 dark:bg-zinc-700" />
 
@@ -321,7 +359,7 @@ const Payment = () => {
                 <Text
                   className="text-lg font-semibold text-black dark:text-white"
                   style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                  {formatCurrency(finalTotal)}
+                  {formatCurrency(basePrice)}
                 </Text>
               </View>
             </View>
@@ -419,7 +457,7 @@ const Payment = () => {
             <Text
               className="text-center text-lg font-semibold text-white"
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
-              Continue Payment - {formatCurrency(finalTotal)}
+              Continue Payment - {formatCurrency(basePrice)}
             </Text>
           )}
         </TouchableOpacity>

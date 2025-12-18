@@ -135,8 +135,7 @@ const ContactUs = () => {
             <Text
               className="text-base leading-6 text-gray-600 dark:text-gray-300"
               style={{ fontFamily: 'Poppins_400Regular' }}>
-              House# 72, Road# 21, Banani, Dhaka-1213 (near Banani Bidyaniketon School & College,
-              beside University of India)
+              Office address: Silicon city, infront of DPS rau, indore 452012
             </Text>
           </View>
 
@@ -145,12 +144,12 @@ const ContactUs = () => {
             <Text
               className="mb-2 text-base font-medium text-gray-700 dark:text-gray-300"
               style={{ fontFamily: 'Poppins_500Medium' }}>
-              Call : 7668009623 (24/7)
+              Call : +91 9171009127
             </Text>
             <Text
               className="text-base font-medium text-gray-700 dark:text-gray-300"
               style={{ fontFamily: 'Poppins_500Medium' }}>
-              Email : mukulparmar40@gmail.com
+              Email : tiffix56@gmail.com
             </Text>
           </View>
 

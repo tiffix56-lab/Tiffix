@@ -10,18 +10,24 @@ import { Address } from '@/types/address.types';
 
 const Header = () => {
   const { colorScheme } = useColorScheme();
-  const { 
-    selectedAddress, 
-    savedAddresses, 
-    defaultAddress, 
-    setSelectedAddress, 
-    loading, 
+  const {
+    selectedAddress,
+    savedAddresses,
+    defaultAddress,
+    setSelectedAddress,
+    loading,
     setAsDefault,
     getFormattedAddress,
-    hasAddresses
+    hasAddresses,
+    refreshAddresses
   } = useDefaultAddress();
   const [showAddressModal, setShowAddressModal] = useState(false);
 
+  // Refresh addresses when component mounts to ensure fresh data
+  useEffect(() => {
+    console.log('🏠 [HEADER] Component mounted, refreshing addresses...');
+    refreshAddresses();
+  }, []);
 
   const currentLocation = loading && !selectedAddress
     ? 'Loading...'

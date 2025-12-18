@@ -18,7 +18,7 @@ const Categories = () => {
         </Text>
       </View>
 
-      <View className="flex-row space-x-4 px-6">
+      <View className="flex flex-row gap-2  px-6">
         {/* Vendor Food Card */}
         <TouchableOpacity className="flex-1" onPress={() => router.push('/vendor-food')}>
           <View className="relative h-64 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -53,7 +53,7 @@ const Categories = () => {
                     <Text
                       className="text-base font-semibold text-black dark:text-white"
                       style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                      Vendor Food
+                      Tiffix signature meals
                     </Text>
                   </View>
                   <View className="rounded-full bg-black p-2 dark:bg-white">
@@ -70,24 +70,23 @@ const Categories = () => {
         </TouchableOpacity>
 
         {/* Home Chef's Card */}
-        <TouchableOpacity className="flex-1" onPress={() => router.push('/home-chef')}>
+        <TouchableOpacity className="flex-1" onPress={() => {}}>
           <View className="relative h-64 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
             <Image
               source={require('@/assets/category-2.png')}
               style={{ height: '100%', width: '100%', resizeMode: 'cover' }}
             />
-            <View className="absolute inset-0 rounded-xl bg-black/20" />
+            <View className="absolute inset-0 rounded-xl bg-black/60 top-0 left-0" />
 
-            {/* Discount Badge - Top Right */}
-            {/* <View className="absolute right-3 top-3">
-              <View className="rounded-lg bg-orange-500 px-2 py-1">
+            <View className="absolute inset-0 flex items-center justify-center">
+              <View className="rounded-lg bg-white px-2 py-1">
                 <Text
-                  className="text-xs font-semibold text-white"
+                  className="text-lg font-semibold text-black"
                   style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                  15% off
+                  Coming Soon
                 </Text>
               </View>
-            </View> */}
+            </View>
 
             {/* Gradient Background Section */}
             <View className="absolute bottom-0 left-0 right-0">
@@ -103,7 +102,7 @@ const Categories = () => {
                     <Text
                       className="text-base font-semibold text-black dark:text-white"
                       style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                      Home Chef's
+                      Coming Soon
                     </Text>
                   </View>
                   <View className="rounded-full bg-black p-2 dark:bg-white">

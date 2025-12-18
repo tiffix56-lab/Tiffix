@@ -13,6 +13,9 @@ export const API_ENDPOINTS = {
     LOCATION: '/auth/location',
     GOOGLE: '/auth/google',
     FACEBOOK: '/auth/facebook',
+    GOOGLE_CALLBACK: '/auth/google/callback',
+    FACEBOOK_CALLBACK: '/auth/facebook/callback',
+    GOOGLE_MOBILE: '/auth/google/mobile',
     INIT_PROFILE_FILL: '/auth/init-profile-fill',
   },
   USER: {

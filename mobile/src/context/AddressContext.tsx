@@ -53,43 +53,43 @@ export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) =>
         });
         
         setSavedAddresses(addresses);
-        
+
         // Set default address
         const foundDefaultAddress = addresses.find((addr: Address) => addr.isDefault);
         console.log('🎯 [ADDRESS_CONTEXT] Found default address:', foundDefaultAddress?.label || 'none');
         setDefaultAddress(foundDefaultAddress || null);
-        
-        // Auto-select default address logic
-        if (!selectedAddress) {
-          // No address currently selected, auto-select default or first
+
+        // Check if currently selected address belongs to this user's addresses
+        let shouldUpdateSelection = true;
+        if (selectedAddress) {
+          const selectedStillExists = addresses.find(addr =>
+            addr.label === selectedAddress.label &&
+            addr.street === selectedAddress.street &&
+            addr.city === selectedAddress.city
+          );
+
+          if (selectedStillExists) {
+            console.log('✅ [ADDRESS_CONTEXT] Currently selected address still valid:', selectedAddress.label);
+            shouldUpdateSelection = false;
+          } else {
+            console.log('⚠️ [ADDRESS_CONTEXT] Currently selected address no longer valid, will auto-select');
+          }
+        }
+
+        // Auto-select address if needed
+        if (shouldUpdateSelection) {
           if (foundDefaultAddress) {
+            console.log('🎯 [ADDRESS_CONTEXT] Auto-selecting default address:', foundDefaultAddress.label);
             setSelectedAddress(foundDefaultAddress);
             await persistSelectedAddress(foundDefaultAddress);
           } else if (addresses.length > 0) {
-            // If no default, use first address
+            console.log('🎯 [ADDRESS_CONTEXT] Auto-selecting first address:', addresses[0].label);
             setSelectedAddress(addresses[0]);
             await persistSelectedAddress(addresses[0]);
-          }
-        } else {
-          // Check if currently selected address still exists in saved addresses
-          const selectedStillExists = addresses.find(addr => 
-            addr.label === selectedAddress.label && 
-            addr.street === selectedAddress.street
-          );
-          
-          if (!selectedStillExists) {
-            // Selected address no longer exists, auto-select default or first
-            if (foundDefaultAddress) {
-              setSelectedAddress(foundDefaultAddress);
-              await persistSelectedAddress(foundDefaultAddress);
-            } else if (addresses.length > 0) {
-              setSelectedAddress(addresses[0]);
-              await persistSelectedAddress(addresses[0]);
-            } else {
-              // No addresses available
-              setSelectedAddress(null);
-              await persistSelectedAddress(null);
-            }
+          } else {
+            console.log('⚠️ [ADDRESS_CONTEXT] No addresses available, clearing selection');
+            setSelectedAddress(null);
+            await persistSelectedAddress(null);
           }
         }
       } else {
@@ -168,30 +168,35 @@ export const AddressProvider: React.FC<AddressProviderProps> = ({ children }) =>
     }
   };
 
+  // Initialize and refresh addresses on mount and when authentication changes
   useEffect(() => {
     const initializeAddresses = async () => {
-      // Load persisted address first (synchronous from local storage)
-      await loadPersistedAddress();
-      // Then fetch fresh addresses from API
-      await refreshAddresses();
+      if (isAuthenticated) {
+        console.log('🔐 [ADDRESS_CONTEXT] User authenticated, loading addresses...');
+        // First, fetch fresh addresses from API
+        // This will auto-select the appropriate address based on user's current addresses
+        await refreshAddresses();
+
+        // Note: We don't load persisted address anymore because:
+        // 1. It could belong to a different user
+        // 2. refreshAddresses() already handles auto-selection of default/first address
+        // 3. The selected address gets persisted after refreshAddresses completes
+      } else {
+        console.log('🔓 [ADDRESS_CONTEXT] User not authenticated, clearing addresses...');
+        // Clear addresses when user logs out or is not authenticated
+        setSavedAddresses([]);
+        setDefaultAddress(null);
+        setSelectedAddress(null);
+        setLoading(false);
+
+        // Clear persisted address from storage
+        await storageService.removeItem('selectedAddress').catch(error => {
+          console.error('Error clearing persisted address:', error);
+        });
+      }
     };
 
     initializeAddresses();
-  }, []);
-
-  // Refresh addresses when user logs in
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('🔐 [ADDRESS_CONTEXT] User authenticated, refreshing addresses...');
-      refreshAddresses();
-    } else {
-      console.log('🔓 [ADDRESS_CONTEXT] User logged out, clearing addresses...');
-      // Clear addresses when user logs out
-      setSavedAddresses([]);
-      setDefaultAddress(null);
-      setSelectedAddress(null);
-      setLoading(false);
-    }
   }, [isAuthenticated]);
 
   const value: AddressContextType = {

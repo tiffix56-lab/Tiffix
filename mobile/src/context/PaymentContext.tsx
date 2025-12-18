@@ -12,6 +12,8 @@ export interface RazorpayOptions {
   amount: number;
   currency: string;
   razorpayKeyId: string;
+  name: string;
+  image: string;
   orderId: string;
   userSubscriptionId: string;
 }
@@ -27,7 +29,7 @@ export interface PaymentResponse {
 
 export interface SubscriptionPurchaseData {
   subscriptionId: string;
-  promoCode?: string;
+  referralCode?: string;
   deliveryAddress: {
     street: string;
     city: string;
@@ -127,15 +129,19 @@ export const PaymentProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       setIsLoading(true);
       setPaymentStatus('PENDING');
-
+      console.log("Data init", data);
+      
       const response = await api.post('/subscription-purchase/initiate', data);
 
       if (response.data?.success && response.data?.data) {
         const responseData = response.data.data;
+        console.log("Heree");
         
         const options: RazorpayOptions = {
           razorpayOrderId: responseData.razorpayOrderId,
           amount: responseData.amount,
+          name: 'Tiffix',
+          image: '/assets/logo-main.png',
           currency: responseData.currency || 'INR',
           razorpayKeyId: responseData.razorpayKeyId,
           orderId: responseData.orderId,
@@ -229,7 +235,8 @@ export const PaymentProvider: React.FC<{ children: ReactNode }> = ({ children })
             key: '${options.razorpayKeyId}',
             amount: ${options.amount},
             currency: '${options.currency}',
-            name: 'Tiffix',
+            name: '${options.name}',
+            image: 'https://app.tiffix.com/logo-main.png',
             description: 'Subscription Purchase',
             order_id: '${options.razorpayOrderId}',
             theme: {
