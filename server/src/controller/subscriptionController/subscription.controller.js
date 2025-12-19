@@ -62,6 +62,8 @@ export default {
                     }
                 }
             ]);
+            console.log(reviewStats);
+            
 
             const subscriptionsWithReviews = subscriptions.map(sub => {
                 const stats = reviewStats.find(r => r.subscriptionId.toString() === sub._id.toString());
