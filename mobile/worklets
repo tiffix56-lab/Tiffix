@@ -1,0 +1,2 @@
+// Fake Worklets plugin for Expo Router 5.x
+module.exports = require("react-native-reanimated/plugin");

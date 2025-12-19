@@ -28,6 +28,15 @@ export default {
           iosUrlScheme: "com.googleusercontent.apps.736730550506-ir73hfdskggdq4telt6912aehcjjv9j3",
         },
       ],
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            useModularHeaders: true,
+            useFrameworks: "static",
+          }
+        }
+      ]
     ],
     orientation: "portrait",
     icon: "./src/assets/splash.png",
