@@ -1,15 +1,17 @@
 {
   "name": "tiffix",
   "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
   "scripts": {
     "android": "expo run:android",
     "ios": "expo run:ios",
     "start": "expo start",
     "prebuild": "expo prebuild",
-    "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
-    "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
     "web": "expo start --web",
-    "clear-cache": "expo start --clear"
+    "clear-cache": "expo start --clear",
+    "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
+    "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write"
   },
   "dependencies": {
     "@expo-google-fonts/dancing-script": "^0.4.1",
@@ -58,7 +60,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "@expo/config-plugins": "^54.0.4",
+    "@expo/metro-config": "0.20.18",
     "@types/react": "~19.0.10",
     "babel-plugin-inline-import": "^3.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
@@ -70,6 +72,12 @@
     "tailwindcss": "^3.4.0",
     "typescript": "~5.8.3"
   },
-  "main": "expo-router/entry",
-  "private": true
+  "pnpm": {
+    "overrides": {
+      "metro": "0.82.5",
+      "metro-config": "0.82.5",
+      "metro-resolver": "0.82.5",
+      "metro-runtime": "0.82.5"
+    }
+  }
 }

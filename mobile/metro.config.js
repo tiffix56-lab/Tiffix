@@ -1,18 +1,9 @@
-// metro.config.js
+
 const { getDefaultConfig } = require('@expo/metro-config');
-const { withNativeWind } = require('nativewind/metro');
+const { withNativeWind } = require('nativewind/metro-plugin');
 
-module.exports = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
 
-// module.exports = withNativeWind(
-//   {
-//     ...defaultConfig,
-//     transformer: {
-//       ...defaultConfig.transformer,
-//     },
-//     resolver: {
-//       ...defaultConfig.resolver,
-//     },
-//   },
-//   { input: './src/global.css' }
-// );
+module.exports = withNativeWind(config, {
+  input: './src/global.css',
+});

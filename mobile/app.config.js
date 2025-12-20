@@ -62,7 +62,6 @@ export default {
             CFBundleURLSchemes: ["tiffix"],
           },
         ],
-        NODE_BINARY: "/usr/local/bin/node",
         "ITSAppUsesNonExemptEncryption": false,
         NSCameraUsageDescription:
           "Snek needs access to your camera for capturing photos and enabling camera features.",
