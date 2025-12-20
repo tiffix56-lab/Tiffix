@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Star, Filter, Search, MessageSquare, ThumbsUp, ThumbsDown,
-  Calendar, User, TrendingUp, Eye, RefreshCw, Loader2,
-  ChevronDown, Award, Target
+  Star, Search, MessageSquare, ThumbsUp, ThumbsDown,
+  Calendar, User, RefreshCw, Loader2,
+  Award, Target
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
-import { getVendorReviewsApi, getVendorReviewsSummaryApi } from '../../service/api.service';
+import { getVendorReviewsApi } from '../../service/api.service';
 import toast from 'react-hot-toast';
 
 const VendorReviews = () => {
@@ -19,10 +18,18 @@ const VendorReviews = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRating, setSelectedRating] = useState('all');
   const [selectedSort, setSelectedSort] = useState('newest');
-  const [reviewsSummary, setReviewsSummary] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalReviews, setTotalReviews] = useState(0);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    limit: 12,
+    total: 0,
+    pages: 1
+  });
+  const [stats, setStats] = useState({
+    averageRating: 0,
+    totalReviews: 0,
+    ratingDistribution: [0, 0, 0, 0, 0] // [1, 2, 3, 4, 5] stars count or similar, adjusted below
+  });
 
   const fetchReviews = async (isRefresh = false) => {
     try {
@@ -65,11 +72,13 @@ const VendorReviews = () => {
 
       const response = await getVendorReviewsApi(params);
       
-      if (response.success) {
+      if (response.success && response.data) {
         setReviews(response.data.reviews || []);
-        setTotalPages(response.data.totalPages || 1);
-        setTotalReviews(response.data.totalReviews || 0);
-        setCurrentPage(response.data.currentPage || 1);
+        setPagination(response.data.pagination || { current: 1, limit: 12, total: 0, pages: 1 });
+        
+        if (response.data.stats) {
+             setStats(response.data.stats);
+        }
       } else {
         setError('Failed to fetch reviews');
       }
@@ -89,31 +98,19 @@ const VendorReviews = () => {
     }
   };
 
-  const fetchReviewsSummary = async () => {
-    try {
-      const response = await getVendorReviewsSummaryApi();
-      if (response.success) {
-        setReviewsSummary(response.data || {});
-      }
-    } catch (err) {
-      console.error('Error fetching reviews summary:', err);
-    }
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedRating, selectedSort]);
 
   useEffect(() => {
     fetchReviews();
   }, [currentPage, selectedRating, selectedSort]);
 
-  useEffect(() => {
-    fetchReviewsSummary();
-  }, []);
-
   // Filter reviews by search term locally
   const filteredReviews = reviews.filter(review =>
     searchTerm === '' || 
     review.reviewText?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    review.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    review.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase())
+    review.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const renderStars = (rating) => {
@@ -158,25 +155,36 @@ const VendorReviews = () => {
     });
   };
 
-  // Calculate stats from reviews summary or current reviews
-  const stats = {
-    averageRating: reviewsSummary?.averageRating || 0,
-    totalReviews: reviewsSummary?.totalReviews || totalReviews,
-    positiveReviews: reviewsSummary?.ratingsBreakdown?.['5'] + reviewsSummary?.ratingsBreakdown?.['4'] || reviews.filter(r => r.rating >= 4).length,
-    negativeReviews: reviewsSummary?.ratingsBreakdown?.['1'] + reviewsSummary?.ratingsBreakdown?.['2'] || reviews.filter(r => r.rating <= 2).length,
-    ratingDistribution: reviewsSummary?.ratingsBreakdown ? 
-      [5, 4, 3, 2, 1].map(rating => ({
-        rating,
-        count: reviewsSummary.ratingsBreakdown[rating.toString()] || 0,
-        percentage: reviewsSummary.totalReviews > 0 ? 
-          ((reviewsSummary.ratingsBreakdown[rating.toString()] || 0) / reviewsSummary.totalReviews * 100).toFixed(1) : 0
-      })) :
-      [5, 4, 3, 2, 1].map(rating => ({
-        rating,
-        count: reviews.filter(r => r.rating === rating).length,
-        percentage: reviews.length > 0 ? (reviews.filter(r => r.rating === rating).length / reviews.length * 100).toFixed(1) : 0
-      }))
+  // Calculate detailed stats for UI
+  const displayStats = {
+    averageRating: stats.averageRating || 0,
+    totalReviews: stats.totalReviews || 0,
+    positiveReviews: 0, // Calculated below
+    negativeReviews: 0, // Calculated below
+    ratingDistribution: []
   };
+
+  // Process rating distribution
+  // Assuming stats.ratingDistribution is an array of ratings [5, 5, 4, ...] or counts logic
+  // Based on the user provided response: "ratingDistribution": [4, 5] (array of actual ratings)
+  // Let's count them
+  const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  
+  if (stats.ratingDistribution && Array.isArray(stats.ratingDistribution)) {
+    stats.ratingDistribution.forEach(r => {
+      if (ratingCounts[r] !== undefined) ratingCounts[r]++;
+    });
+  }
+
+  displayStats.positiveReviews = ratingCounts[4] + ratingCounts[5];
+  displayStats.negativeReviews = ratingCounts[1] + ratingCounts[2];
+
+  displayStats.ratingDistribution = [5, 4, 3, 2, 1].map(rating => ({
+    rating,
+    count: ratingCounts[rating],
+    percentage: stats.totalReviews > 0 ? ((ratingCounts[rating] / stats.totalReviews) * 100).toFixed(1) : 0
+  }));
+
 
   if (loading && !refreshing) {
     return (
@@ -239,8 +247,8 @@ const VendorReviews = () => {
             <div>
               <p className="text-gray-400 text-sm">Average Rating</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-white">{stats.averageRating.toFixed(1)}</p>
-                <div className="flex">{renderStars(Math.round(stats.averageRating))}</div>
+                <p className="text-2xl font-bold text-white">{displayStats.averageRating.toFixed(1)}</p>
+                <div className="flex">{renderStars(Math.round(displayStats.averageRating))}</div>
               </div>
             </div>
           </div>
@@ -253,7 +261,7 @@ const VendorReviews = () => {
             </div>
             <div>
               <p className="text-gray-400 text-sm">Total Reviews</p>
-              <p className="text-2xl font-bold text-white">{stats.totalReviews}</p>
+              <p className="text-2xl font-bold text-white">{displayStats.totalReviews}</p>
             </div>
           </div>
         </Card>
@@ -266,10 +274,10 @@ const VendorReviews = () => {
             <div>
               <p className="text-gray-400 text-sm">Positive Reviews</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-white">{stats.positiveReviews}</p>
-                {stats.totalReviews > 0 && (
+                <p className="text-2xl font-bold text-white">{displayStats.positiveReviews}</p>
+                {displayStats.totalReviews > 0 && (
                   <p className="text-sm text-green-400">
-                    ({((stats.positiveReviews / stats.totalReviews) * 100).toFixed(0)}%)
+                    ({((displayStats.positiveReviews / displayStats.totalReviews) * 100).toFixed(0)}%)
                   </p>
                 )}
               </div>
@@ -285,10 +293,10 @@ const VendorReviews = () => {
             <div>
               <p className="text-gray-400 text-sm">Needs Attention</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-white">{stats.negativeReviews}</p>
-                {stats.totalReviews > 0 && (
+                <p className="text-2xl font-bold text-white">{displayStats.negativeReviews}</p>
+                {displayStats.totalReviews > 0 && (
                   <p className="text-sm text-red-400">
-                    ({((stats.negativeReviews / stats.totalReviews) * 100).toFixed(0)}%)
+                    ({((displayStats.negativeReviews / displayStats.totalReviews) * 100).toFixed(0)}%)
                   </p>
                 )}
               </div>
@@ -305,7 +313,7 @@ const VendorReviews = () => {
             Rating Distribution
           </h3>
           <div className="space-y-3">
-            {stats.ratingDistribution.map(({ rating, count, percentage }) => (
+            {displayStats.ratingDistribution.map(({ rating, count, percentage }) => (
               <div key={rating} className="flex items-center gap-3">
                 <div className="flex items-center gap-1 w-16">
                   <span className="text-sm text-gray-300">{rating}</span>
@@ -376,7 +384,7 @@ const VendorReviews = () => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-white">
-            Reviews ({filteredReviews.length} of {totalReviews})
+            Reviews ({filteredReviews.length} of {pagination.total})
           </h3>
           {refreshing && (
             <div className="flex items-center gap-2 text-gray-400">
@@ -409,16 +417,17 @@ const VendorReviews = () => {
                       </div>
                       <div>
                         <p className="font-semibold text-white">
-                          {review.user?.name || review.customerName || 'Anonymous Customer'}
+                          {review.userId?.name || 'Anonymous Customer'}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {review.user?.email || review.customerEmail || 'No email'}
+                          {/* Email is not in standard user object based on sample response, fallback handled gracefully */}
+                          Verified Customer
                         </p>
                       </div>
                     </div>
-                    <Badge color={getReviewTypeColor(review.reviewType)} className="text-xs">
+                    {/* <Badge color={getReviewTypeColor(review.reviewType)} className="text-xs">
                       {review.reviewType || 'Review'}
-                    </Badge>
+                    </Badge> */}
                   </div>
 
                   {/* Rating */}
@@ -462,11 +471,11 @@ const VendorReviews = () => {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {pagination.pages > 1 && (
         <Card className="p-4">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-400">
-              Page {currentPage} of {totalPages} • {totalReviews} total reviews
+              Page {pagination.current} of {pagination.pages} • {pagination.total} total reviews
             </div>
             <div className="flex gap-2">
               <Button
@@ -480,14 +489,14 @@ const VendorReviews = () => {
               
               {/* Page numbers */}
               <div className="hidden sm:flex gap-1">
-                {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                {[...Array(Math.min(5, pagination.pages))].map((_, i) => {
                   let pageNum;
-                  if (totalPages <= 5) {
+                  if (pagination.pages <= 5) {
                     pageNum = i + 1;
                   } else if (currentPage <= 3) {
                     pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
+                  } else if (currentPage >= pagination.pages - 2) {
+                    pageNum = pagination.pages - 4 + i;
                   } else {
                     pageNum = currentPage - 2 + i;
                   }
@@ -510,8 +519,8 @@ const VendorReviews = () => {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages || loading}
+                onClick={() => setCurrentPage(prev => Math.min(pagination.pages, prev + 1))}
+                disabled={currentPage === pagination.pages || loading}
               >
                 Next
               </Button>

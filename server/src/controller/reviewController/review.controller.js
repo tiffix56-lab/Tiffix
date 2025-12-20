@@ -295,9 +295,11 @@ export default {
                 endDate
             } = req.query;
 
-            const query = { status };
+            const query = { 
+                status,
+                reviewType: EReviewType.ORDER
+            };
 
-            if (reviewType) query.reviewType = reviewType;
             if (minRating) query.rating = { $gte: parseInt(minRating) };
             if (maxRating) query.rating = { ...query.rating, $lte: parseInt(maxRating) };
 

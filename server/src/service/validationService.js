@@ -725,7 +725,8 @@ export const ValidateAdminSubscriptionQuery = Joi.object({
     category: Joi.string().valid('home_chef', 'food_vendor').optional(),
     priceMin: Joi.number().min(0).optional(),
     priceMax: Joi.number().min(0).optional(),
-    subscriptionId: Joi.string().hex().length(24).optional()
+    subscriptionId: Joi.string().hex().length(24).optional(),
+    endingSoon: Joi.string().valid('true', 'false').optional()
 });
 
 export const ValidateAdminStatsQuery = Joi.object({

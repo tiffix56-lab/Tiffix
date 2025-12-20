@@ -30,7 +30,8 @@ function Purchases() {
     priceMax: '',
     category: '',
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
+    endingSoon: false
   })
   const [pagination, setPagination] = useState({
   currentPage: 1,
@@ -45,7 +46,7 @@ function Purchases() {
     setLoading(true)
     try {
       const cleanFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== '')
+        Object.entries(filters).filter(([_, value]) => value !== '' && value !== false)
       )
       const data = await getSubscriptionPurchasesApi(cleanFilters)
       
@@ -103,20 +104,35 @@ function Purchases() {
           <h1 className="text-2xl font-bold text-white">Subscription Purchases</h1>
           <p className="text-gray-400 mt-1">Manage and monitor subscription purchases</p>
         </div>
-        <button
-          onClick={() => { fetchPurchases(); fetchStats(); }}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { fetchPurchases(); fetchStats(); }}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
       </div>
       
       {/* Filters */}
       <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-5 h-5 text-gray-400" />
-          <h2 className="text-lg font-semibold text-white">Filters</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-gray-400" />
+            <h2 className="text-lg font-semibold text-white">Filters</h2>
+          </div>
+          <button
+            onClick={() => handleFilterChange('endingSoon', !filters.endingSoon)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+              filters.endingSoon 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            {filters.endingSoon ? 'Show All' : 'Ending Soon'}
+          </button>
         </div>
         <div className="flex flex-wrap gap-4 mb-4">
           <div className="relative">
@@ -175,7 +191,7 @@ function Purchases() {
           </div>
           
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+            
             <input
               type="date"
               placeholder="To Date"
@@ -233,7 +249,7 @@ function Purchases() {
               </div>
               <div className="text-center p-6 bg-gray-700 rounded-xl border border-gray-600 hover:bg-gray-600 transition-colors">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg mx-auto mb-4">
-                  <DollarSign className="w-6 h-6 text-white" />
+                  
                 </div>
                 <div className="text-2xl font-bold text-white mb-1">₹{purchases?.reduce((sum, p) => sum + (p.finalPrice || 0), 0) || 0}</div>
                 <div className="text-sm text-gray-400">Total Revenue</div>
@@ -269,6 +285,7 @@ function Purchases() {
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Price</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Duration</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Start Date</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">End Date</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -307,7 +324,7 @@ function Purchases() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-1">
-                            <DollarSign className="w-4 h-4 text-gray-400" />
+                            
                             <span className="text-sm font-medium text-white">₹{purchase.finalPrice}</span>
                           </div>
                         </td>
@@ -319,9 +336,17 @@ function Purchases() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
+                            
                             <span className="text-sm text-gray-300">
-                              {new Date(purchase.startDate).toLocaleDateString()}
+                              {new Date(purchase.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            
+                            <span className="text-sm text-gray-300">
+                              {new Date(purchase.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
                           </div>
                         </td>

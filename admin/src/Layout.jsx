@@ -26,7 +26,7 @@ function AdminLayout() {
     { name: 'Vendor Management', href: '/vendor-management', icon: Building2 },
     // { name: "Promo Codes", href: '/promo-codes', icon: Tag },
     { name: 'Referrals', href: '/referrals', icon: Gift },
-    // { name: 'Reviews', href: '/reviews', icon: MessageSquare },
+    { name: 'Reviews', href: '/reviews', icon: MessageSquare },
   ];
 
   const isActive = (path) => {

@@ -19,7 +19,7 @@ export default {
                 return httpError(next, error, req, 422);
             }
 
-            const {
+            let {
                 page = 1,
                 limit = 20,
                 search,
@@ -32,11 +32,22 @@ export default {
                 category,
                 priceMin,
                 priceMax,
-                subscriptionId
+                subscriptionId,
+                endingSoon
             } = req.query;
 
             const skip = (page - 1) * limit;
             const query = {};
+            
+            if (endingSoon === 'true') {
+                const now = TimezoneUtil.now();
+                query.status = 'active';
+                query.endDate = { $gte: now };
+                // Override sort to show closest ending first
+                req.query.sortBy = 'endDate';
+                sortOrder = 'asc'; 
+            }
+
             if (search) {
                 query.$or = [
                     { '_id': { $regex: new RegExp(search, 'i') } },

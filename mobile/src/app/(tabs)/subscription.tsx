@@ -85,7 +85,7 @@ interface OrderCardProps {
   isUpcoming?: boolean;
   onSkip: (orderId: string) => void;
   onCancel: (orderId: string) => void;
-  onReview: (orderId: string) => void;
+  onReview: (orderId: string, subscriptionId: string, vendorId: string) => void;
 }
 
 const Subscription = () => {
@@ -266,9 +266,9 @@ const Subscription = () => {
     );
   };
 
-  const handleReviewOrder = async (orderId: string) => {
+  const handleReviewOrder = async (orderId: string, subscriptionId: string, vendorId: string) => {
     // Navigate to review screen or show review modal
-    router.push(`/(profile)/review?orderId=${orderId}`);
+    router.push(`/(profile)/review?orderId=${orderId}&subscriptionId=${subscriptionId}&vendorId=${vendorId}`);
   };
 
   const handleCancelSubscription = (subscriptionId: string) => {
@@ -844,7 +844,10 @@ const Subscription = () => {
           <View className="border-t border-gray-100 dark:border-neutral-700">
             <TouchableOpacity
               className="w-full items-center justify-center py-4"
-              onPress={() => onReview(order._id)}
+              onPress={() => {
+                if(order.userSubscriptionId && order.userSubscriptionId.subscriptionId && order.userSubscriptionId.vendorDetails && order.userSubscriptionId.vendorDetails.currentVendor)
+                onReview(order._id, order.userSubscriptionId?.subscriptionId?._id, order.userSubscriptionId.vendorDetails.currentVendor.vendorId);
+              }}
               activeOpacity={0.7}>
               <View className="flex-row items-center">
                 <Feather name="star" size={16} color="#F59E0B" />
