@@ -110,12 +110,13 @@ export default {
             } = req.query;
 
             const query = { isActive };
-
+            console.log(startDate);
+            
             if (startDate && endDate) {
                 // Date range query
                 query.mealDate = {
-                    $gte: TimezoneUtil.startOfDay(new Date(startDate)),
-                    $lte: TimezoneUtil.endOfDay(new Date(endDate))
+                    $gte: TimezoneUtil.startOfDay(startDate),
+                    $lte: TimezoneUtil.endOfDay(endDate)
                 };
             } else if (startDate) {
                 query.mealDate = { $gte: TimezoneUtil.startOfDay(new Date(startDate)) };

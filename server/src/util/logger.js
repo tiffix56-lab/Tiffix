@@ -44,7 +44,7 @@ const consoleLogFormat = format.printf((info) => {
         colors: true
     })
 
-    return `${customLevel} [${customTimestamp}] ${customMessage}\n${magenta('META')} ${customMeta} \n`
+    return `${customLevel} [${customTimestamp}] ${customMessage}\n${magenta('META')}  \n`
 })
 
 const transformMeta = format((info) => {
