@@ -28,7 +28,6 @@ export default {
             }
 
             const {
-                reviewType,
                 subscriptionId,
                 vendorId,
                 orderId,
@@ -36,71 +35,20 @@ export default {
                 reviewText
             } = value;
 
-            // Validate user can review this item
-            let canReview = false;
-            let targetItem = null;
-
-            if (reviewType === EReviewType.SUBSCRIPTION) {
-                const userSubscription = await UserSubscription.findOne({
-                    userId,
-                    subscriptionId,
-                    status: 'active'
-                });
-
-                if (!userSubscription) {
-                    return httpError(next, new Error('You can only review subscriptions you have purchased'), req, 403);
-                }
-
-                targetItem = await Subscription.findById(subscriptionId);
-                canReview = true;
-
-            } else if (reviewType === EReviewType.VENDOR) {
-                const userSubscription = await UserSubscription.findOne({
-                    userId,
-                    'vendorDetails.currentVendor.vendorId': vendorId,
-                    status: 'active'
-                });
-
-                if (!userSubscription) {
-                    return httpError(next, new Error('You can only review vendors you have been assigned'), req, 403);
-                }
-
-                targetItem = await VendorProfile.findById(vendorId);
-                canReview = true;
-
-            } else if (reviewType === EReviewType.ORDER) {
-                const order = await Order.findOne({
-                    _id: orderId,
-                    userId,
-                    status: EOrderStatus.DELIVERED
-                });
-
-                if (!order) {
-                    return httpError(next, new Error('You can only review orders that have been delivered to you'), req, 403);
-                }
-
-                targetItem = order;
-                canReview = true;
-            }
-
-            if (!canReview || !targetItem) {
-                return httpError(next, new Error('Invalid review target'), req, 400);
-            }
-
+            // Check if order is already reviewed
             const existingReview = await Review.findOne({
                 userId,
-                reviewType,
-                ...(subscriptionId && { subscriptionId }),
-                ...(vendorId && { vendorId }),
-                ...(orderId && { orderId })
+                orderId,
+                reviewType: EReviewType.ORDER
             });
 
             if (existingReview) {
                 return httpError(next, new Error('You have already reviewed this item'), req, 409);
             }
 
+            // Create Order Review
             const newReview = new Review({
-                reviewType,
+                reviewType: EReviewType.ORDER,
                 userId,
                 subscriptionId,
                 vendorId,
@@ -112,6 +60,29 @@ export default {
 
             await newReview.save();
 
+            // Create Subscription Review (Always)
+            await Review.create({
+                reviewType: EReviewType.SUBSCRIPTION,
+                userId,
+                subscriptionId,
+                vendorId, // Optional linkage
+                rating,
+                reviewText,
+                isVerifiedPurchase: true
+            });
+
+            // Create Vendor Review (Always)
+            await Review.create({
+                reviewType: EReviewType.VENDOR,
+                userId,
+                vendorId,
+                subscriptionId, // Optional linkage
+                rating,
+                reviewText,
+                isVerifiedPurchase: true
+            });
+
+            
             const populatedReview = await Review.findById(newReview._id)
                 .populate('userId', 'name')
                 .populate('subscriptionId', 'planName category')

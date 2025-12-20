@@ -98,20 +98,7 @@ reviewSchema.index({ subscriptionId: 1, status: 1, rating: -1 })
 reviewSchema.index({ userId: 1, reviewType: 1 })
 
 // Ensure one review per user per item
-reviewSchema.index(
-    { userId: 1, subscriptionId: 1, reviewType: 1 }, 
-    { 
-        unique: true, 
-        partialFilterExpression: { reviewType: EReviewType.SUBSCRIPTION } 
-    }
-)
-reviewSchema.index(
-    { userId: 1, vendorId: 1, reviewType: 1 }, 
-    { 
-        unique: true, 
-        partialFilterExpression: { reviewType: EReviewType.VENDOR } 
-    }
-)
+// Unique constraint for Order Reviews - Keep this
 reviewSchema.index(
     { userId: 1, orderId: 1, reviewType: 1 }, 
     { 
@@ -119,6 +106,11 @@ reviewSchema.index(
         partialFilterExpression: { reviewType: EReviewType.ORDER } 
     }
 )
+
+// Non-unique indexes for Subscription and Vendor reviews (previously unique)
+// Allowed multiple reviews for same subscription/vendor by same user (e.g. per order)
+reviewSchema.index({ userId: 1, subscriptionId: 1, reviewType: 1 })
+reviewSchema.index({ userId: 1, vendorId: 1, reviewType: 1 })
 
 // Virtual for formatted review date
 reviewSchema.virtual('formattedDate').get(function() {

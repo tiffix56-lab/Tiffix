@@ -823,22 +823,10 @@ export const ValidateUpdateDailyMeal = Joi.object({
 
 // ############### REVIEW VALIDATION SCHEMAS ###############
 export const ValidateCreateReview = Joi.object({
-    reviewType: Joi.string().valid('subscription', 'vendor', 'order').required(),
-    subscriptionId: Joi.string().hex().length(24).when('reviewType', {
-        is: 'subscription',
-        then: Joi.required(),
-        otherwise: Joi.forbidden()
-    }),
-    vendorId: Joi.string().hex().length(24).when('reviewType', {
-        is: 'vendor',
-        then: Joi.required(),
-        otherwise: Joi.forbidden()
-    }),
-    orderId: Joi.string().hex().length(24).when('reviewType', {
-        is: 'order',
-        then: Joi.required(),
-        otherwise: Joi.forbidden()
-    }),
+    reviewType: Joi.string().valid('subscription', 'vendor', 'order').optional(),
+    subscriptionId: Joi.string().hex().length(24).required(),
+    vendorId: Joi.string().hex().length(24).required(),
+    orderId: Joi.string().hex().length(24).required(),
     rating: Joi.number().integer().min(1).max(5).required(),
     reviewText: Joi.string().max(1000).trim().required()
 });
