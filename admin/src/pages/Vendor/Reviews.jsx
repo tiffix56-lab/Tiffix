@@ -143,6 +143,7 @@ const VendorReviews = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
+    const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -150,8 +151,7 @@ const VendorReviews = () => {
     if (diffDays === 1) return 'Today';
     if (diffDays === 2) return 'Yesterday';
     if (diffDays <= 7) return `${diffDays - 1} days ago`;
-    return date.toLocaleDateString('en-IN', { 
-      timeZone: 'Asia/Kolkata',
+    return istDate.toLocaleDateString('en-IN', { 
       day: 'numeric', 
       month: 'short', 
       year: 'numeric' 

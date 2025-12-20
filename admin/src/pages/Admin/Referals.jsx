@@ -116,8 +116,9 @@ function Referals() {
   
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      timeZone: 'Asia/Kolkata',
+    const date = new Date(dateString);
+    const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+    return new Date(istDate).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

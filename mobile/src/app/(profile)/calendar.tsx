@@ -318,8 +318,8 @@ const Calendar = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      timeZone: 'Asia/Kolkata',
+    const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+    return istDate.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric'

@@ -71,13 +71,5 @@
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.0",
     "typescript": "~5.8.3"
-  },
-  "pnpm": {
-    "overrides": {
-      "metro": "0.82.5",
-      "metro-config": "0.82.5",
-      "metro-resolver": "0.82.5",
-      "metro-runtime": "0.82.5"
-    }
   }
 }

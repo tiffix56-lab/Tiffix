@@ -45,8 +45,8 @@ const PaymentHistory = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      timeZone: 'Asia/Kolkata',
+    const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+    return istDate.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: '2-digit',
