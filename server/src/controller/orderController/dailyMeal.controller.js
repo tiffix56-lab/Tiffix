@@ -119,9 +119,9 @@ export default {
                     $lte: TimezoneUtil.endOfDay(endDate)
                 };
             } else if (startDate) {
-                query.mealDate = { $gte: TimezoneUtil.startOfDay(new Date(startDate)) };
+                query.mealDate = { $gte: TimezoneUtil.startOfDay(startDate) };
             } else if (endDate) {
-                query.mealDate = { $lte: TimezoneUtil.endOfDay(new Date(endDate)) };
+                query.mealDate = { $lte: TimezoneUtil.endOfDay(endDate) };
             } else {
                 const today = TimezoneUtil.startOfDay();
                 const tomorrow = TimezoneUtil.addDays(1, today);
@@ -180,8 +180,8 @@ export default {
             } else if (isDateRange) {
                 responseData.queryType = 'dateRange';
                 responseData.dateRange = {
-                    startDate: startDate ? TimezoneUtil.format(new Date(startDate), 'date') : null,
-                    endDate: endDate ? TimezoneUtil.format(new Date(endDate), 'date') : null
+                    startDate: startDate ? TimezoneUtil.format(startDate, 'date') : null,
+                    endDate: endDate ? TimezoneUtil.format(endDate, 'date') : null
                 };
             }
 
