@@ -496,9 +496,9 @@ const Subscription = () => {
 
   const formatDate = (dateString: string) => {
     console.log(dateString, "Date");
-    
-    const date =  new Date(dateString).toLocaleDateString('en-IN', {
-      timeZone: 'Asia/Kolkata',
+    const dates = new Date(dateString);
+    const istDate = new Date(dates.getTime() + 5.5 * 60 * 60 * 1000);
+    const date =  new Date(istDate).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -681,8 +681,8 @@ const Subscription = () => {
   const OrderCard: React.FC<OrderCardProps> = ({ order, isUpcoming = false, onSkip, onCancel, onReview }) => {
     const formatDate = (dateString: string) => {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        timeZone: 'Asia/Kolkata',
+      const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
+      return istDate.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short', 
         day: 'numeric'
