@@ -133,7 +133,8 @@ const Subscription = () => {
             // Try to get more comprehensive order data
             const ordersResponse = await orderService.getUserOrders({
               page: 1,
-              limit: 100,  
+              limit: 100, // Get more orders
+              days: 30    // Get orders from last 30 days (API limit)
             });
             console.log('📡 [SUBSCRIPTION_TAB] Orders response:', ordersResponse);
             
@@ -494,11 +495,17 @@ const Subscription = () => {
   });
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    console.log(dateString, "Date");
+    
+    const date =  new Date(dateString).toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
+
+    return date
+    
   };
 
   const formatCurrency = (amount: number) => {
@@ -675,6 +682,7 @@ const Subscription = () => {
     const formatDate = (dateString: string) => {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Kolkata',
         weekday: 'short',
         month: 'short', 
         day: 'numeric'

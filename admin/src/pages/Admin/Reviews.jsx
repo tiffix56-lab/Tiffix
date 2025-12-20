@@ -243,6 +243,7 @@ const Reviews = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -250,7 +251,7 @@ const Reviews = () => {
   };
 
   const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString('en-IN');
+    return new Date(dateString).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   };
 
   useEffect(() => {

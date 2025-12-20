@@ -151,6 +151,7 @@ const VendorReviews = () => {
     if (diffDays === 2) return 'Yesterday';
     if (diffDays <= 7) return `${diffDays - 1} days ago`;
     return date.toLocaleDateString('en-IN', { 
+      timeZone: 'Asia/Kolkata',
       day: 'numeric', 
       month: 'short', 
       year: 'numeric' 

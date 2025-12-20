@@ -68,7 +68,7 @@ const Profile = () => {
       id: 'my-subscription',
       title: 'My Subscription',
       icon: 'file-text',
-      route: '/my-subscription',
+      route: '(tabs)/subscription',
     },
     {
       id: 'address',
@@ -148,7 +148,12 @@ const Profile = () => {
         ]
       );
     } else {
-      router.push(`/(profile)${route}`);
+      if(route.startsWith('(tabs)')) {
+        router.push(`/${route}`);
+      } else {
+        router.push(`/(profile)${route}`);
+
+      }
     }
   };
 

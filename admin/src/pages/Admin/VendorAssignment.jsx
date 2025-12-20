@@ -14,7 +14,8 @@ import {
   Clock,
   TrendingUp,
   ChevronDown,
-  Plus
+  Plus,
+  ChefHat
 } from 'lucide-react';
 import {
   getVendorAssignmentsApi,
@@ -397,6 +398,7 @@ function VendorAssignment() {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -1151,6 +1153,45 @@ function VendorAssignment() {
                     )}
                   </div>
                 </div>
+
+                {/* Current Vendor Information */}
+                {selectedRequest.userSubscriptionId?.vendorDetails?.currentVendor && (
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <h4 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
+                      <ChefHat className="w-5 h-5 text-orange-400" />
+                      Current Vendor Details
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Business Name:</span>
+                        <span className="text-white">
+                          {selectedRequest.userSubscriptionId.vendorDetails.currentVendor.vendorBusinessName || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Vendor Type:</span>
+                        <span className="text-white capitalize">
+                          {selectedRequest.userSubscriptionId.vendorDetails.currentVendor.vendorType?.replace('_', ' ') || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Assigned At:</span>
+                        <span className="text-white">
+                          {selectedRequest.userSubscriptionId.vendorDetails.currentVendor.assignedAt 
+                            ? formatDate(selectedRequest.userSubscriptionId.vendorDetails.currentVendor.assignedAt)
+                            : 'N/A'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Switch Used:</span>
+                        <span className="text-white">
+                          {selectedRequest.userSubscriptionId.vendorDetails.vendorSwitchUsed ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Delivery Zone Information */}
                 {selectedRequest.deliveryZone && (

@@ -17,8 +17,16 @@ export default {
       [
         "expo-build-properties",
         {
-          "ios": {
-            "deploymentTarget": "15.1"
+          ios: {
+            deploymentTarget: "15.1",
+            useFrameworks: "static",
+            useModularHeaders: true,
+            extraPods: [
+              { name: "FirebaseCore", modular_headers: true },
+              { name: "FirebaseCoreInternal", modular_headers: true },
+              { name: "FirebaseInstallations", modular_headers: true },
+              { name: "GoogleUtilities", modular_headers: true }
+            ]
           }
         }
       ],
@@ -28,15 +36,6 @@ export default {
           iosUrlScheme: "com.googleusercontent.apps.736730550506-ir73hfdskggdq4telt6912aehcjjv9j3",
         },
       ],
-      [
-        "expo-build-properties",
-        {
-          ios: {
-            useModularHeaders: true,
-            useFrameworks: "static",
-          }
-        }
-      ]
     ],
     orientation: "portrait",
     icon: "./src/assets/splash.png",
@@ -47,6 +46,7 @@ export default {
       backgroundColor: "#ffffff",
     },
     assetBundlePatterns: ["src/assets/*"],
+    jsEngine: "hermes",
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.rutwik187.tiffix",
@@ -62,6 +62,7 @@ export default {
             CFBundleURLSchemes: ["tiffix"],
           },
         ],
+        NODE_BINARY: "/usr/local/bin/node",
         "ITSAppUsesNonExemptEncryption": false,
         NSCameraUsageDescription:
           "Snek needs access to your camera for capturing photos and enabling camera features.",

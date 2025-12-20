@@ -655,6 +655,27 @@ export default {
                         processedBy: { $arrayElemAt: ['$processedBy', 0] },
                         deliveryZone: { $arrayElemAt: ['$deliveryZone', 0] }
                     }
+                },
+                {
+                    $lookup: {
+                        from: 'vendorprofiles',
+                        localField: 'userSubscriptionId.vendorDetails.currentVendor.vendorId',
+                        foreignField: '_id',
+                        as: 'subscriptionVendorDetails'
+                    }
+                },
+                {
+                    $addFields: {
+                        'userSubscriptionId.vendorDetails.currentVendor.vendorBusinessName': {
+                            $let: {
+                                vars: { vendor: { $arrayElemAt: ['$subscriptionVendorDetails', 0] } },
+                                in: '$$vendor.businessInfo.businessName'
+                            }
+                        }
+                    }
+                },
+                {
+                    $unset: 'subscriptionVendorDetails'
                 }
             ];
 

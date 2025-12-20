@@ -7,15 +7,14 @@ module.exports = function (api) {
     ],
     plugins: [
       require.resolve("expo-router/babel"),
-      ["inline-import", { extensions: [".sql"] }],
-      [
-        "module-resolver",
-        {
-          alias: {
-            "react-native-worklets/plugin": "./src/worklets/plugin.js"
-          }
-        }
-      ],
+      // [
+      //   "module-resolver",
+      //   {
+      //     alias: {
+      //       "react-native-worklets/plugin": "./src/worklets/plugin.js"
+      //     }
+      //   }
+      // ],
       "react-native-reanimated/plugin"
     ]
   }

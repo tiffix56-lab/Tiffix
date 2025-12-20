@@ -230,6 +230,7 @@ function Order() {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -237,7 +238,7 @@ function Order() {
   }
 
   const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString('en-IN')
+    return new Date(dateString).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
   }
 
   useEffect(() => {
@@ -578,6 +579,9 @@ function Order() {
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-orange-400" />
                         <div>
+                          <div>
+                            {order.orderNumber }
+                          </div>
                           <div className="text-sm text-white font-medium">
                             {order.userId?.name || 'N/A'}
                           </div>
