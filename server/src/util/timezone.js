@@ -30,10 +30,16 @@ class TimezoneUtil {
      * @returns {Date} Start of day in IST
      */
     static startOfDay(date = null) {
-        const istDate = date ? this.toIST(date) : this.now()
-        istDate.setHours(0, 0, 0, 0)
-        return istDate
-    }
+    const d = date ? new Date(date) : new Date()
+    return new Date(
+        Date.UTC(
+            d.getUTCFullYear(),
+            d.getUTCMonth(),
+            d.getUTCDate() - (INDIAN_TIMEZONE === 'Asia/Kolkata' ? 1 : 0),
+            18, 30, 0, 0
+        )
+    )
+}
 
     /**
      * Get end of day in IST
@@ -41,9 +47,8 @@ class TimezoneUtil {
      * @returns {Date} End of day in IST
      */
     static endOfDay(date = null) {
-        const istDate = date ? this.toIST(date) : this.now()
-        istDate.setHours(23, 59, 59, 999)
-        return istDate
+        const start = this.startOfDay(date)
+        return new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1)
     }
 
     /**
