@@ -265,69 +265,7 @@ class OrderCreationService {
         }
 
         const newOrder = new Order(orderData)
-        
-        // Manual validation to get better error messages
-        const validationError = newOrder.validateSync()
-        if (validationError) {
-            console.error('❌ Validation error details:', {
-                message: validationError.message,
-                errors: validationError.errors,
-                orderNumber: newOrder.orderNumber
-            })
-            throw new Error(`Order validation failed: ${validationError.message}`)
-        }
-
-        console.log('✅ Order validation passed, attempting to save...')
-
-        let saved = false
-        let attempts = 0
-        const maxAttempts = 3
-
-        while (!saved && attempts < maxAttempts) {
-            attempts++
-            try {
-                await newOrder.save()
-                saved = true
-            } catch (error) {
-                if (error.code === 11000 && (error.message.includes('orderNumber') || (error.keyPattern && error.keyPattern.orderNumber))) {
-                    console.log(`⚠️ Duplicate orderNumber detected (Attempt ${attempts}/${maxAttempts}). Checking for existing order...`)
-                    
-                    // Check if the order was actually created for this user (race condition same user)
-                    const existing = await Order.findOne({
-                        userId,
-                        userSubscriptionId: userSubscription._id,
-                        dailyMealId: dailyMeal._id,
-                        mealType: mealType,
-                        status: { $nin: [EOrderStatus.SKIPPED, EOrderStatus.CANCELLED] }
-                    })
-
-                    if (existing) {
-                        console.log('⚠️ Order already exists for this user. Treating as duplicate.')
-                        await log.addFailedOrder(
-                            userId,
-                            userSubscription._id,
-                            mealType,
-                            'ORDER_ALREADY_EXISTS',
-                            `Order ${existing.orderNumber} already exists`,
-                            false
-                        )
-                        return // Stop retrying, we are done
-                    }
-
-                    // If not same user, it's an ID collision with another user.
-                    // Clear the generated ID to allow pre-save hook to generate a new one
-                    newOrder.orderNumber = undefined
-                    
-                    if (attempts === maxAttempts) {
-                        throw new Error(`Failed to generate unique order number after ${maxAttempts} attempts`)
-                    }
-                    // Continue loop to retry save()
-                } else {
-                    throw error // Other errors
-                }
-            }
-        }
-        
+        await newOrder.save()
         console.log('✅ Order saved successfully with orderNumber:', newOrder.orderNumber)
 
         // Add to successful orders log

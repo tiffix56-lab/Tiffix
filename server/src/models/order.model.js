@@ -215,39 +215,9 @@ orderSchema.pre('save', async function (next) {
                 console.error('❌ orderDate is missing for order number generation')
                 throw new Error('orderDate is required to generate orderNumber')
             }
+            
 
-            let date, count;
-            try {
-                // Try using TimezoneUtil first
-                date = TimezoneUtil.format(this.orderDate, 'date').replace(/\//g, '')
-                count = await this.constructor.countDocuments({
-                    orderDate: {
-                        $gte: TimezoneUtil.startOfDay(this.orderDate),
-                        $lte: TimezoneUtil.endOfDay(this.orderDate)
-                    }
-                })
-            } catch (timezoneError) {
-                console.error('❌ TimezoneUtil error, using fallback:', timezoneError)
-                // Fallback to basic date formatting
-                const orderDate = new Date(this.orderDate)
-                date = orderDate.getFullYear().toString() +
-                    (orderDate.getMonth() + 1).toString().padStart(2, '0') +
-                    orderDate.getDate().toString().padStart(2, '0')
-
-                const startOfDay = new Date(orderDate)
-                startOfDay.setHours(0, 0, 0, 0)
-                const endOfDay = new Date(orderDate)
-                endOfDay.setHours(23, 59, 59, 999)
-
-                count = await this.constructor.countDocuments({
-                    orderDate: {
-                        $gte: startOfDay,
-                        $lte: endOfDay
-                    }
-                })
-            }
-
-            this.orderNumber = `TFX-${date}-${(count + 1).toString().padStart(4, '0')}`
+            this.orderNumber = `TFX-${new Date().now()}`
             console.log(`✅ Generated order number: ${this.orderNumber}`)
         }
         next()
