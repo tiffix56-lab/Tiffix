@@ -266,36 +266,6 @@ class OrderCreationService {
 
         const newOrder = new Order(orderData)
         
-        // Manual orderNumber generation as backup (in case pre-save hook fails)
-        if (!newOrder.orderNumber) {
-            console.log('🔧 Manually generating order number as backup...')
-            try {
-                const date = TimezoneUtil.format(orderData.orderDate, 'date').replace(/\//g, '')
-                const count = await Order.countDocuments({
-                    orderDate: {
-                        $gte: TimezoneUtil.startOfDay(orderData.orderDate),
-                        $lte: TimezoneUtil.endOfDay(orderData.orderDate)
-                    }
-                })
-                newOrder.orderNumber = `TFX-${date}-${(count + 1).toString().padStart(4, '0')}`
-                console.log(`🔧 Manually generated order number: ${newOrder.orderNumber}`)
-            } catch (error) {
-                console.error('❌ Error in manual order number generation:', error)
-                // Final fallback using timestamp
-                const timestamp = Date.now().toString().slice(-8)
-                newOrder.orderNumber = `TFX-${timestamp}`
-                console.log(`🔧 Using timestamp fallback order number: ${newOrder.orderNumber}`)
-            }
-        }
-        
-        // Check if orderNumber was set
-        console.log('🔍 Pre-save order check:', {
-            hasOrderNumber: !!newOrder.orderNumber,
-            orderNumber: newOrder.orderNumber,
-            orderDate: newOrder.orderDate,
-            isNew: newOrder.isNew
-        })
-        
         // Manual validation to get better error messages
         const validationError = newOrder.validateSync()
         if (validationError) {
@@ -308,7 +278,56 @@ class OrderCreationService {
         }
 
         console.log('✅ Order validation passed, attempting to save...')
-        await newOrder.save()
+
+        let saved = false
+        let attempts = 0
+        const maxAttempts = 3
+
+        while (!saved && attempts < maxAttempts) {
+            attempts++
+            try {
+                await newOrder.save()
+                saved = true
+            } catch (error) {
+                if (error.code === 11000 && (error.message.includes('orderNumber') || (error.keyPattern && error.keyPattern.orderNumber))) {
+                    console.log(`⚠️ Duplicate orderNumber detected (Attempt ${attempts}/${maxAttempts}). Checking for existing order...`)
+                    
+                    // Check if the order was actually created for this user (race condition same user)
+                    const existing = await Order.findOne({
+                        userId,
+                        userSubscriptionId: userSubscription._id,
+                        dailyMealId: dailyMeal._id,
+                        mealType: mealType,
+                        status: { $nin: [EOrderStatus.SKIPPED, EOrderStatus.CANCELLED] }
+                    })
+
+                    if (existing) {
+                        console.log('⚠️ Order already exists for this user. Treating as duplicate.')
+                        await log.addFailedOrder(
+                            userId,
+                            userSubscription._id,
+                            mealType,
+                            'ORDER_ALREADY_EXISTS',
+                            `Order ${existing.orderNumber} already exists`,
+                            false
+                        )
+                        return // Stop retrying, we are done
+                    }
+
+                    // If not same user, it's an ID collision with another user.
+                    // Clear the generated ID to allow pre-save hook to generate a new one
+                    newOrder.orderNumber = undefined
+                    
+                    if (attempts === maxAttempts) {
+                        throw new Error(`Failed to generate unique order number after ${maxAttempts} attempts`)
+                    }
+                    // Continue loop to retry save()
+                } else {
+                    throw error // Other errors
+                }
+            }
+        }
+        
         console.log('✅ Order saved successfully with orderNumber:', newOrder.orderNumber)
 
         // Add to successful orders log
