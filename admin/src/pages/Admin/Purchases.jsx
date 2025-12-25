@@ -97,9 +97,9 @@ function Purchases() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Subscription Purchases</h1>
           <p className="text-gray-400 mt-1">Manage and monitor subscription purchases</p>
@@ -116,8 +116,8 @@ function Purchases() {
       </div>
       
       {/* Filters */}
-      <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-gray-400" />
             <h2 className="text-lg font-semibold text-white">Filters</h2>
@@ -273,8 +273,9 @@ function Purchases() {
               </div>
             </div>
             {purchases?.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <>
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
                   <thead className="bg-gray-700">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
@@ -369,6 +370,76 @@ function Purchases() {
                   </tbody>
                 </table>
               </div>
+
+              <div className="md:hidden space-y-4 p-4">
+                  {purchases.map((purchase) => (
+                    <div key={purchase._id} className="bg-gray-700 p-4 rounded-lg border border-gray-600 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-sm font-medium text-white">#{purchase.transactionId.transactionId || 'N/A'}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <User className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-300">{purchase.userId?.name || 'N/A'}</span>
+                          </div>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            purchase.status === 'active' ? 'bg-green-100 text-green-800' :
+                            purchase.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            purchase.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {purchase.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-600">
+                        <div>
+                          <p className="text-xs text-gray-400">Plan</p>
+                          <p className="text-sm text-white font-medium">{purchase.subscriptionId?.planName || 'N/A'}</p>
+                          <p className="text-[10px] text-gray-400 capitalize">{purchase.subscriptionId?.category?.replace('_', ' ') || ''}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Price</p>
+                          <p className="text-sm text-white font-medium">₹{purchase.finalPrice}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Vendor Status</p>
+                          <span className={`inline-flex mt-1 px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                            purchase.vendorDetails?.isVendorAssigned ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {purchase.vendorDetails?.isVendorAssigned ? 'Assigned' : 'Unassigned'}
+                          </span>
+                        </div>
+                         <div>
+                          <p className="text-xs text-gray-400">Duration</p>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-gray-500" />
+                            <span className="text-sm text-white">{purchase.subscriptionId?.durationDays || 0} days</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-600">
+                         <div className="text-xs text-gray-400">
+                            {new Date(purchase.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {new Date(purchase.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                         </div>
+                         <button
+                            onClick={() => fetchPurchaseDetails(purchase._id)}
+                            disabled={loadingDetails}
+                            className="flex items-center gap-1 text-orange-400 hover:text-orange-300 transition-colors text-sm font-medium disabled:opacity-50"
+                          >
+                             {loadingDetails ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                            View Details
+                         </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="text-center py-12">
                 <Package className="w-12 h-12 text-gray-500 mx-auto mb-4" />

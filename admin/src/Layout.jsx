@@ -2,7 +2,8 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { 
   Home, Users, ChefHat, MapPin, Menu, X, LogOut, Star, Share, 
   Package, ShoppingCart, Calendar, UserPlus, Building2, 
-  Tag, Gift, MessageSquare, ClipboardList, CreditCard 
+  Tag, Gift, MessageSquare, ClipboardList, CreditCard, 
+  MessageSquareWarning
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
@@ -27,6 +28,7 @@ function AdminLayout() {
     // { name: "Promo Codes", href: '/promo-codes', icon: Tag },
     { name: 'Referrals', href: '/referrals', icon: Gift },
     { name: 'Reviews', href: '/reviews', icon: MessageSquare },
+    { name: 'Complain', href: '/complain', icon: MessageSquareWarning},
   ];
 
   const isActive = (path) => {

@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "Tiffix",
     slug: "tiffix-mobile",
-    version: "1.1.4",
+    version: "1.1.5",
     scheme: "tiffix",
     web: {
       favicon: "./src/assets/favicon.png",
@@ -12,6 +12,7 @@ export default {
       tsconfigPaths: true,
     },
     plugins: [
+      "expo-font",
       "expo-router",
       "@react-native-firebase/app",
       [
@@ -38,12 +39,12 @@ export default {
       ],
     ],
     orientation: "portrait",
-    icon: "./src/assets/splash.png",
-    userInterfaceStyle: "light",
+    icon: "./src/assets/logo-main.png",
+    userInterfaceStyle: "dark",
     splash: {
-      image: "./src/assets/splash.png",
+      image: "./src/assets/logo-main.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff",
+      backgroundColor: "#000000",
     },
     assetBundlePatterns: ["src/assets/*"],
     jsEngine: "hermes",

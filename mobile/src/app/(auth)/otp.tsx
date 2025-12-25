@@ -150,7 +150,7 @@ const OTP = () => {
               Verification
             </Text>
             <Text className="text-center text-base leading-6 text-zinc-500 dark:text-zinc-400">
-              6-digits pin has been sent to your email{'\n'}address, {maskEmail(emailAddress)}
+              6-digits pin has been sent to your whatsapp.
             </Text>
           </View>
 

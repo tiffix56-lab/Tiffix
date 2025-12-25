@@ -380,12 +380,12 @@ const Menu = () => {
                       {item.foodTitle}
                     </h3>
                     
-                      <div className="flex items-center gap-1 mt-1">
+                      {/* <div className="flex items-center gap-1 mt-1">
                         <Star className="w-4 h-4 text-yellow-500 fill-current" />
                         <span className="text-sm text-white">
                           {item.rating.average.toFixed(1)} ({item.rating.totalReviews || 0})
                         </span>
-                      </div>
+                      </div> */}
                   </div>
                   
                   <div className="flex gap-1 ml-2">

@@ -25,6 +25,7 @@ import ReviewsVendor from "./pages/Vendor/Reviews";
 import Profile from "./pages/Vendor/Profile";
 import Dashboard from "./pages/Admin/Dashboard";
 import Analytics from "./pages/Admin/Analytics";
+import Complain from "./pages/Admin/Complain";
 
 
 
@@ -55,6 +56,7 @@ function App() {
             <Route path="/referrals" element={<Referals />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/complain" element={<Complain />} />
           </Route>
 
           {/* Vendor Routes */}

@@ -285,10 +285,10 @@ function Subscription() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 md:p-6">
       <div className="">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Subscription Management</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Subscription Management</h1>
           <p className="text-gray-400">Create, manage, and organize your subscription plans</p>
         </div>
 
@@ -354,18 +354,18 @@ function Subscription() {
         )}
 
         {/* Controls */}
-        <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl shadow-xl p-6 mb-6 border border-gray-600">
+        <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl shadow-xl p-4 md:p-6 mb-6 border border-gray-600">
           <div className="space-y-4">
             {/* Top Row - Search, Basic Filters, Add Button */}
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
+              <div className="flex flex-col md:flex-row flex-wrap gap-4 items-stretch md:items-center">
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Search subscriptions..."
-                    className="pl-10 pr-4 py-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
+                    className="w-full md:w-auto pl-10 pr-4 py-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
                     value={filters.search}
                     onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                   />
@@ -375,7 +375,7 @@ function Subscription() {
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-orange-400" />
                   <select
-                    className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
+                    className="flex-1 md:flex-none bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
                     value={filters.category}
                     onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
                   >
@@ -409,10 +409,10 @@ function Subscription() {
                 </select>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={clearFilters}
-                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 border border-gray-600 hover:border-gray-500"
+                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 border border-gray-600 hover:border-gray-500"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Clear Filters
@@ -423,7 +423,7 @@ function Subscription() {
                     setEditingSubscription(null)
                     setShowModal(true)
                   }}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 shadow-lg shadow-orange-500/25"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-lg shadow-orange-500/25"
                 >
                   <Plus className="w-4 h-4" />
                   Create Subscription

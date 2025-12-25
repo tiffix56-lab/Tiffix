@@ -436,7 +436,7 @@ const Information = () => {
                         style={{ fontFamily: 'Poppins_500Medium' }}>
                         Lunch Delivery Time
                       </Text>
-                      <TouchableOpacity
+                      {/* <TouchableOpacity
                         onPress={() => setLunchEnabled(!lunchEnabled)}
                         className={`h-6 w-11 rounded-full ${
                           lunchEnabled ? 'bg-green-500' : 'bg-zinc-300 dark:bg-zinc-600'
@@ -446,7 +446,7 @@ const Information = () => {
                             lunchEnabled ? 'translate-x-5' : 'translate-x-0.5'
                           } mt-0.5`}
                         />
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                     {lunchEnabled && (
                       <TouchableOpacity
@@ -488,7 +488,7 @@ const Information = () => {
                         style={{ fontFamily: 'Poppins_500Medium' }}>
                         Dinner Delivery Time
                       </Text>
-                      <TouchableOpacity
+                      {/* <TouchableOpacity
                         onPress={() => setDinnerEnabled(!dinnerEnabled)}
                         className={`h-6 w-11 rounded-full ${
                           dinnerEnabled ? 'bg-green-500' : 'bg-zinc-300 dark:bg-zinc-600'
@@ -498,7 +498,7 @@ const Information = () => {
                             dinnerEnabled ? 'translate-x-5' : 'translate-x-0.5'
                           } mt-0.5`}
                         />
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                     {dinnerEnabled && (
                       <TouchableOpacity

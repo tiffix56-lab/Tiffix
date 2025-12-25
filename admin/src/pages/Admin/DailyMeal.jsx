@@ -20,8 +20,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPe
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-      <div className="flex items-center justify-between mt-8 text-gray-400">
-          <div>
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-8 text-gray-400 gap-4">
+          <div className="text-center sm:text-left">
               <p>Showing <span className="font-semibold text-white">{startItem}</span> to <span className="font-semibold text-white">{endItem}</span> of <span className="font-semibold text-white">{totalItems}</span> results</p>
           </div>
           <div className="flex items-center space-x-2">
@@ -383,33 +383,33 @@ function DailyMeal() {
   }, [subscriptions])
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Daily Meal Management</h1>
-          <p className="text-gray-400 mt-1">Manage daily meals and monitor order creation</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Daily Meal Management</h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">Manage daily meals and monitor order creation</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={() => setShowSetMealModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm sm:text-base"
           >
             <Plus className="w-4 h-4" />
             Set Today's Meal
           </button>
           <button
             onClick={activeTab === 'meals' ? fetchDailyMeals : fetchOrderLogs}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            className="flex-none flex items-center justify-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm sm:text-base"
           >
             <RefreshCw className="w-4 h-4" />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
@@ -452,11 +452,11 @@ function DailyMeal() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700">
-        <div className="flex border-b border-gray-700">
+      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+        <div className="flex border-b border-gray-700 overflow-x-auto">
           <button
             onClick={() => setActiveTab('meals')}
-            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'meals'
+            className={`px-4 py-3 sm:px-6 sm:py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'meals'
                 ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-gray-400 hover:text-gray-300'
             }`}
@@ -468,7 +468,7 @@ function DailyMeal() {
           </button>
           <button
             onClick={() => setActiveTab('logs')}
-            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'logs'
+            className={`px-4 py-3 sm:px-6 sm:py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'logs'
                 ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-gray-400 hover:text-gray-300'
             }`}
@@ -482,7 +482,7 @@ function DailyMeal() {
 
         {/* Daily Meals Tab */}
         {activeTab === 'meals' && (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Filters */}
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-4">
@@ -490,14 +490,14 @@ function DailyMeal() {
                 <h3 className="text-lg font-semibold text-white">Filters</h3>
               </div>
               
-              <div className="flex gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-4">
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <input
                     type="date"
                     value={filters.startDate}
                     onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
 
@@ -507,7 +507,7 @@ function DailyMeal() {
                     type="date"
                     value={filters.endDate}
                     onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
 
@@ -515,7 +515,7 @@ function DailyMeal() {
                 <select
                   value={filters.vendorType}
                   onChange={(e) => handleFilterChange('vendorType', e.target.value)}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
                 >
                   {vendorTypes.map(type => (
                     <option key={type.value} value={type.value}>
@@ -527,7 +527,7 @@ function DailyMeal() {
                 <select
                   value={filters.sortOrder}
                   onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-                  className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="desc">Latest First</option>
                   <option value="asc">Oldest First</option>
@@ -538,7 +538,7 @@ function DailyMeal() {
             {/* Stats Overview */}
             {dailyMeals.length > 0 && (
               <div className="mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-gray-700 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="w-5 h-5 text-blue-400" />
@@ -599,7 +599,108 @@ function DailyMeal() {
               </div>
             ) : dailyMeals.length > 0 ? (
               <>
-                <div className="overflow-x-auto">
+                {/* Mobile Card View */}
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                  {dailyMeals.map((meal) => (
+                    <div key={meal._id} className="bg-gray-700 p-4 rounded-lg border border-gray-600 space-y-3">
+                      <div className="flex justify-between items-start">
+                         <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-white font-medium">
+                                {formatDate(meal.mealDate)}
+                              </span>
+                          </div>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${meal.isActive 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${meal.isActive ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+                              {meal.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                      </div>
+                      
+                      <div className="space-y-1">
+                          <div className="text-sm font-medium text-white">{meal.subscriptionId?.planName || meal.subscriptionId?.title || 'N/A'}</div>
+                          <div className="text-xs text-gray-400 capitalize">
+                            {meal.subscriptionId?.category?.replace('_', ' ') || ''}
+                          </div>
+                      </div>
+
+                       <div className="space-y-1">
+                          <p className="text-xs text-gray-400 uppercase tracking-wider">Vendor</p>
+                           <div className="text-sm text-white">
+                              <div className="font-medium capitalize">
+                                {meal.vendorType?.replace('_', ' ') || 'N/A'}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                Created by: {meal.createdBy?.name || 'N/A'}
+                              </div>
+                            </div>
+                       </div>
+                       
+                       <div className="grid grid-cols-2 gap-2">
+                           <div>
+                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Lunch</p>
+                                <div className="text-sm text-white">
+                                  {meal.selectedMenus?.lunchMenus?.length > 0 ? (
+                                    <div>
+                                      <div className="font-medium">{meal.selectedMenus.lunchMenus[0].foodTitle}</div>
+                                      {meal.selectedMenus.lunchMenus.length > 1 && (
+                                        <div className="text-xs text-gray-400">+{meal.selectedMenus.lunchMenus.length - 1} more</div>
+                                      )}
+                                    </div>
+                                  ) : meal.lunchMenus?.length > 0 ? (
+                                    <div>
+                                      <div className="font-medium">{meal.lunchMenus[0].title}</div>
+                                      {meal.lunchMenus.length > 1 && (
+                                        <div className="text-xs text-gray-400">+{meal.lunchMenus.length - 1} more</div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Not set</span>
+                                  )}
+                                </div>
+                           </div>
+                           <div>
+                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Dinner</p>
+                                <div className="text-sm text-white">
+                                  {meal.selectedMenus?.dinnerMenus?.length > 0 ? (
+                                    <div>
+                                      <div className="font-medium">{meal.selectedMenus.dinnerMenus[0].foodTitle}</div>
+                                      {meal.selectedMenus.dinnerMenus.length > 1 && (
+                                        <div className="text-xs text-gray-400">+{meal.selectedMenus.dinnerMenus.length - 1} more</div>
+                                      )}
+                                    </div>
+                                  ) : meal.dinnerMenus?.length > 0 ? (
+                                    <div>
+                                      <div className="font-medium">{meal.dinnerMenus[0].title}</div>
+                                      {meal.dinnerMenus.length > 1 && (
+                                        <div className="text-xs text-gray-400">+{meal.dinnerMenus.length - 1} more</div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Not set</span>
+                                  )}
+                                </div>
+                           </div>
+                       </div>
+                       
+                       <button 
+                          onClick={() => {
+                            setSelectedMeal(meal)
+                            setShowDetailsModal(true)
+                          }}
+                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 bg-gray-800 rounded-lg text-orange-400 hover:text-orange-300 transition-colors text-sm font-medium border border-gray-600"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Details
+                        </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-700">
                       <tr>
@@ -733,7 +834,7 @@ function DailyMeal() {
 
         {/* Order Creation Logs Tab */}
         {activeTab === 'logs' && (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Log Filters */}
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-4">
@@ -741,7 +842,7 @@ function DailyMeal() {
                 <h3 className="text-lg font-semibold text-white">Log Filters</h3>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <select
                   value={logFilters.status}
                   onChange={(e) => handleLogFilterChange('status', e.target.value)}
@@ -801,15 +902,15 @@ function DailyMeal() {
               <div className="space-y-4">
                 {orderLogs.map((log) => (
                   <div key={log._id} className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-4">
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
                           <h4 className="text-lg font-medium text-white">
                             {log.subscriptionId?.planName || 'System Triggered'}
                           </h4>
                           {getStatusBadge(log.status)}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-400">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             {formatDate(log.triggerDate)}
@@ -870,7 +971,7 @@ function DailyMeal() {
 
       {/* Set Today's Meal Modal */}
       {showSetMealModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl p-6 w-full max-w-2xl border border-gray-700 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">Set Today's Meal</h3>
@@ -1121,7 +1222,7 @@ function DailyMeal() {
 
       {/* Meal Details Modal */}
       {showDetailsModal && selectedMeal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl p-6 w-full max-w-3xl border border-gray-700 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">Daily Meal Details</h3>
@@ -1135,7 +1236,7 @@ function DailyMeal() {
             
             <div className="space-y-6">
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-400 text-sm">Date</p>
                   <p className="text-white font-medium">{formatDate(selectedMeal.mealDate)}</p>
@@ -1156,7 +1257,7 @@ function DailyMeal() {
                 <h4 className="text-white font-medium mb-3">Subscription Details</h4>
                 <div className="bg-gray-700 p-4 rounded-lg">
                   <p className="text-white font-medium mb-2">{selectedMeal.subscriptionId?.planName || selectedMeal.subscriptionId?.title || 'N/A'}</p>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-gray-400">Category</p>
                       <p className="text-gray-300 capitalize">
@@ -1170,7 +1271,7 @@ function DailyMeal() {
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm mt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mt-3">
                     <div>
                       <p className="text-gray-400">Created By</p>
                       <p className="text-gray-300">{selectedMeal.createdBy?.name || 'N/A'}</p>

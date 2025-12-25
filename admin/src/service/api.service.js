@@ -715,6 +715,21 @@ export const getAdminZoneAnalyticsApi = async (params) => {
 }
 
 
+// COMPLAINS
+
+export const getComplainsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/complains', {
+        params
+    });
+    return response.data;
+}
+
+export const deleteComplainApi = async (complainId) => {
+    const response = await servicesAxiosInstance.delete(`/admin/complains/${complainId}`);
+    return response.data;
+}
+
+
 // MAPS & LOCATION SERVICES
 
 export const mapsAutocompleteApi = async (body) => {

@@ -54,32 +54,6 @@ const MealSubscriptions = () => {
     );
   }
 
-  if (!selectedAddress && savedAddresses.length === 0) {
-    return (
-      <View className="pb-6">
-        <View className="mb-6 flex-row items-center justify-center">
-          <Text
-            className="text-2xl font-semibold text-black dark:text-white"
-            style={{ fontFamily: 'Poppins_600SemiBold' }}>
-            Meal Subscriptions
-          </Text>
-        </View>
-        <View className="mx-6 items-center justify-center rounded-xl border border-dashed border-orange-300 bg-orange-50 py-8 dark:border-orange-600 dark:bg-orange-900/20">
-          <Feather name="map-pin" size={32} color={colorScheme === 'dark' ? '#FB923C' : '#EA580C'} />
-          <Text
-            className="mt-2 text-center text-base font-medium text-orange-700 dark:text-orange-400"
-            style={{ fontFamily: 'Poppins_500Medium' }}>
-            Add your address to see available meals
-          </Text>
-          <Text
-            className="mt-1 text-center text-sm text-orange-600 dark:text-orange-500"
-            style={{ fontFamily: 'Poppins_400Regular' }}>
-            Tap the address at the top to get started
-          </Text>
-        </View>
-      </View>
-    );
-  }
 
   if (selectedAddress && !isServiceableAddress(selectedAddress)) {
     return (
@@ -172,6 +146,21 @@ const MealSubscriptions = () => {
           ))}
         </View>
       </View>
+      <TouchableOpacity onPress={() => router.push('/(profile)/address')} className="pb-6">
+        <View className="mx-6 items-center justify-center rounded-xl border border-dashed border-orange-300 bg-orange-50 py-8 dark:border-orange-600 dark:bg-orange-900/20">
+          <Feather name="map-pin" size={32} color={colorScheme === 'dark' ? '#FB923C' : '#EA580C'} />
+          <Text
+            className="mt-2 text-center text-base font-medium text-orange-700 dark:text-orange-400"
+            style={{ fontFamily: 'Poppins_500Medium' }}>
+            Add your address to see available meals
+          </Text>
+          <Text
+            className="mt-1 text-center text-sm text-orange-600 dark:text-orange-500"
+            style={{ fontFamily: 'Poppins_400Regular' }}>
+            Tap the address at the top to get started
+          </Text>
+        </View>
+      </TouchableOpacity>
     </View>
   );
 };

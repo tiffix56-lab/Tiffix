@@ -9,6 +9,28 @@ const servicesAxiosInstance = axios.create({
   baseURL: baseURL
 });
 
+servicesAxiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+
+      if (status === 401) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+
+      return Promise.reject(
+        new Error(error.response?.data?.message || error.message || 'Request failed')
+      );
+    }
+
+    return Promise.reject(new Error('An unknown error occurred'));
+  }
+);
+
+
 servicesAxiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');

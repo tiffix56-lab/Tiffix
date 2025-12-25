@@ -250,16 +250,16 @@ function Order() {
   }, [filters])
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Order Management</h1>
           <p className="text-orange-300 mt-1">Manage and monitor all orders across the platform</p>
         </div>
         <button
           onClick={fetchOrders}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors self-start md:self-auto"
         >
           <RefreshCw className="w-4 h-4" />
           Refresh
@@ -330,8 +330,8 @@ function Order() {
       </div> */}
 
       {/* Search and Filters */}
-      <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-orange-400" />
             <h2 className="text-lg font-semibold text-white">Search & Filters</h2>
@@ -339,7 +339,7 @@ function Order() {
           {hasActiveFilters() && (
             <button
               onClick={clearAllFilters}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#1E2938] text-white rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/30"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#1E2938] text-white rounded-lg hover:bg-orange-500/20 transition-colors border border-orange-500/30 self-start md:self-auto"
             >
               <RotateCcw className="w-4 h-4" />
               Clear All
@@ -377,11 +377,11 @@ function Order() {
         </div>
 
         {/* Filter Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <select
             value={filters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
-            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 w-full"
           >
             {orderStatuses.map(status => (
               <option key={status.value} value={status.value}>
@@ -393,7 +393,7 @@ function Order() {
           {/* <select
             value={filters.vendorId}
             onChange={(e) => handleFilterChange('vendorId', e.target.value)}
-            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 w-full"
           >
             <option value="">All Vendors</option>
             {vendors.map(vendor => (
@@ -406,7 +406,7 @@ function Order() {
           {/* <select
             value={filters.days}
             onChange={(e) => handleFilterChange('days', e.target.value)}
-            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 w-full"
           >
             <option value="">All Days</option>
             <option value="1">Today</option>
@@ -414,13 +414,13 @@ function Order() {
             <option value="30">Next 30 Days</option>
           </select> */}
 
-          <div className="relative">
+          <div className="relative w-full">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400 w-4 h-4" />
             <input
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="pl-10 pr-10 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="pl-10 pr-10 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full"
             />
             {filters.startDate && (
               <button
@@ -432,13 +432,13 @@ function Order() {
             )}
           </div>
 
-          <div className="relative">
+          <div className="relative w-full">
             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400 w-4 h-4" />
             <input
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="pl-10 pr-10 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="pl-10 pr-10 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent w-full"
             />
             {filters.endDate && (
               <button
@@ -453,7 +453,7 @@ function Order() {
           {/* <select
             value={filters.sortOrder}
             onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 w-full"
           >
             <option value="desc">Latest First</option>
             <option value="asc">Oldest First</option>
@@ -548,133 +548,191 @@ function Order() {
             </div>
           </div>
         ) : orders?.length > 0 ? (
-          <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full">
-              <thead className="bg-orange-500/10">
-                <tr>
-                  <th className="px-6 py-4 text-left">
-                    <input
-                      type="checkbox"
-                      onChange={handleSelectAll}
-                      checked={selectedOrders.length === orders.length && orders.length > 0}
-                    />
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Order Details</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Menu Items</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Vendor</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Delivery</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-[#1E2938] divide-y divide-orange-500/20">
-                {orders.map((order) => (
-                  <tr key={order._id} className="hover:bg-orange-500/10">
-                    <td className="px-6 py-4">
+          <>
+            <div className="overflow-x-auto scrollbar-hide hidden md:block">
+              <table className="w-full">
+                <thead className="bg-orange-500/10">
+                  <tr>
+                    <th className="px-6 py-4 text-left">
                       <input
                         type="checkbox"
-                        checked={selectedOrders.includes(order._id)}
-                        onChange={() => handleSelectOrder(order._id)}
+                        onChange={handleSelectAll}
+                        checked={selectedOrders.length === orders.length && orders.length > 0}
                       />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-orange-400" />
-                        <div>
-                          <div>
-                            {order.orderNumber }
-                          </div>
-                          <div className="text-sm text-white font-medium">
-                            {order.userId?.name || 'N/A'}
-                          </div>
-                          <div className="text-xs text-orange-300">
-                            {order.userId?.phoneNumber?.internationalNumber || 'N/A'}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        {order.selectedMenus?.length > 0 ? (
-                          <div>
-                            <div className="text-white font-medium">
-                              {order.selectedMenus[0].foodTitle}
-                            </div>
-                            {order.selectedMenus.length > 1 && (
-                              <div className="text-xs text-orange-300">
-                                +{order.selectedMenus.length - 1} more items
-                              </div>
-                            )}
-                            <div className="text-xs text-orange-300 capitalize mt-1">
-                              {order.mealType?.replace('_', ' ')}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-orange-300">No items</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <div className="text-white font-medium">
-                          {order.vendorDetails?.vendorId?.businessInfo?.businessName || 'N/A'}
-                        </div>
-                        <div className="text-xs text-orange-300 capitalize">
-                          {order.vendorDetails?.vendorType?.replace('_', ' ') || ''}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <div className="flex items-center gap-1 text-white">
-                          <Calendar className="w-4 h-4 text-orange-400" />
-                          {formatDate(order.deliveryDate)}
-                        </div>
-                        <div className="flex items-center gap-1 text-orange-300 mt-1">
-                          <Clock className="w-4 h-4" />
-                          {order.deliveryTime || 'N/A'}
-                        </div>
-                        <div className="text-xs text-orange-300/70 mt-1">
-                          {order.deliveryAddress?.city}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        {getStatusBadge(order)}
-                        {order.cancellationDetails?.isCancelled && (
-                          <div className="text-xs text-red-400">Cancelled</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => fetchOrderDetails(order._id)}
-                          className="text-orange-400 hover:text-orange-300 transition-colors"
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        
-                        {order.status === 'out_for_delivery' && !order.skipDetails?.isSkipped && !order.cancellationDetails?.isCancelled && (
-                          <button
-                            onClick={() => handleConfirmDelivery(order._id)}
-                            disabled={confirmingDelivery}
-                            className="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50"
-                          >
-                            <CheckCircle className="w-3 h-3" />
-                            {confirmingDelivery ? 'Confirming...' : 'Confirm Delivery'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Order Details</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Customer</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Menu Items</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Vendor</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Delivery</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-[#1E2938] divide-y divide-orange-500/20">
+                  {orders.map((order) => (
+                    <tr key={order._id} className="hover:bg-orange-500/10">
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.includes(order._id)}
+                          onChange={() => handleSelectOrder(order._id)}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-orange-400" />
+                          <div>
+                            <div>
+                              {order.orderNumber }
+                            </div>
+                            <div className="text-sm text-white font-medium">
+                              {order.userId?.name || 'N/A'}
+                            </div>
+                            <div className="text-xs text-orange-300">
+                              {order.userId?.phoneNumber?.internationalNumber || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          {order.selectedMenus?.length > 0 ? (
+                            <div>
+                              <div className="text-white font-medium">
+                                {order.selectedMenus[0].foodTitle}
+                              </div>
+                              {order.selectedMenus.length > 1 && (
+                                <div className="text-xs text-orange-300">
+                                  +{order.selectedMenus.length - 1} more items
+                                </div>
+                              )}
+                              <div className="text-xs text-orange-300 capitalize mt-1">
+                                {order.mealType?.replace('_', ' ')}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-orange-300">No items</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          <div className="text-white font-medium">
+                            {order.vendorDetails?.vendorId?.businessInfo?.businessName || 'N/A'}
+                          </div>
+                          <div className="text-xs text-orange-300 capitalize">
+                            {order.vendorDetails?.vendorType?.replace('_', ' ') || ''}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          <div className="flex items-center gap-1 text-white">
+                            <Calendar className="w-4 h-4 text-orange-400" />
+                            {formatDate(order.deliveryDate)}
+                          </div>
+                          <div className="flex items-center gap-1 text-orange-300 mt-1">
+                            <Clock className="w-4 h-4" />
+                            {order.deliveryTime || 'N/A'}
+                          </div>
+                          <div className="text-xs text-orange-300/70 mt-1">
+                            {order.deliveryAddress?.city}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          {getStatusBadge(order)}
+                          {order.cancellationDetails?.isCancelled && (
+                            <div className="text-xs text-red-400">Cancelled</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => fetchOrderDetails(order._id)}
+                            className="text-orange-400 hover:text-orange-300 transition-colors"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          
+                          {order.status === 'out_for_delivery' && !order.skipDetails?.isSkipped && !order.cancellationDetails?.isCancelled && (
+                            <button
+                              onClick={() => handleConfirmDelivery(order._id)}
+                              disabled={confirmingDelivery}
+                              className="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              {confirmingDelivery ? 'Confirming...' : 'Confirm Delivery'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden space-y-4 p-4">
+              {orders.map((order) => (
+                <div key={order._id} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-col">
+                      <span className="text-white font-medium">
+                        {order.orderNumber}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {formatDate(order.deliveryDate)}
+                      </span>
+                    </div>
+                    {getStatusBadge(order)}
+                  </div>
+
+                  <div className="mb-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <User className="w-4 h-4 text-orange-400" />
+                      <span>{order.userId?.name || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <ChefHat className="w-4 h-4 text-orange-400" />
+                      <span>{order.vendorDetails?.vendorId?.businessInfo?.businessName || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <Package className="w-4 h-4 text-orange-400" />
+                      <span>
+                        {order.selectedMenus?.length > 0 ? order.selectedMenus[0].foodTitle : 'No items'}
+                        {order.selectedMenus?.length > 1 && ` +${order.selectedMenus.length - 1} more`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-3 border-t border-gray-700 gap-3">
+                    <button
+                      onClick={() => fetchOrderDetails(order._id)}
+                      className="flex items-center gap-1 text-orange-400 hover:text-orange-300 text-sm"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Details
+                    </button>
+                    {order.status === 'out_for_delivery' && !order.skipDetails?.isSkipped && !order.cancellationDetails?.isCancelled && (
+                      <button
+                        onClick={() => handleConfirmDelivery(order._id)}
+                        disabled={confirmingDelivery}
+                        className="flex items-center gap-1 text-green-400 hover:text-green-300 text-sm disabled:opacity-50"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Confirm
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12">
             <Package className="w-12 h-12 text-orange-400 mx-auto mb-4" />

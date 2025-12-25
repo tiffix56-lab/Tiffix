@@ -45,8 +45,7 @@ const PaymentHistory = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
-    return istDate.toLocaleDateString('en-IN', {
+    return date.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: '2-digit',
@@ -206,7 +205,7 @@ const PaymentHistory = () => {
                               <Text
                                 className="text-lg font-semibold text-black dark:text-white"
                                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                                {formatCurrency(calculateTotalWithGST(transaction.finalAmount))}
+                                {formatCurrency(transaction.finalAmount)}
                               </Text>
                               <Text
                                 className="text-xs text-zinc-500 dark:text-zinc-400"

@@ -397,9 +397,8 @@ function VendorAssignment() {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
-    return new Date(istDate).toLocaleDateString('en-IN', {
+    console.log(dateString);
+    return new Date(dateString).toLocaleDateString('en-IN', {
 
       year: 'numeric',
       month: 'short',
@@ -410,7 +409,7 @@ function VendorAssignment() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -470,33 +469,33 @@ function VendorAssignment() {
       </div> */}
 
       {/* Quick Actions */}
-      <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+      <div className="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
         <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           <button
             onClick={() => handleQuickFilter('pending')}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
           >
             <Clock className="w-4 h-4" />
             View Pending
           </button>
           <button
             onClick={() => handleQuickFilter('initial')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Initial Assignments
           </button>
           <button
             onClick={() => handleQuickFilter('switches')}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Vendor Switches
           </button>
           <button
             onClick={() => handleQuickFilter('urgent')}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             <AlertTriangle className="w-4 h-4" />
             Urgent Requests
@@ -505,7 +504,7 @@ function VendorAssignment() {
       </div>
 
       {/* Search and Filter Section */}
-      <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+      <div className="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
         <div className="flex flex-col lg:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -519,7 +518,7 @@ function VendorAssignment() {
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -532,21 +531,23 @@ function VendorAssignment() {
               ))}
             </select>
 
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 transition-colors"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-              <ChevronDown className={`w-4 h-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white hover:bg-gray-600 transition-colors"
+              >
+                <Filter className="w-4 h-4" />
+                Filters
+                <ChevronDown className={`w-4 h-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </button>
 
-            <button
-              onClick={handleSearch}
-              className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              Search
-            </button>
+              <button
+                onClick={handleSearch}
+                className="flex-1 sm:flex-none px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Search
+              </button>
+            </div>
           </div>
         </div>
 
@@ -613,9 +614,10 @@ function VendorAssignment() {
         )}
       </div>
 
-      {/* Assignment Table */}
+      {/* Assignment Table/Cards */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-700">
               <tr>
@@ -728,7 +730,7 @@ function VendorAssignment() {
                       {getStatusBadge(assignment.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {formatDate(assignment.requestedAt || assignment.createdAt)}
+                      {formatDate(assignment.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
@@ -769,10 +771,101 @@ function VendorAssignment() {
           </table>
         </div>
 
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4 p-4">
+          {loading ? (
+            <div className="text-center py-8">
+              <RefreshCw className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-2" />
+              <p className="text-gray-400">Loading assignments...</p>
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+              <p className="text-gray-400">No vendor assignments found</p>
+            </div>
+          ) : (
+            assignments.map((assignment) => (
+              <div key={assignment._id} className="bg-gray-700 rounded-lg p-4 border border-gray-600 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="text-sm text-white">
+                    <span className="font-medium">#{assignment._id?.slice(-6)}</span>
+                    <div className="text-xs text-gray-400 capitalize mt-1">
+                      {assignment.requestType?.replace('_', ' ')}
+                    </div>
+                  </div>
+                  {getStatusBadge(assignment.status)}
+                </div>
+
+                <div className="flex items-center gap-3 py-2 border-y border-gray-600">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center shrink-0">
+                    <span className="text-white text-sm font-semibold">
+                      {assignment.userId?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-white">
+                      {assignment.userId?.name || 'Unknown User'}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {assignment.userId?.phoneNumber?.internationalNumber || ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-400 text-xs">Priority:</span>
+                    <div className="mt-1 flex items-center gap-2">
+                      {getPriorityBadge(assignment.priority)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-gray-400 text-xs">Requested:</span>
+                    <div className="text-white text-xs mt-1">
+                      {formatDate(assignment.createdAt)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-600">
+                  {assignment.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => openAssignModal(assignment)}
+                        className="flex items-center gap-1 text-green-400 hover:text-green-300 text-sm"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Assign
+                      </button>
+                      <button
+                        onClick={() => openRejectModal(assignment)}
+                        className="flex items-center gap-1 text-red-400 hover:text-red-300 text-sm"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedRequest(assignment);
+                      setShowDetailsModal(true);
+                    }}
+                    className="flex items-center gap-1 text-orange-400 hover:text-orange-300 text-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Details
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-gray-700 border-t border-gray-600">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-gray-400">
                 Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalAssignments)} of {totalAssignments} assignments
               </div>

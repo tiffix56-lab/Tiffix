@@ -22,8 +22,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPe
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-      <div className="flex items-center justify-between mt-8 text-gray-400">
-          <div>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-8 text-gray-400">
+          <div className="text-sm text-center md:text-left">
               <p>Showing <span className="font-semibold text-white">{startItem}</span> to <span className="font-semibold text-white">{endItem}</span> of <span className="font-semibold text-white">{totalItems}</span> results</p>
           </div>
           <div className="flex items-center space-x-2">
@@ -213,10 +213,10 @@ function UserManagement() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 md:p-6">
       <div className="">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">User Management</h1>
           <p className="text-gray-400">Manage users, vendors, and administrators</p>
         </div>
 
@@ -266,18 +266,18 @@ function UserManagement() {
         )}
 
         {/* Controls */}
-        <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl shadow-xl p-6 mb-6 border border-gray-600">
+        <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl shadow-xl p-4 md:p-6 mb-6 border border-gray-600">
           <div className="space-y-4">
             {/* Top Row - Search, Basic Filters */}
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
+              <div className="flex flex-col md:flex-row flex-wrap gap-4 items-stretch md:items-center">
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Search users..."
-                    className="pl-10 pr-4 py-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
+                    className="w-full md:w-auto pl-10 pr-4 py-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder-gray-400"
                     value={filters.search}
                     onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                   />
@@ -287,7 +287,7 @@ function UserManagement() {
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-orange-400" />
                   <select
-                    className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
+                    className="flex-1 md:flex-none bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
                     value={filters.role}
                     onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
                   >
@@ -323,7 +323,7 @@ function UserManagement() {
 
               <button
                 onClick={clearFilters}
-                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 border border-gray-600 hover:border-gray-500"
+                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 border border-gray-600 hover:border-gray-500"
               >
                 <RefreshCw className="w-4 h-4" />
                 Clear Filters
