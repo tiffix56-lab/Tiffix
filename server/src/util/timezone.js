@@ -11,7 +11,7 @@ class TimezoneUtil {
      * @returns {Date} Current date in IST
      */
     static now() {
-        return new Date(new Date().toLocaleString('en-US', { timeZone: INDIAN_TIMEZONE }))
+        return new Date()
     }
 
     /**
