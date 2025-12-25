@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import TimezoneUtil from '../util/timezone.js'
+import Sequence from './sequence.model.js'
 
 export const EOrderStatus = Object.freeze({
     UPCOMING: 'upcoming',
@@ -202,22 +203,33 @@ orderSchema.index({ userSubscriptionId: 1, deliveryDate: 1 })
 orderSchema.index({ status: 1, deliveryDate: 1 })
 
 // Pre-save hook to generate order number
-orderSchema.pre('save', async function (next) {
+orderSchema.pre('validate', async function (next) {
     try {
         if (this.isNew && !this.orderNumber) {
-            console.log('🔢 Generating order number for new order...', {
-                orderDate: this.orderDate,
-                userId: this.userId,
-                mealType: this.mealType
+            // Use orderDate if available, otherwise current time
+            const dateBasis = this.orderDate || TimezoneUtil.now()
+            
+            // Convert to IST to get correct day
+            const istDate = TimezoneUtil.toIST(dateBasis)
+            const year = istDate.getFullYear()
+            const month = String(istDate.getMonth() + 1).padStart(2, '0')
+            const day = String(istDate.getDate()).padStart(2, '0')
+            const datePrefix = `${year}${month}${day}`
+            const sequenceId = `order_${datePrefix}`
+
+            console.log('🔢 Generating atomic order number...', {
+                sequenceId,
+                userId: this.userId
             })
 
-            if (!this.orderDate) {
-                console.error('❌ orderDate is missing for order number generation')
-                throw new Error('orderDate is required to generate orderNumber')
-            }
-            
+            // Atomically increment the sequence for this day
+            const sequence = await Sequence.findByIdAndUpdate(
+                sequenceId,
+                { $inc: { sequence_value: 1 } },
+                { new: true, upsert: true }
+            )
 
-            this.orderNumber = `TFX-${new Date().now()}`
+            this.orderNumber = `${datePrefix}-${String(sequence.sequence_value).padStart(4, '0')}`
             console.log(`✅ Generated order number: ${this.orderNumber}`)
         }
         next()
