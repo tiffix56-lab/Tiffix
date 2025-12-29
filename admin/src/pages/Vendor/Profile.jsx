@@ -346,14 +346,14 @@ function Profile() {
               <Card.Header>
                 <div className="flex items-center justify-between">
                   <Card.Title>Profile Information</Card.Title>
-                  <Button
+                  {/* <Button
                     onClick={() => setEditMode(!editMode)}
                     variant="outline"
                     size="sm"
                     icon={editMode ? Save : Edit3}
                   >
                     {editMode ? 'Cancel' : 'Edit'}
-                  </Button>
+                  </Button> */}
                 </div>
               </Card.Header>
 

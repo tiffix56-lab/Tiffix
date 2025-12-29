@@ -744,56 +744,59 @@ function Order() {
 
       {/* Order Details Modal */}
       {showDetailsModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1E2938] rounded-xl p-6 w-full max-w-4xl border border-orange-500/30 max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1E2938] rounded-xl w-full max-w-4xl border border-orange-500/30 max-h-[90vh] overflow-y-auto scrollbar-hide">
+            <div className="sticky top-0 bg-[#1E2938] px-6 py-4 border-b border-orange-500/30 flex items-center justify-between z-10">
               <h3 className="text-lg font-semibold text-white">Order Details</h3>
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="text-orange-300 hover:text-white"
+                className="p-2 hover:bg-orange-500/10 rounded-full text-orange-300 hover:text-white transition-colors"
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="space-y-6">
+            <div className="p-6 space-y-8">
               {/* Order Header */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-orange-300 text-sm">Order Number</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-[#1E2938] p-4 rounded-lg border border-orange-500/10">
+                  <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-1">Order Number</p>
                   <p className="text-white font-mono font-medium">
                     {selectedOrder.orderNumber || `#${selectedOrder._id?.slice(-8)}`}
                   </p>
                 </div>
-                <div>
-                  <p className="text-orange-300 text-sm">Status</p>
+                <div className="bg-[#1E2938] p-4 rounded-lg border border-orange-500/10">
+                  <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-2">Status</p>
                   {getStatusBadge(selectedOrder)}
                 </div>
-                <div>
-                  <p className="text-orange-300 text-sm">Credits Used</p>
-                  <p className="text-white">{selectedOrder.creditsUsed || 0}</p>
+                <div className="bg-[#1E2938] p-4 rounded-lg border border-orange-500/10">
+                  <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-1">Credits Used</p>
+                  <p className="text-white font-medium text-lg">{selectedOrder.creditsUsed || 0}</p>
                 </div>
               </div>
 
               {/* Customer Information */}
               <div>
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <User className="w-4 h-4" />
+                <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                  <User className="w-5 h-5 text-orange-400" />
                   Customer Information
                 </h4>
-                <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
-                  <div className="mb-4">
-                    <p className="text-orange-300 text-sm">User ID</p>
-                    <p className="text-white font-mono text-sm">{selectedOrder.userId || 'N/A'}</p>
+                <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg">
+                  <div className="mb-6">
+                    <p className="text-orange-300 text-sm mb-1">User ID</p>
+                    <p className="text-white font-mono text-sm bg-black/20 p-2 rounded">{selectedOrder.userId || 'N/A'}</p>
                   </div>
-                  <div className="mt-4">
+                  <div>
                     <p className="text-orange-300 text-sm mb-2">Delivery Address</p>
-                    <div className="text-white text-sm">
-                      <p>{selectedOrder.deliveryAddress?.street}</p>
+                    <div className="text-white space-y-1">
+                      <p className="font-medium">{selectedOrder.deliveryAddress?.street}</p>
                       <p>{selectedOrder.deliveryAddress?.city}, {selectedOrder.deliveryAddress?.state}</p>
-                      <p>{selectedOrder.deliveryAddress?.zipCode}</p>
+                      <p className="text-gray-400">{selectedOrder.deliveryAddress?.zipCode}</p>
                       {selectedOrder.deliveryAddress?.landmark && (
-                        <p className="text-orange-300 mt-1">Landmark: {selectedOrder.deliveryAddress.landmark}</p>
+                        <div className="mt-2 p-2 bg-orange-500/5 border-l-2 border-orange-500 rounded">
+                          <p className="text-orange-300 text-xs uppercase font-semibold">Landmark</p>
+                          <p className="text-white text-sm">{selectedOrder.deliveryAddress.landmark}</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -803,36 +806,37 @@ function Order() {
               {/* Menu Items */}
               {selectedOrder.selectedMenus?.length > 0 && (
                 <div>
-                  <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                    <ChefHat className="w-4 h-4" />
-                    Menu Items ({selectedOrder.mealType})
+                  <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                    <ChefHat className="w-5 h-5 text-orange-400" />
+                    Menu Items ({selectedOrder.mealType?.replace('_', ' ')?.toUpperCase()})
                   </h4>
-                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg space-y-3">
+                  <div className="space-y-3">
                     {selectedOrder.selectedMenus.map((menu, index) => (
-                      <div key={menu._id || index} className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                      <div key={menu._id || index} className="flex flex-col sm:flex-row items-start gap-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
                         {menu.foodImage && (
                           <img 
                             src={menu.foodImage} 
                             alt={menu.foodTitle}
-                            className="w-16 h-16 rounded-lg object-cover"
+                            className="w-full sm:w-24 h-48 sm:h-24 rounded-lg object-cover border border-orange-500/20"
                             onError={(e) => {
                               e.target.style.display = 'none'
                             }}
                           />
                         )}
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 w-full">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                             <div>
-                              <p className="text-white font-medium">{menu.foodTitle}</p>
-                              <p className="text-orange-400 font-semibold">₹{menu.price}</p>
+                              <p className="text-white font-semibold text-lg">{menu.foodTitle}</p>
+                              <p className="text-orange-400 font-bold">₹{menu.price}</p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-orange-300 text-sm font-mono">ID: {menu._id}</p>
-                            </div>
+                            <span className="text-orange-300/50 text-xs font-mono bg-black/20 px-2 py-1 rounded">ID: {menu._id}</span>
                           </div>
-                          <p className="text-white text-sm mb-2">{menu.description?.short}</p>
+                          <p className="text-gray-300 text-sm mb-3 leading-relaxed">{menu.description?.short}</p>
                           {menu.detailedItemList && (
-                            <p className="text-orange-300 text-xs mb-2">Items: {menu.detailedItemList}</p>
+                            <div className="bg-black/20 p-2 rounded text-xs">
+                              <span className="text-orange-300 font-semibold mr-2">ITEMS:</span>
+                              <span className="text-gray-400">{menu.detailedItemList}</span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -844,26 +848,26 @@ function Order() {
               {/* Daily Meal Information */}
               {selectedOrder.dailyMealId && (
                 <div>
-                  <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
+                  <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                    <Calendar className="w-5 h-5 text-orange-400" />
                     Daily Meal Information
                   </h4>
-                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
-                        <p className="text-orange-300 text-sm">Meal Date</p>
-                        <p className="text-white">{formatDate(selectedOrder.dailyMealId.mealDate)}</p>
+                        <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-1">Meal Date</p>
+                        <p className="text-white font-medium">{formatDate(selectedOrder.dailyMealId.mealDate)}</p>
                       </div>
                       <div>
-                        <p className="text-orange-300 text-sm">Daily Meal ID</p>
-                        <p className="text-white font-mono text-xs">{selectedOrder.dailyMealId._id}</p>
+                        <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-1">Daily Meal ID</p>
+                        <p className="text-white font-mono text-xs bg-black/20 p-1.5 rounded inline-block">{selectedOrder.dailyMealId._id}</p>
                       </div>
                     </div>
                     {selectedOrder.dailyMealId.notes && (
                       <div className="mt-4">
-                        <p className="text-orange-300 text-sm mb-2">Notes</p>
-                        <p className="text-white text-sm bg-orange-500/10 border border-orange-500/20 p-3 rounded">
-                          {selectedOrder.dailyMealId.notes}
+                        <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-2">Notes</p>
+                        <p className="text-white text-sm bg-orange-500/10 border border-orange-500/20 p-4 rounded-lg italic">
+                          "{selectedOrder.dailyMealId.notes}"
                         </p>
                       </div>
                     )}
@@ -874,59 +878,59 @@ function Order() {
               {/* User Subscription Information */}
               {selectedOrder.userSubscriptionId && (
                 <div>
-                  <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                    <Package className="w-4 h-4" />
+                  <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                    <Package className="w-5 h-5 text-orange-400" />
                     Subscription Details
                   </h4>
-                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
-                    <div className="grid grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-orange-300 text-sm">Plan Name</p>
-                        <p className="text-white">{selectedOrder.userSubscriptionId.subscriptionId?.planName || 'N/A'}</p>
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg space-y-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-black/20 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Plan Name</p>
+                        <p className="text-white text-sm font-medium">{selectedOrder.userSubscriptionId.subscriptionId?.planName || 'N/A'}</p>
                       </div>
-                      <div>
-                        <p className="text-orange-300 text-sm">Category</p>
-                        <p className="text-white capitalize">{selectedOrder.userSubscriptionId.subscriptionId?.category || 'N/A'}</p>
+                      <div className="bg-black/20 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Category</p>
+                        <p className="text-white text-sm font-medium capitalize">{selectedOrder.userSubscriptionId.subscriptionId?.category || 'N/A'}</p>
                       </div>
-                      <div>
-                        <p className="text-orange-300 text-sm">Status</p>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                      <div className="bg-black/20 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Status</p>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                           selectedOrder.userSubscriptionId.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-red-500/20 text-red-400'
                         }`}>
                           {selectedOrder.userSubscriptionId.status}
                         </span>
                       </div>
-                      <div>
-                        <p className="text-orange-300 text-sm">Credits</p>
-                        <p className="text-white">{selectedOrder.userSubscriptionId.creditsUsed || 0}/{selectedOrder.userSubscriptionId.creditsGranted || 0}</p>
+                      <div className="bg-black/20 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Credits</p>
+                        <p className="text-white text-sm font-medium">{selectedOrder.userSubscriptionId.creditsUsed || 0}/{selectedOrder.userSubscriptionId.creditsGranted || 0}</p>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-orange-300 text-sm">Original Price</p>
-                        <p className="text-white">₹{selectedOrder.userSubscriptionId.originalPrice || 0}</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="border border-orange-500/10 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Original Price</p>
+                        <p className="text-white text-sm">₹{selectedOrder.userSubscriptionId.originalPrice || 0}</p>
                       </div>
-                      <div>
-                        <p className="text-orange-300 text-sm">Final Price</p>
-                        <p className="text-orange-400 font-semibold">₹{selectedOrder.userSubscriptionId.finalPrice || 0}</p>
+                      <div className="border border-orange-500/10 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Final Price</p>
+                        <p className="text-orange-400 font-bold text-base">₹{selectedOrder.userSubscriptionId.finalPrice || 0}</p>
                       </div>
-                      <div>
-                        <p className="text-orange-300 text-sm">Discount</p>
-                        <p className="text-green-400">₹{selectedOrder.userSubscriptionId.discountApplied || 0}</p>
+                      <div className="border border-orange-500/10 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Discount</p>
+                        <p className="text-green-400 text-sm font-medium">₹{selectedOrder.userSubscriptionId.discountApplied || 0}</p>
                       </div>
-                      <div>
-                        <p className="text-orange-300 text-sm">Skip Credits</p>
-                        <p className="text-white">{selectedOrder.userSubscriptionId.skipCreditUsed || 0}/{selectedOrder.userSubscriptionId.skipCreditAvailable || 0}</p>
+                      <div className="border border-orange-500/10 p-3 rounded-lg">
+                        <p className="text-orange-300 text-[10px] uppercase tracking-wider font-bold mb-1">Skip Credits</p>
+                        <p className="text-white text-sm font-medium">{selectedOrder.userSubscriptionId.skipCreditUsed || 0}/{selectedOrder.userSubscriptionId.skipCreditAvailable || 0}</p>
                       </div>
                     </div>
 
                     {selectedOrder.userSubscriptionId.subscriptionId?.description && (
-                      <div className="mb-4">
-                        <p className="text-orange-300 text-sm mb-2">Description</p>
-                        <p className="text-white text-sm bg-orange-500/10 border border-orange-500/20 p-3 rounded">
+                      <div className="bg-black/20 p-4 rounded-lg">
+                        <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-2">Description</p>
+                        <p className="text-gray-300 text-sm leading-relaxed">
                           {selectedOrder.userSubscriptionId.subscriptionId.description}
                         </p>
                       </div>
@@ -934,17 +938,19 @@ function Order() {
 
                     {/* Meal Timing */}
                     {selectedOrder.userSubscriptionId.mealTiming && (
-                      <div className="mb-4">
-                        <p className="text-orange-300 text-sm mb-2">Meal Timing</p>
-                        <div className="flex gap-4">
+                      <div>
+                        <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-3">Meal Timing</p>
+                        <div className="flex flex-wrap gap-3">
                           {selectedOrder.userSubscriptionId.mealTiming.lunch?.enabled && (
-                            <div className="bg-orange-500/20 border border-orange-500/30 px-3 py-2 rounded">
-                              <span className="text-white text-sm">Lunch: {selectedOrder.userSubscriptionId.mealTiming.lunch.time}</span>
+                            <div className="bg-orange-600/20 border border-orange-500/30 px-4 py-2 rounded-full flex items-center gap-2">
+                              <Clock className="w-3 h-3 text-orange-400" />
+                              <span className="text-white text-xs font-medium">Lunch: {selectedOrder.userSubscriptionId.mealTiming.lunch.time}</span>
                             </div>
                           )}
                           {selectedOrder.userSubscriptionId.mealTiming.dinner?.enabled && (
-                            <div className="bg-orange-500/20 border border-orange-500/30 px-3 py-2 rounded">
-                              <span className="text-white text-sm">Dinner: {selectedOrder.userSubscriptionId.mealTiming.dinner.time}</span>
+                            <div className="bg-orange-600/20 border border-orange-500/30 px-4 py-2 rounded-full flex items-center gap-2">
+                              <Clock className="w-3 h-3 text-orange-400" />
+                              <span className="text-white text-xs font-medium">Dinner: {selectedOrder.userSubscriptionId.mealTiming.dinner.time}</span>
                             </div>
                           )}
                         </div>
@@ -952,14 +958,24 @@ function Order() {
                     )}
 
                     {/* Subscription Period */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-orange-300 text-sm">Start Date</p>
-                        <p className="text-white">{formatDate(selectedOrder.userSubscriptionId.startDate)}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-orange-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-green-500/10 flex items-center justify-center">
+                          <Calendar className="w-4 h-4 text-green-400" />
+                        </div>
+                        <div>
+                          <p className="text-orange-300 text-[10px] uppercase font-bold">Start Date</p>
+                          <p className="text-white text-sm">{formatDate(selectedOrder.userSubscriptionId.startDate)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-orange-300 text-sm">End Date</p>
-                        <p className="text-white">{formatDate(selectedOrder.userSubscriptionId.endDate)}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center">
+                          <Calendar className="w-4 h-4 text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-orange-300 text-[10px] uppercase font-bold">End Date</p>
+                          <p className="text-white text-sm">{formatDate(selectedOrder.userSubscriptionId.endDate)}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -968,52 +984,52 @@ function Order() {
 
               {/* Vendor Information */}
               <div>
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
+                <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                  <MapPin className="w-5 h-5 text-orange-400" />
                   Vendor Information
                 </h4>
-                <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
-                  <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
                     <div>
-                      <p className="text-orange-300 text-sm">Business Name</p>
-                      <p className="text-white">{selectedOrder.vendorDetails?.vendorId?.businessInfo?.businessName || 'N/A'}</p>
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-1">Business Name</p>
+                      <p className="text-white font-semibold">{selectedOrder.vendorDetails?.vendorId?.businessInfo?.businessName || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-orange-300 text-sm">Type</p>
-                      <p className="text-white capitalize">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-1">Type</p>
+                      <p className="text-white capitalize font-medium">
                         {selectedOrder.vendorDetails?.vendorType?.replace('_', ' ') || 'N/A'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-orange-300 text-sm">Vendor ID</p>
-                      <p className="text-white font-mono text-xs">{selectedOrder.vendorDetails?.vendorId?._id || 'N/A'}</p>
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-1">Vendor ID</p>
+                      <p className="text-white font-mono text-xs bg-black/20 p-1.5 rounded inline-block">{selectedOrder.vendorDetails?.vendorId?._id || 'N/A'}</p>
                     </div>
                   </div>
                   
                   {/* Vendor Assignment Info */}
                   {selectedOrder.userSubscriptionId?.vendorDetails && (
-                    <div className="border-t border-orange-500/30 pt-4">
-                      <p className="text-orange-300 text-sm mb-3">Vendor Assignment</p>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-orange-300 text-xs">Current Vendor</p>
-                          <p className="text-white text-sm">
-                            {selectedOrder.userSubscriptionId.vendorDetails.isVendorAssigned ? 'Yes' : 'No'}
+                    <div className="border-t border-orange-500/20 pt-5">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-4">Vendor Assignment</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-black/20 p-3 rounded-lg">
+                          <p className="text-gray-400 text-[10px] uppercase mb-1">Assigned</p>
+                          <p className="text-white text-sm font-medium">
+                            {selectedOrder.userSubscriptionId.vendorDetails.isVendorAssigned ? 'YES' : 'NO'}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-orange-300 text-xs">Assigned Date</p>
-                          <p className="text-white text-sm">
+                        <div className="bg-black/20 p-3 rounded-lg">
+                          <p className="text-gray-400 text-[10px] uppercase mb-1">Assigned At</p>
+                          <p className="text-white text-sm font-medium">
                             {selectedOrder.userSubscriptionId.vendorDetails.currentVendor?.assignedAt 
                               ? formatDate(selectedOrder.userSubscriptionId.vendorDetails.currentVendor.assignedAt)
                               : 'N/A'
                             }
                           </p>
                         </div>
-                        <div>
-                          <p className="text-orange-300 text-xs">Switch Used</p>
-                          <p className="text-white text-sm">
-                            {selectedOrder.userSubscriptionId.vendorDetails.vendorSwitchUsed ? 'Yes' : 'No'}
+                        <div className="bg-black/20 p-3 rounded-lg">
+                          <p className="text-gray-400 text-[10px] uppercase mb-1">Switch Used</p>
+                          <p className="text-white text-sm font-medium">
+                            {selectedOrder.userSubscriptionId.vendorDetails.vendorSwitchUsed ? 'YES' : 'NO'}
                           </p>
                         </div>
                       </div>
@@ -1024,38 +1040,54 @@ function Order() {
 
               {/* Delivery Information */}
               <div>
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <Truck className="w-4 h-4" />
+                <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                  <Truck className="w-5 h-5 text-orange-400" />
                   Delivery Information
                 </h4>
-                <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-orange-300 text-sm">Delivery Date</p>
-                      <p className="text-white">{formatDate(selectedOrder.deliveryDate)}</p>
+                <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-orange-500/50" />
+                      <div>
+                        <p className="text-orange-300 text-xs uppercase font-bold">Delivery Date</p>
+                        <p className="text-white font-medium">{formatDate(selectedOrder.deliveryDate)}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-orange-300 text-sm">Delivery Time</p>
-                      <p className="text-white">{selectedOrder.deliveryTime || 'N/A'}</p>
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-orange-500/50" />
+                      <div>
+                        <p className="text-orange-300 text-xs uppercase font-bold">Delivery Time</p>
+                        <p className="text-white font-medium">{selectedOrder.deliveryTime || 'N/A'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-orange-300 text-sm">Order Created</p>
-                      <p className="text-white">{formatDateTime(selectedOrder.createdAt)}</p>
+                    <div className="flex items-center gap-3">
+                      <Activity className="w-5 h-5 text-orange-500/50" />
+                      <div>
+                        <p className="text-orange-300 text-xs uppercase font-bold">Created At</p>
+                        <p className="text-white font-medium">{formatDateTime(selectedOrder.createdAt)}</p>
+                      </div>
                     </div>
                   </div>
                   
                   {/* Delivery Photos */}
                   {selectedOrder.deliveryConfirmation?.deliveryPhotos?.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-orange-300 text-sm mb-2">Delivery Photos</p>
-                      <div className="flex gap-2">
+                    <div className="mt-6 pt-6 border-t border-orange-500/20">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-4 flex items-center gap-2">
+                        <Camera className="w-4 h-4" />
+                        Delivery Evidence
+                      </p>
+                      <div className="flex flex-wrap gap-4">
                         {selectedOrder.deliveryConfirmation.deliveryPhotos.map((photo, index) => (
-                          <img 
-                            key={index}
-                            src={photo} 
-                            alt={`Delivery photo ${index + 1}`}
-                            className="w-20 h-20 rounded-lg object-cover"
-                          />
+                          <div key={index} className="relative group">
+                            <img 
+                              src={photo} 
+                              alt={`Delivery evidence ${index + 1}`}
+                              className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-orange-500/20 hover:border-orange-500 transition-all cursor-zoom-in"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                              <Eye className="w-6 h-6 text-white" />
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1066,28 +1098,36 @@ function Order() {
               {/* Skip/Cancel Details */}
               {(selectedOrder.skipDetails?.isSkipped || selectedOrder.cancellationDetails?.isCancelled) && (
                 <div>
-                  <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    {selectedOrder.skipDetails?.isSkipped ? 'Skip Details' : 'Cancellation Details'}
+                  <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    Special Status Details
                   </h4>
-                  <div className="bg-orange-900/20 border border-orange-500/30 p-4 rounded-lg">
+                  <div className="bg-red-500/5 border border-red-500/20 p-5 rounded-xl">
                     {selectedOrder.skipDetails?.isSkipped && (
-                      <div>
-                        <p className="text-orange-400 font-medium mb-2">Order Skipped</p>
-                        <p className="text-gray-300 text-sm mb-1">
-                          Reason: {selectedOrder.skipDetails.skipReason}
-                        </p>
-                        <p className="text-gray-300 text-sm mb-1">
-                          Skipped at: {formatDateTime(selectedOrder.skipDetails.skippedAt)}
-                        </p>
-                        <p className="text-gray-300 text-sm">
-                          Credits Refunded: {selectedOrder.skipDetails.creditsRefunded ? 'Yes' : 'No'}
-                        </p>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-orange-400 font-bold">
+                          <RefreshCw className="w-5 h-5" />
+                          ORDER SKIPPED
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="bg-black/20 p-3 rounded-lg">
+                            <p className="text-gray-400 text-[10px] uppercase mb-1">Reason</p>
+                            <p className="text-white text-sm">{selectedOrder.skipDetails.skipReason}</p>
+                          </div>
+                          <div className="bg-black/20 p-3 rounded-lg">
+                            <p className="text-gray-400 text-[10px] uppercase mb-1">Skipped At</p>
+                            <p className="text-white text-sm">{formatDateTime(selectedOrder.skipDetails.skippedAt)}</p>
+                          </div>
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-xs font-bold">
+                          {selectedOrder.skipDetails.creditsRefunded ? '✓ CREDITS REFUNDED' : '✗ CREDITS NOT REFUNDED'}
+                        </div>
                       </div>
                     )}
                     {selectedOrder.cancellationDetails?.isCancelled && (
-                      <div>
-                        <p className="text-red-400 font-medium">Order Cancelled</p>
+                      <div className="flex items-center gap-2 text-red-500 font-bold text-lg">
+                        <XCircle className="w-6 h-6" />
+                        ORDER CANCELLED
                       </div>
                     )}
                   </div>
@@ -1097,23 +1137,26 @@ function Order() {
               {/* Status History */}
               {selectedOrder.statusHistory?.length > 0 && (
                 <div>
-                  <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    Status History
+                  <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                    <Activity className="w-5 h-5 text-orange-400" />
+                    Status Timeline
                   </h4>
-                  <div className="bg-[#1E2938] border border-orange-500/20 p-4 rounded-lg space-y-3">
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-6 rounded-lg space-y-6 relative before:absolute before:left-8 before:top-8 before:bottom-8 before:w-0.5 before:bg-orange-500/20">
                     {selectedOrder.statusHistory.map((history, index) => (
-                      <div key={index} className="border-l-2 border-orange-500 pl-4">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-orange-400 font-medium capitalize">
+                      <div key={index} className="relative pl-10">
+                        <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-orange-500 bg-[#1E2938] z-10"></div>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                          <span className="text-orange-400 font-bold uppercase text-sm tracking-wide">
                             {history.status?.replace('_', ' ')}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-gray-500 font-medium">
                             {formatDateTime(history.updatedAt)}
                           </span>
                         </div>
                         {history.notes && (
-                          <p className="text-gray-300 text-sm">{history.notes}</p>
+                          <p className="text-gray-300 text-sm bg-black/20 p-3 rounded-lg border border-orange-500/5 leading-relaxed">
+                            {history.notes}
+                          </p>
                         )}
                       </div>
                     ))}

@@ -677,21 +677,32 @@ function Subscription() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-gray-800 rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl">
-            <div className="sticky top-0 bg-gradient-to-r from-gray-700 to-gray-800 border-b border-gray-600 px-6 py-4 rounded-t-xl">
+          <div className="bg-gray-800 rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl relative">
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 rounded-t-xl z-10 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Package className="w-5 h-5 text-orange-400" />
                 {editingSubscription ? 'Edit Subscription Plan' : 'Create Subscription Plan'}
               </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false)
+                  setEditingSubscription(null)
+                  resetForm()
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-6 bg-gray-800">
+            <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6 bg-gray-800">
               {/* Basic Information */}
               <div>
                 <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
                   <Crown className="w-5 h-5 text-orange-400" />
                   Basic Information
                 </h3>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label htmlFor="planName" className="block text-sm font-medium text-gray-300 mb-2">Plan Name *</label>
                     <input
@@ -719,7 +730,7 @@ function Subscription() {
                   </div>
                 </div>
 
-                <div>
+                <div className="mb-4">
                   <label htmlFor="duration" className="block text-sm font-medium text-gray-300 mb-2">Duration</label>
                   <select
                     id="duration"
@@ -734,7 +745,7 @@ function Subscription() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                   <div>
                     <label htmlFor="durationDays" className="block text-sm font-medium text-gray-300 mb-2">Duration (Days)</label>
                     <input
@@ -794,7 +805,7 @@ function Subscription() {
                   <DollarSign className="w-5 h-5 text-orange-400" />
                   Pricing
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="originalPrice" className="block text-sm font-medium text-gray-300 mb-2">Original Price (₹) *</label>
                     <input
@@ -876,81 +887,99 @@ function Subscription() {
                   <Clock className="w-5 h-5 text-orange-400" />
                   Meal Timings
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <label className="flex items-center text-gray-300 hover:text-white cursor-pointer">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  <label className="flex items-center text-gray-300 hover:text-white cursor-pointer bg-gray-900/50 p-3 rounded-lg border border-gray-700/50 transition-colors hover:bg-gray-900">
                     <input
                       type="checkbox"
                       name="freeDelivery"
                       checked={formData.freeDelivery}
                       onChange={handleInputChange}
-                      className="mr-2 text-orange-500 rounded focus:ring-orange-500"
+                      className="mr-3 text-orange-500 rounded focus:ring-orange-500 w-5 h-5 bg-gray-800 border-gray-600"
                     />
                     Free Delivery
                   </label>
-                  <label className="flex items-center text-gray-300 hover:text-white cursor-pointer">
+                  <label className="flex items-center text-gray-300 hover:text-white cursor-pointer bg-gray-900/50 p-3 rounded-lg border border-gray-700/50 transition-colors hover:bg-gray-900">
                     <input
                       type="checkbox"
                       name="mealTimings.isLunchAvailable"
                       checked={formData.mealTimings.isLunchAvailable}
                       onChange={handleInputChange}
-                      className="mr-2 text-orange-500 rounded focus:ring-orange-500"
+                      className="mr-3 text-orange-500 rounded focus:ring-orange-500 w-5 h-5 bg-gray-800 border-gray-600"
                     />
                     Lunch Available
                   </label>
-                  <label className="flex items-center text-gray-300 hover:text-white cursor-pointer">
+                  <label className="flex items-center text-gray-300 hover:text-white cursor-pointer bg-gray-900/50 p-3 rounded-lg border border-gray-700/50 transition-colors hover:bg-gray-900">
                     <input
                       type="checkbox"
                       name="mealTimings.isDinnerAvailable"
                       checked={formData.mealTimings.isDinnerAvailable}
                       onChange={handleInputChange}
-                      className="mr-2 text-orange-500 rounded focus:ring-orange-500"
+                      className="mr-3 text-orange-500 rounded focus:ring-orange-500 w-5 h-5 bg-gray-800 border-gray-600"
                     />
                     Dinner Available
                   </label>
                 </div>
 
                 {/* Time Windows */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {formData.mealTimings.isLunchAvailable && (
-                    <div>
-                      <h4 className="text-md font-medium text-white mb-2">Lunch Time Window</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="time"
-                          name="mealTimings.lunchOrderWindow.startTime"
-                          value={formData.mealTimings.lunchOrderWindow.startTime}
-                          onChange={handleInputChange}
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
-                        />
-                        <input
-                          type="time"
-                          name="mealTimings.lunchOrderWindow.endTime"
-                          value={formData.mealTimings.lunchOrderWindow.endTime}
-                          onChange={handleInputChange}
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
-                        />
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50">
+                      <h4 className="text-md font-medium text-white mb-3 flex items-center gap-2">
+                         <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                         Lunch Time Window
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                         <div>
+                            <label className="text-xs text-gray-400 mb-1 block">Start Time</label>
+                            <input
+                              type="time"
+                              name="mealTimings.lunchOrderWindow.startTime"
+                              value={formData.mealTimings.lunchOrderWindow.startTime}
+                              onChange={handleInputChange}
+                              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
+                            />
+                         </div>
+                         <div>
+                            <label className="text-xs text-gray-400 mb-1 block">End Time</label>
+                            <input
+                              type="time"
+                              name="mealTimings.lunchOrderWindow.endTime"
+                              value={formData.mealTimings.lunchOrderWindow.endTime}
+                              onChange={handleInputChange}
+                              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
+                            />
+                         </div>
                       </div>
                     </div>
                   )}
 
                   {formData.mealTimings.isDinnerAvailable && (
-                    <div>
-                      <h4 className="text-md font-medium text-white mb-2">Dinner Time Window</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="time"
-                          name="mealTimings.dinnerOrderWindow.startTime"
-                          value={formData.mealTimings.dinnerOrderWindow.startTime}
-                          onChange={handleInputChange}
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
-                        />
-                        <input
-                          type="time"
-                          name="mealTimings.dinnerOrderWindow.endTime"
-                          value={formData.mealTimings.dinnerOrderWindow.endTime}
-                          onChange={handleInputChange}
-                          className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
-                        />
+                    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50">
+                      <h4 className="text-md font-medium text-white mb-3 flex items-center gap-2">
+                         <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                         Dinner Time Window
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                         <div>
+                            <label className="text-xs text-gray-400 mb-1 block">Start Time</label>
+                            <input
+                              type="time"
+                              name="mealTimings.dinnerOrderWindow.startTime"
+                              value={formData.mealTimings.dinnerOrderWindow.startTime}
+                              onChange={handleInputChange}
+                              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
+                            />
+                         </div>
+                         <div>
+                            <label className="text-xs text-gray-400 mb-1 block">End Time</label>
+                            <input
+                              type="time"
+                              name="mealTimings.dinnerOrderWindow.endTime"
+                              value={formData.mealTimings.dinnerOrderWindow.endTime}
+                              onChange={handleInputChange}
+                              className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white"
+                            />
+                         </div>
                       </div>
                     </div>
                   )}
@@ -965,7 +994,7 @@ function Subscription() {
                 </h3>
                 <div className="bg-gray-900 border border-gray-600 rounded-lg p-4">
                   <div className="mb-3">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                       <p className="text-gray-400 text-sm">Select menus to include in this subscription plan:</p>
                       <div className="flex gap-2">
                         <button
@@ -986,7 +1015,7 @@ function Subscription() {
                                 : [...new Set([...prev.planMenus, ...filteredMenuIds])]
                             }));
                           }}
-                          className="text-xs px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors"
+                          className="text-xs px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors whitespace-nowrap"
                         >
                           {menus.filter(menu => 
                             menu.foodTitle.toLowerCase().includes(menuSearchTerm.toLowerCase()) ||
@@ -1008,7 +1037,7 @@ function Subscription() {
                     </div>
                   </div>
                   {menus && menus.length > 0 ? (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {menus
                         .filter(menu => 
                           menu.foodTitle.toLowerCase().includes(menuSearchTerm.toLowerCase()) ||
@@ -1018,7 +1047,7 @@ function Subscription() {
                         .map((menu) => (
                         <label
                           key={menu._id}
-                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 cursor-pointer border border-gray-700 hover:border-gray-600 transition-colors"
+                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-800 cursor-pointer border border-gray-700 hover:border-gray-600 transition-colors"
                         >
                           <input
                             type="checkbox"
@@ -1032,17 +1061,17 @@ function Subscription() {
                                   : prev.planMenus.filter(id => id !== menu._id)
                               }));
                             }}
-                            className="w-4 h-4 text-orange-500 bg-gray-800 border-gray-600 rounded focus:ring-orange-500 focus:ring-2"
+                            className="w-4 h-4 text-orange-500 bg-gray-800 border-gray-600 rounded focus:ring-orange-500 focus:ring-2 mt-1"
                           />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-white font-medium">{menu.foodTitle}</h4>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-white font-medium truncate">{menu.foodTitle}</h4>
                               <span className="text-sm text-orange-400 font-semibold">₹{menu.price}</span>
                             </div>
                             <p className="text-gray-400 text-sm line-clamp-1">
                               {menu.description?.short || menu.description || 'No description available'}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded">
                                 {menu.cuisine}
                               </span>
@@ -1092,7 +1121,7 @@ function Subscription() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t border-gray-600">
+              <div className="sticky bottom-0 -mx-4 md:-mx-6 -mb-6 p-4 md:p-6 bg-gray-800 border-t border-gray-700 flex justify-end gap-4 rounded-b-xl z-10">
                 <button
                   type="button"
                   onClick={() => {
