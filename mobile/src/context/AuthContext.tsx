@@ -16,6 +16,7 @@ import Toast from 'react-native-toast-message';
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; message: string }>;
   googleLogin: (idToken: string) => Promise<{ success: boolean; message: string; needsProfileCompletion?: boolean }>;
+  appleLogin: (idToken: string, firstName?: string | null, lastName?: string | null) => Promise<{ success: boolean; message: string; needsProfileCompletion?: boolean }>;
   register: (credentials: RegisterCredentials) => Promise<{ success: boolean; message: string; requiresVerification?: boolean }>;
   verifyEmail: (data: VerifyEmailData) => Promise<{ success: boolean; message: string }>;
   resendOTP: (email: string) => Promise<{ success: boolean; message: string }>;
@@ -219,6 +220,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       return { success: false, message: 'Google login failed' };
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  const appleLogin = async (idToken: string, firstName?: string | null, lastName?: string | null) => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    try {
+      const response = await authService.appleMobileLogin(idToken, firstName, lastName);
+
+      if (response.success && response.data) {
+        await storageService.setToken(response.data.accessToken);
+        await storageService.setUserData(response.data.user);
+
+        // Save needsProfileCompletion flag to storage
+        if (response.data.needsProfileCompletion) {
+          await storageService.setNeedsProfileCompletion(true);
+        } else {
+          await storageService.removeNeedsProfileCompletion();
+        }
+
+        initializeAuth();
+
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Logged in with Apple successfully',
+        });
+
+        return {
+          success: true,
+          message: response.message,
+          needsProfileCompletion: response.data.needsProfileCompletion
+        };
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Apple Login Failed',
+          text2: response.message,
+        });
+
+        return { success: false, message: response.message };
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Apple Login Failed',
+        text2: 'Something went wrong',
+      });
+
+      return { success: false, message: 'Apple login failed' };
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -532,6 +585,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     refreshProfile,
     needsPhoneNumber,
+    appleLogin,
   };
 
   return (

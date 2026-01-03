@@ -14,6 +14,7 @@ export default {
     plugins: [
       "expo-font",
       "expo-router",
+      "expo-apple-authentication",
       "@react-native-firebase/app",
       [
         "expo-build-properties",

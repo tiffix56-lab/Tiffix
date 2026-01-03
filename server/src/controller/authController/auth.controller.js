@@ -10,6 +10,7 @@ import quicker from '../../util/quicker.js';
 import whatsappService from '../../service/whatsappService.js';
 import TimezoneUtil from '../../util/timezone.js';
 import { OAuth2Client } from 'google-auth-library';
+import appleSignin from 'apple-signin-auth';
 
 
 export default {
@@ -896,6 +897,135 @@ export default {
 
         } catch (err) {
             console.error('Google mobile auth error:', err);
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    appleMobileAuth: async (req, res, next) => {
+        try {
+            const { idToken, firstName, lastName } = req.body;
+
+            if (!idToken) {
+                return httpError(next, new Error('Identity token is required'), req, 400);
+            }
+
+            let appleIdTokenClaims;
+            try {
+                appleIdTokenClaims = await appleSignin.verifyIdToken(idToken, {
+                    audience: config.auth.apple.bundleId,
+                    ignoreExpiration: true,
+                });
+            } catch (err) {
+                console.error('Apple token verification failed:', err);
+                return httpError(next, new Error('Invalid Apple token'), req, 401);
+            }
+
+            const { email, sub: appleId } = appleIdTokenClaims;
+
+            let user = await userModel.findOne({
+                $or: [
+                    { emailAddress: email, isDeleted: false },
+                    { appleId: appleId, isDeleted: false }
+                ]
+            });
+
+            if (user) {
+                if (user.isBanned) {
+                    return httpError(next, new Error('Your account is suspended'), req, 401);
+                }
+
+                if (user.provider === EAuthProvider.LOCAL) {
+                    user.provider = EAuthProvider.APPLE;
+                    user.appleId = appleId;
+                    user.accountConfirmation.status = true;
+                    user.isActive = true;
+                } else if (!user.appleId) {
+                    user.appleId = appleId;
+                }
+
+                user.lastLogin = TimezoneUtil.now();
+                await user.save();
+            } else {
+                if (!email) {
+                    return httpError(next, new Error('Email not provided by Apple. Please try again or check your Apple ID settings.'), req, 400);
+                }
+
+                const name = (firstName && lastName) ? `${firstName} ${lastName}` : (firstName || 'Apple User');
+
+                const userData = {
+                    name,
+                    emailAddress: email,
+                    appleId: appleId,
+                    provider: EAuthProvider.APPLE,
+                    role: EUserRole.USER,
+                    consent: true,
+                    isActive: true,
+                    isDeleted: false,
+                    accountConfirmation: {
+                        status: true,
+                        timestamp: TimezoneUtil.now()
+                    },
+                    referral: {
+                        userReferralCode: await userModel.generateUniqueReferralCode(),
+                        referralCodeGeneratedAt: TimezoneUtil.now(),
+                        canRefer: true
+                    },
+                    lastLogin: TimezoneUtil.now()
+                };
+
+                user = new userModel(userData);
+                await user.save();
+
+                try {
+                    const userProfile = new userProfileModel({
+                        userId: user._id,
+                        addresses: [],
+                        preferences: {}
+                    });
+                    await userProfile.save();
+                } catch (profileError) {
+                    console.warn('User profile creation failed for Apple OAuth user:', profileError.message);
+                }
+            }
+
+            const needsProfileCompletion = !user.phoneNumber?.internationalNumber;
+
+            const accessToken = quicker.generateToken(
+                {
+                    userId: user._id,
+                    email: user.emailAddress,
+                    userType: user.role,
+                    role: user.role
+                },
+                config.auth.jwtSecret,
+                config.auth.jwtExpiresIn
+            );
+
+            res.cookie('accessToken', accessToken, {
+                sameSite: 'strict',
+                maxAge: 1000 * 3600 * 24 * 365,
+                httpOnly: true,
+                secure: !(config.env === EApplicationEnvironment.DEVELOPMENT)
+            });
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                accessToken,
+                user: {
+                    id: user._id,
+                    email: user.emailAddress,
+                    name: user.name,
+                    userType: user.role,
+                    role: user.role
+                },
+                needsProfileCompletion,
+                message: needsProfileCompletion
+                    ? 'Please complete your profile by adding phone number'
+                    : 'Login successful'
+            });
+
+        } catch (err) {
+            console.error('Apple mobile auth error:', err);
             const errorMessage = err.message || 'Internal server error';
             httpError(next, new Error(errorMessage), req, 500);
         }

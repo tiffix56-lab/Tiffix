@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: null
         },
+        appleId: {
+            type: String,
+            default: null
+        },
         provider: {
             type: String,
             enum: [...Object.values(EAuthProvider)],

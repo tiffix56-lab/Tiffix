@@ -66,6 +66,7 @@ router.route('/auth/failure').get(authController.oauthFailure)
 
 // Mobile OAuth routes
 router.route('/auth/google/mobile').post(authController.googleMobileAuth)
+router.route('/auth/apple/mobile').post(authController.appleMobileAuth)
 
 
 // ############### USER PROFILE ROUTES ####################

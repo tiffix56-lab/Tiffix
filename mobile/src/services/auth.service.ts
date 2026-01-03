@@ -139,6 +139,23 @@ class AuthService {
     };
   }
 
+  async appleMobileLogin(idToken: string, firstName?: string | null, lastName?: string | null): Promise<AuthResponse> {
+    const response = await apiService.post<{ accessToken: string; user: User; needsProfileCompletion?: boolean }>(
+      API_ENDPOINTS.AUTH.APPLE_MOBILE,
+      { idToken, firstName, lastName }
+    );
+
+    return {
+      success: response.success,
+      message: response.message,
+      data: response.data ? {
+        user: response.data.user,
+        accessToken: response.data.accessToken,
+        needsProfileCompletion: response.data.needsProfileCompletion,
+      } : undefined,
+    };
+  }
+
   async deleteAccount(): Promise<ApiResponse> {
     return await apiService.post(API_ENDPOINTS.AUTH.DELETE_ACCOUNT);
   }

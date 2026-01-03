@@ -16,6 +16,7 @@
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "apple-signin-auth": "^2.0.0",
     "bcrypt": "^6.0.0",
     "colorette": "^2.0.20",
     "connect-mongo": "^5.1.0",

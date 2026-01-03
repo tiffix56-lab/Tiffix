@@ -43,6 +43,9 @@ const config = {
             appId: process.env.FACEBOOK_APP_ID,
             appSecret: process.env.FACEBOOK_APP_SECRET,
             callbackURL: process.env.FACEBOOK_CALLBACK_URL || `${process.env.SERVER_URL || 'http://localhost:5000'}/v1/auth/facebook/callback`
+        },
+        apple: {
+            bundleId: "com.rutwik187.tiffix"
         }
     },
     security: {

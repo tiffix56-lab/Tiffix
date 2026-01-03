@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
     GOOGLE_CALLBACK: '/auth/google/callback',
     FACEBOOK_CALLBACK: '/auth/facebook/callback',
     GOOGLE_MOBILE: '/auth/google/mobile',
+    APPLE_MOBILE: '/auth/apple/mobile',
     INIT_PROFILE_FILL: '/auth/init-profile-fill',
   },
   USER: {
