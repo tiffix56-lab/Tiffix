@@ -146,7 +146,7 @@ const MealSubscriptions = () => {
           ))}
         </View>
       </View>
-      <TouchableOpacity onPress={() => router.push('/(profile)/address')} className="pb-6">
+      {!selectedAddress && <TouchableOpacity onPress={() => router.push('/(profile)/address')} className="pb-6">
         <View className="mx-6 items-center justify-center rounded-xl border border-dashed border-orange-300 bg-orange-50 py-8 dark:border-orange-600 dark:bg-orange-900/20">
           <Feather name="map-pin" size={32} color={colorScheme === 'dark' ? '#FB923C' : '#EA580C'} />
           <Text
@@ -160,7 +160,7 @@ const MealSubscriptions = () => {
             Tap the address at the top to get started
           </Text>
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity>}
     </View>
   );
 };

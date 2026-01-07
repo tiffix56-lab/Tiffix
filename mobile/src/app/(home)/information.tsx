@@ -8,6 +8,8 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
+  Modal,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -132,16 +134,30 @@ const Information = () => {
 
   // Date picker handlers
   const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(false);
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
     if (selectedDate) {
       setDate(selectedDate);
-      const formattedDate = selectedDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      setSelectedDate(formattedDate);
+      if (Platform.OS === 'android') {
+        const formattedDate = selectedDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        setSelectedDate(formattedDate);
+      }
     }
+  };
+
+  const confirmDateIOS = () => {
+    setShowDatePicker(false);
+    const formattedDate = date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    setSelectedDate(formattedDate);
   };
 
   // Helper function to parse time string (e.g., "12:00 PM") to Date object
@@ -189,45 +205,93 @@ const Information = () => {
 
   // Time picker handlers
   const onLunchTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowLunchTimePicker(false);
+    }
+    if (selectedTime) {
+      setLunchDateTime(selectedTime);
+
+      if (Platform.OS === 'android' && selectedSubscription?.mealTimings.lunchOrderWindow) {
+        const { startTime, endTime } = selectedSubscription.mealTimings.lunchOrderWindow;
+
+        if (!isTimeInWindow(selectedTime, startTime, endTime)) {
+          Alert.alert(
+            'Invalid Time',
+            `Please select a time between ${startTime} and ${endTime} for lunch delivery.`
+          );
+          return;
+        }
+
+        // Format as 24-hour time (HH:MM)
+        const hours = selectedTime.getHours().toString().padStart(2, '0');
+        const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+        const formattedTime = `${hours}:${minutes}`;
+        setLunchTime(formattedTime);
+      }
+    }
+  };
+
+  const confirmLunchTimeIOS = () => {
     setShowLunchTimePicker(false);
-    if (selectedTime && selectedSubscription?.mealTimings.lunchOrderWindow) {
+    if (selectedSubscription?.mealTimings.lunchOrderWindow) {
       const { startTime, endTime } = selectedSubscription.mealTimings.lunchOrderWindow;
 
-      if (!isTimeInWindow(selectedTime, startTime, endTime)) {
+      if (!isTimeInWindow(lunchDateTime, startTime, endTime)) {
         Alert.alert(
           'Invalid Time',
           `Please select a time between ${startTime} and ${endTime} for lunch delivery.`
         );
         return;
       }
-
-      setLunchDateTime(selectedTime);
-      // Format as 24-hour time (HH:MM)
-      const hours = selectedTime.getHours().toString().padStart(2, '0');
-      const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+      const hours = lunchDateTime.getHours().toString().padStart(2, '0');
+      const minutes = lunchDateTime.getMinutes().toString().padStart(2, '0');
       const formattedTime = `${hours}:${minutes}`;
       setLunchTime(formattedTime);
     }
   };
 
   const onDinnerTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDinnerTimePicker(false);
+    }
+    if (selectedTime) {
+      setDinnerDateTime(selectedTime);
+
+      if (Platform.OS === 'android' && selectedSubscription?.mealTimings.dinnerOrderWindow) {
+        const { startTime, endTime } = selectedSubscription.mealTimings.dinnerOrderWindow;
+
+        if (!isTimeInWindow(selectedTime, startTime, endTime)) {
+          Alert.alert(
+            'Invalid Time',
+            `Please select a time between ${startTime} and ${endTime} for dinner delivery.`
+          );
+          return;
+        }
+        // Format as 24-hour time (HH:MM)
+        const hours = selectedTime.getHours().toString().padStart(2, '0');
+        const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+        const formattedTime = `${hours}:${minutes}`;
+        console.log('🕐 [DINNER_TIME] Selected time:', formattedTime);
+        setDinnerTime(formattedTime);
+      }
+    }
+  };
+
+  const confirmDinnerTimeIOS = () => {
     setShowDinnerTimePicker(false);
-    if (selectedTime && selectedSubscription?.mealTimings.dinnerOrderWindow) {
+    if (selectedSubscription?.mealTimings.dinnerOrderWindow) {
       const { startTime, endTime } = selectedSubscription.mealTimings.dinnerOrderWindow;
 
-      if (!isTimeInWindow(selectedTime, startTime, endTime)) {
+      if (!isTimeInWindow(dinnerDateTime, startTime, endTime)) {
         Alert.alert(
           'Invalid Time',
           `Please select a time between ${startTime} and ${endTime} for dinner delivery.`
         );
         return;
       }
-      setDinnerDateTime(selectedTime);
-      // Format as 24-hour time (HH:MM)
-      const hours = selectedTime.getHours().toString().padStart(2, '0');
-      const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+      const hours = dinnerDateTime.getHours().toString().padStart(2, '0');
+      const minutes = dinnerDateTime.getMinutes().toString().padStart(2, '0');
       const formattedTime = `${hours}:${minutes}`;
-      console.log('🕐 [DINNER_TIME] Selected time:', formattedTime);
       setDinnerTime(formattedTime);
     }
   };
@@ -538,34 +602,119 @@ const Information = () => {
       </View>
 
       {/* Date Picker */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={onDateChange}
-          minimumDate={new Date(new Date().setDate(new Date().getDate() + 1))}
-        />
+      {Platform.OS === 'ios' ? (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showDatePicker}
+          onRequestClose={() => setShowDatePicker(false)}>
+          <View className="flex-1 items-center justify-center bg-black/50">
+            <View className="w-[90%] rounded-2xl bg-white p-4 dark:bg-zinc-900">
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="inline"
+                onChange={onDateChange}
+                minimumDate={new Date(new Date().setDate(new Date().getDate() + 1))}
+                themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
+              />
+              <View className="mt-4 flex-row justify-end space-x-4">
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text className="text-base font-medium text-zinc-500 dark:text-zinc-400">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmDateIOS}>
+                  <Text className="ml-4 text-base font-semibold text-black dark:text-white">Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+            minimumDate={new Date(new Date().setDate(new Date().getDate() + 1))}
+          />
+        )
       )}
 
       {/* Lunch Time Picker */}
-      {showLunchTimePicker && (
-        <DateTimePicker
-          value={lunchDateTime}
-          mode="time"
-          display="default"
-          onChange={onLunchTimeChange}
-        />
+      {Platform.OS === 'ios' ? (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showLunchTimePicker}
+          onRequestClose={() => setShowLunchTimePicker(false)}>
+          <View className="flex-1 items-center justify-center bg-black/50">
+            <View className="w-[90%] rounded-2xl bg-white p-4 dark:bg-zinc-900">
+              <DateTimePicker
+                value={lunchDateTime}
+                mode="time"
+                display="spinner"
+                onChange={onLunchTimeChange}
+                themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
+              />
+              <View className="mt-4 flex-row justify-end space-x-4">
+                <TouchableOpacity onPress={() => setShowLunchTimePicker(false)}>
+                  <Text className="text-base font-medium text-zinc-500 dark:text-zinc-400">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmLunchTimeIOS}>
+                  <Text className="ml-4 text-base font-semibold text-black dark:text-white">Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        showLunchTimePicker && (
+          <DateTimePicker
+            value={lunchDateTime}
+            mode="time"
+            display="default"
+            onChange={onLunchTimeChange}
+          />
+        )
       )}
 
       {/* Dinner Time Picker */}
-      {showDinnerTimePicker && (
-        <DateTimePicker
-          value={dinnerDateTime}
-          mode="time"
-          display="default"
-          onChange={onDinnerTimeChange}
-        />
+      {Platform.OS === 'ios' ? (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showDinnerTimePicker}
+          onRequestClose={() => setShowDinnerTimePicker(false)}>
+          <View className="flex-1 items-center justify-center bg-black/50">
+            <View className="w-[90%] rounded-2xl bg-white p-4 dark:bg-zinc-900">
+              <DateTimePicker
+                value={dinnerDateTime}
+                mode="time"
+                display="spinner"
+                onChange={onDinnerTimeChange}
+                themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
+              />
+              <View className="mt-4 flex-row justify-end space-x-4">
+                <TouchableOpacity onPress={() => setShowDinnerTimePicker(false)}>
+                  <Text className="text-base font-medium text-zinc-500 dark:text-zinc-400">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmDinnerTimeIOS}>
+                  <Text className="ml-4 text-base font-semibold text-black dark:text-white">Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        showDinnerTimePicker && (
+          <DateTimePicker
+            value={dinnerDateTime}
+            mode="time"
+            display="default"
+            onChange={onDinnerTimeChange}
+          />
+        )
       )}
 
 

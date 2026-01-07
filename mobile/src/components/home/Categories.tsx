@@ -70,7 +70,7 @@ const Categories = () => {
         </TouchableOpacity>
 
         {/* Home Chef's Card */}
-        <TouchableOpacity className="flex-1" onPress={() => {}}>
+        <TouchableOpacity className="flex-1" disabled>
           <View className="relative h-64 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
             <Image
               source={require('@/assets/category-2.png')}
