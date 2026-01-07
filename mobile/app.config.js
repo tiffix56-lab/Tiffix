@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "Tiffix",
     slug: "tiffix-mobile",
-    version: "1.1.5",
+    version: "1.1.8",
     scheme: "tiffix",
     web: {
       favicon: "./src/assets/favicon.png",
@@ -50,7 +50,7 @@ export default {
     assetBundlePatterns: ["src/assets/*"],
     jsEngine: "hermes",
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: "com.rutwik187.tiffix",
       googleServicesFile: "./GoogleService-Info.plist",
       config: {
@@ -66,13 +66,18 @@ export default {
         ],
         "ITSAppUsesNonExemptEncryption": false,
         NSCameraUsageDescription:
-          "Snek needs access to your camera for capturing photos and enabling camera features.",
+          "Tiffix needs access to your camera for capturing photos and enabling camera features.",
         NSPhotoLibraryUsageDescription:
-          "Snek needs access to your photo library so you can upload and select images.",
+          "Tiffix needs access to your photo library so you can upload and select images.",
         NSPhotoLibraryAddUsageDescription:
-          "Snek needs permission to save photos to your gallery.",
+          "Tiffix needs permission to save photos to your gallery.",
         NSUserNotificationUsageDescription:
-          "Snek uses notifications to keep you updated with important alerts and updates."
+          "Tiffix uses notifications to keep you updated with important alerts and updates.",
+        NSLocationWhenInUseUsageDescription:
+          "Tiffix needs access to your location to provide location-based services.",
+        NSLocationAlwaysUsageDescription:
+          "Tiffix needs access to your location to show delivery addresses and track orders.",
+        
       },
     },
     android: {
