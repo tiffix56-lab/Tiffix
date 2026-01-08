@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "Tiffix",
     slug: "tiffix-mobile",
-    version: "1.1.8",
+    version: "1.1.9",
     scheme: "tiffix",
     web: {
       favicon: "./src/assets/favicon.png",
@@ -77,7 +77,7 @@ export default {
           "Tiffix needs access to your location to provide location-based services.",
         NSLocationAlwaysUsageDescription:
           "Tiffix needs access to your location to show delivery addresses and track orders.",
-        
+
       },
     },
     android: {

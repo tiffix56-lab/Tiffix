@@ -26,6 +26,7 @@ import Profile from "./pages/Vendor/Profile";
 import Dashboard from "./pages/Admin/Dashboard";
 import Analytics from "./pages/Admin/Analytics";
 import Complain from "./pages/Admin/Complain";
+import PushNotifications from "./pages/Admin/PushNotifications";
 
 
 
@@ -57,6 +58,7 @@ function App() {
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/complain" element={<Complain />} />
+            <Route path="/push-notifications" element={<PushNotifications />} />
           </Route>
 
           {/* Vendor Routes */}

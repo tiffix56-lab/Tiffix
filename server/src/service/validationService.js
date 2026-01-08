@@ -849,6 +849,14 @@ export const ValidateReviewQuery = Joi.object({
     sortBy: Joi.string().valid('createdAt', 'rating', 'helpfulCount').optional()
 });
 
+/**
+ * ************ NOTIFICATION VALIDATION ***********************
+ */
+export const ValidateBroadcastNotification = Joi.object({
+    title: Joi.string().min(3).max(100).trim().required(),
+    body: Joi.string().min(3).max(500).trim().required()
+});
+
 // Removed vendor response and report functionality for simplified review system
 
 export const validateJoiSchema = (schema, value) => {

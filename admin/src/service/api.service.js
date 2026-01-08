@@ -762,4 +762,11 @@ export const mapsGetStyleApi = async (styleName = 'default-light-standard-mr') =
     return response.data;
 }
 
+// NOTIFICATIONS
+
+export const sendBroadcastNotificationApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/notifications/broadcast', body);
+    return response.data;
+}
+
 

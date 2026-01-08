@@ -26,6 +26,7 @@ import authorization from '../middleware/authorization.js'
 import passport from '../config/passport.js'
 import { EUserRole } from '../constant/application.js'
 import contactController from '../controller/contactController/contact.controller.js'
+import notificationController from '../controller/notificationController/notification.controller.js'
 
 const router = Router()
 
@@ -326,5 +327,8 @@ router.route('/contacts').post(contactController.createContact)
 router.route('/admin/contacts').get(authentication, authorization([EUserRole.ADMIN]), contactController.getAllContacts)
 router.route('/admin/contacts/:contactId').put(authentication, authorization([EUserRole.ADMIN]), contactController.updateContact)
 router.route('/admin/contacts/:contactId').delete(authentication, authorization([EUserRole.ADMIN]), contactController.deleteContact)
+
+// ############### NOTIFICATION ROUTES ####################
+router.route('/admin/notifications/broadcast').post(authentication, authorization([EUserRole.ADMIN]), notificationController.sendBroadcastNotification)
 
 export default router
