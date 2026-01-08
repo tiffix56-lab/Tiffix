@@ -20,6 +20,8 @@ import TimezoneUtil from '../../util/timezone.js'
 import VendorAssignmentRequest from '../../models/vendorSwitchRequest.model.js'
 import User from '../../models/user.model.js'
 import { EPaymentStatus } from '../../constant/application.js'
+import emailService from '../../service/emailService.js'
+import whatsappService from '../../service/whatsappService.js'
 
 
 export default {
@@ -494,8 +496,44 @@ export default {
 
             await vendorAssignmentRequest.save();
 
+            // Send notifications
+            try {
+                const user = await User.findById(userId);
+                const startDateStr = TimezoneUtil.format(userSubscription.startDate, 'date');
+                const endDateStr = TimezoneUtil.format(userSubscription.endDate, 'date');
+
+                // Send Email
+                if (user.emailAddress) {
+                    await emailService.sendPurchaseSuccessEmail(
+                        user.emailAddress,
+                        user.name,
+                        subscription.planName,
+                        startDateStr,
+                        endDateStr,
+                        transaction.amount,
+                        transaction.transactionId
+                    );
+                }
+
+                // Send WhatsApp
+                if (user.phoneNumber && user.phoneNumber.internationalNumber) {
+                    await whatsappService.sendPurchaseSuccessMessage(
+                        user.phoneNumber.internationalNumber,
+                        user.name,
+                        subscription.planName,
+                        transaction.amount,
+                        startDateStr,
+                        endDateStr,
+                        transaction.transactionId
+                    );
+                }
+            } catch (notifyError) {
+                console.error("Notification Error:", notifyError);
+            }
+
             httpResponse(req, res, 200, responseMessage.customMessage("PAYMENT VERIFIED"), {
                 subscriptionId: userSubscription._id,
+                transactionId: transaction.transactionId,
                 status: 'active',
                 message: 'Subscription activated successfully. Vendor assignment request has been created and will be processed by admin shortly.',
                 vendorAssignmentRequestId: vendorAssignmentRequest._id,
