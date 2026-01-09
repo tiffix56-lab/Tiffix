@@ -21,9 +21,7 @@ servicesAxiosInstance.interceptors.response.use(
         window.location.href = '/login';
       }
 
-      return Promise.reject(
-        new Error(error.response?.data?.message || error.message || 'Request failed')
-      );
+      return Promise.reject(error);
     }
 
     return Promise.reject(new Error('An unknown error occurred'));
