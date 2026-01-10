@@ -7,13 +7,21 @@ class NotificationService {
   private listenersInitialized = false;
 
   async requestUserPermission(): Promise<boolean> {
-    // 🔹 iOS permission (Firebase + Expo compatible)
     if (Platform.OS === 'ios') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      return status === 'granted';
+      const authStatus = await messaging().requestPermission({
+        alert: true,
+        badge: true,
+        sound: true,
+      });
+
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+      console.log('[FCM] iOS permission:', enabled);
+      return enabled;
     }
 
-    // 🔹 Android 13+ permission
     if (Platform.OS === 'android' && Platform.Version >= 33) {
       const res = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
@@ -49,38 +57,36 @@ class NotificationService {
     this.listenersInitialized = true;
 
     Notifications.setNotificationHandler({
-  handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
-
+      handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
+        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
 
     // 🔹 Foreground messages
-    messaging().onMessage(async remoteMessage => {
+    messaging().onMessage(async (remoteMessage) => {
       Notifications.scheduleNotificationAsync({
         content: {
           title: remoteMessage.notification?.title ?? '',
           body: remoteMessage.notification?.body ?? '',
           data: remoteMessage.data,
         },
-        trigger: null, 
+        trigger: null,
       });
-
     });
 
     // 🔹 App opened from background
-    messaging().onNotificationOpenedApp(remoteMessage => {
+    messaging().onNotificationOpenedApp((remoteMessage) => {
       console.log('Opened from background:', remoteMessage.notification);
     });
 
     // 🔹 App opened from quit state
     messaging()
       .getInitialNotification()
-      .then(remoteMessage => {
+      .then((remoteMessage) => {
         if (remoteMessage) {
           console.log('Opened from quit:', remoteMessage.notification);
         }

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import {
   Calendar, Clock, Package, Filter, Search,
   Eye, RefreshCw, AlertCircle, CheckCircle, XCircle,
-  Truck, ChefHat, MapPin, User, Camera, Activity, X, RotateCcw
+  Truck, ChefHat, MapPin, User, Camera, Activity, X, RotateCcw,
+  Copy, ExternalLink
 } from 'lucide-react'
 import {
   getAdminOrdersApi,
@@ -198,6 +199,12 @@ function Order() {
     
     return Object.values(filtersToCheck).some(value => value !== '') || searchTerm.trim() !== ''
   }
+
+  const handleCopy = (text, label) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
 
   const getStatusBadge = (order) => {
     let status = order.status
@@ -781,21 +788,134 @@ function Order() {
                   <User className="w-5 h-5 text-orange-400" />
                   Customer Information
                 </h4>
-                <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg">
-                  <div className="mb-6">
-                    <p className="text-orange-300 text-sm mb-1">User ID</p>
-                    <p className="text-white font-mono text-sm bg-black/20 p-2 rounded">{selectedOrder.userId || 'N/A'}</p>
+                <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg space-y-4">
+                  
+                  {/* User Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">User ID</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-mono text-sm bg-black/20 px-2 py-1 rounded">
+                          {selectedOrder.userId?._id || selectedOrder.userId || 'N/A'}
+                        </span>
+                        <button
+                          onClick={() => handleCopy(selectedOrder.userId?._id || selectedOrder.userId, 'User ID')}
+                          className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                          title="Copy User ID"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">Full Name</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">
+                          {selectedOrder.userId?.name || 'N/A'}
+                        </span>
+                        {selectedOrder.userId?.name && (
+                          <button
+                            onClick={() => handleCopy(selectedOrder.userId.name, 'Name')}
+                            className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                            title="Copy Name"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">Phone Number</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-mono text-sm">
+                          {selectedOrder.userId?.phoneNumber?.internationalNumber || 'N/A'}
+                        </span>
+                        {selectedOrder.userId?.phoneNumber?.internationalNumber && (
+                          <button
+                            onClick={() => handleCopy(selectedOrder.userId.phoneNumber.internationalNumber, 'Phone Number')}
+                            className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                            title="Copy Phone"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">Email Address</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white text-sm">
+                          {selectedOrder.userId?.emailAddress || 'N/A'}
+                        </span>
+                        {selectedOrder.userId?.emailAddress && (
+                          <button
+                            onClick={() => handleCopy(selectedOrder.userId.emailAddress, 'Email')}
+                            className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                            title="Copy Email"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-orange-300 text-sm mb-2">Delivery Address</p>
-                    <div className="text-white space-y-1">
-                      <p className="font-medium">{selectedOrder.deliveryAddress?.street}</p>
-                      <p>{selectedOrder.deliveryAddress?.city}, {selectedOrder.deliveryAddress?.state}</p>
-                      <p className="text-gray-400">{selectedOrder.deliveryAddress?.zipCode}</p>
+
+                  {/* Delivery Address Section */}
+                  <div className="pt-4 border-t border-orange-500/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5" />
+                        Delivery Address
+                      </p>
+                      <button
+                        onClick={() => {
+                          const addr = selectedOrder.deliveryAddress;
+                          if (addr) handleCopy(`${addr.street}, ${addr.city}, ${addr.state} ${addr.zipCode}`, 'Address');
+                        }}
+                        className="flex items-center gap-1.5 px-2 py-1 text-xs bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 transition-colors"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy Address
+                      </button>
+                    </div>
+                    
+                    <div className="text-white space-y-1 bg-black/20 p-3 rounded-lg border border-orange-500/10">
+                      <p className="font-medium leading-relaxed">{selectedOrder.deliveryAddress?.street}</p>
+                      <p className="text-sm text-gray-300">{selectedOrder.deliveryAddress?.city}, {selectedOrder.deliveryAddress?.state}</p>
+                      <p className="text-sm text-gray-400">{selectedOrder.deliveryAddress?.zipCode}</p>
+                      
                       {selectedOrder.deliveryAddress?.landmark && (
-                        <div className="mt-2 p-2 bg-orange-500/5 border-l-2 border-orange-500 rounded">
-                          <p className="text-orange-300 text-xs uppercase font-semibold">Landmark</p>
-                          <p className="text-white text-sm">{selectedOrder.deliveryAddress.landmark}</p>
+                        <div className="mt-2 pt-2 border-t border-white/10">
+                          <span className="text-orange-300 text-xs font-semibold mr-2">LANDMARK:</span>
+                          <span className="text-white text-sm">{selectedOrder.deliveryAddress.landmark}</span>
+                        </div>
+                      )}
+
+                      {/* Map Coordinates Integration */}
+                      {selectedOrder.deliveryAddress?.coordinates?.coordinates && (
+                        <div className="flex flex-wrap gap-2 pt-3 mt-1">
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${selectedOrder.deliveryAddress.coordinates.coordinates[1]},${selectedOrder.deliveryAddress.coordinates.coordinates[0]}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-md hover:bg-blue-600/30 transition-colors text-xs font-medium"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            View on Map
+                          </a>
+                          <button
+                            onClick={() => {
+                              const coords = selectedOrder.deliveryAddress.coordinates.coordinates;
+                              handleCopy(`https://www.google.com/maps/search/?api=1&query=${coords[1]},${coords[0]}`, 'Map Link');
+                            }}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 text-gray-300 border border-gray-600 rounded-md hover:bg-gray-700 transition-colors text-xs font-medium"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            Copy Map Link
+                          </button>
                         </div>
                       )}
                     </div>

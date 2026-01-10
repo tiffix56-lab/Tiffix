@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "Tiffix",
     slug: "tiffix-mobile",
-    version: "1.1.9",
+    version: "1.2.0",
     scheme: "tiffix",
     web: {
       favicon: "./src/assets/favicon.png",

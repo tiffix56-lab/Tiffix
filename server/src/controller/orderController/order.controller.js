@@ -358,9 +358,9 @@ export default {
                 ])
             } else {
                 orders = await Order.find(query)
-                    .populate('userId', 'name phoneNumber')
-                    .populate('selectedMenus', 'foodTitle foodImage')
-                    .populate('userSubscriptionId', 'deliveryAddress')
+                    .populate('userId', 'name phoneNumber emailAddress')
+                    .populate('selectedMenus', 'foodTitle foodImage price description detailedItemList')
+                    .populate('userSubscriptionId', 'subscriptionId mealTiming skipCreditAvailable deliveryAddress')
                     .sort({ deliveryDate: 1, deliveryTime: 1 })
                     .limit(parseInt(limit))
                     .skip((parseInt(page) - 1) * parseInt(limit));
@@ -832,6 +832,7 @@ export default {
             const { orderId } = req.params;
 
             const order = await Order.findById(orderId)
+                .populate('userId', 'name phoneNumber emailAddress')
                 .populate('selectedMenus', 'foodTitle foodImage price description detailedItemList')
                 .populate('vendorDetails.vendorId', 'businessInfo.businessName businessInfo.address businessInfo.cuisineTypes')
                 .populate('userSubscriptionId', 'subscriptionId mealTiming skipCreditAvailable')

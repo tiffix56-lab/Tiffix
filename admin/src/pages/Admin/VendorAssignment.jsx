@@ -15,7 +15,9 @@ import {
   TrendingUp,
   ChevronDown,
   Plus,
-  ChefHat
+  ChefHat,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import {
   getVendorAssignmentsApi,
@@ -331,6 +333,11 @@ function VendorAssignment() {
       toast.error('Failed to update priority');
       console.error('Error updating priority:', error);
     }
+  };
+
+  const handleCopy = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
   };
 
   const openAssignModal = (request) => {
@@ -1288,22 +1295,113 @@ function VendorAssignment() {
                   </div>
                 )}
 
+                {/* Delivery Address Information */}
+                {selectedRequest.userSubscriptionId?.deliveryAddress && (
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-medium text-white flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-orange-400" />
+                        Delivery Address
+                      </h4>
+                      <button
+                        onClick={() => {
+                          const addr = selectedRequest.userSubscriptionId.deliveryAddress;
+                          handleCopy(`${addr.street}, ${addr.city}, ${addr.state} ${addr.zipCode}`, 'Address');
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-white bg-gray-600 rounded-md transition-colors"
+                        title="Copy Address"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-gray-400 text-xs">Address</span>
+                        <span className="text-white break-words">
+                          {selectedRequest.userSubscriptionId.deliveryAddress.street || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t border-gray-600 pt-2 mt-2">
+                        <span className="text-gray-400">City</span>
+                        <span className="text-white">
+                          {selectedRequest.userSubscriptionId.deliveryAddress.city || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">State</span>
+                        <span className="text-white">
+                          {selectedRequest.userSubscriptionId.deliveryAddress.state || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Pincode</span>
+                        <span className="text-white">
+                          {selectedRequest.userSubscriptionId.deliveryAddress.zipCode || 'N/A'}
+                        </span>
+                      </div>
+                      
+                      {selectedRequest.userSubscriptionId.deliveryAddress.coordinates?.coordinates && (
+                        <div className="flex flex-col gap-2 pt-2 border-t border-gray-600 mt-2">
+                          <span className="text-gray-400 text-xs">Map Location</span>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${selectedRequest.userSubscriptionId.deliveryAddress.coordinates.coordinates[1]},${selectedRequest.userSubscriptionId.deliveryAddress.coordinates.coordinates[0]}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 flex items-center justify-center gap-2 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded hover:bg-blue-600/30 transition-colors"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              View on Maps
+                            </a>
+                            <button
+                              onClick={() => {
+                                const coords = selectedRequest.userSubscriptionId.deliveryAddress.coordinates.coordinates;
+                                handleCopy(`https://www.google.com/maps/search/?api=1&query=${coords[1]},${coords[0]}`, 'Map Link');
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white bg-gray-600 rounded-md transition-colors"
+                              title="Copy Map Link"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Delivery Zone Information */}
                 {selectedRequest.deliveryZone && (
                   <div className="bg-gray-700 p-4 rounded-lg">
                     <h4 className="text-lg font-medium text-white mb-3 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-orange-400" />
+                      <TrendingUp className="w-5 h-5 text-orange-400" />
                       Delivery Zone
                     </h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Zone Name:</span>
-                        <span className="text-white">{selectedRequest.deliveryZone.name || 'N/A'}</span>
+                        <span className="text-white">{selectedRequest.deliveryZone.zoneName || selectedRequest.deliveryZone.name || 'N/A'}</span>
                       </div>
-                      {selectedRequest.deliveryZone.city && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">City:</span>
-                          <span className="text-white">{selectedRequest.deliveryZone.city}</span>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Service Radius:</span>
+                        <span className="text-white">{selectedRequest.deliveryZone.serviceRadius || 0} km</span>
+                      </div>
+                      <div className="flex flex-col gap-1 border-t border-gray-600 pt-2 mt-2">
+                        <span className="text-gray-400 text-xs">Pincodes:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selectedRequest.deliveryZone.pincodes?.map((pin, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-600 text-white text-xs rounded">
+                              {pin}
+                            </span>
+                          )) || <span className="text-white">N/A</span>}
+                        </div>
+                      </div>
+                      {selectedRequest.deliveryZone.coordinates && (
+                        <div className="flex justify-between border-t border-gray-600 pt-2 mt-2">
+                          <span className="text-gray-400">Base Coordinates:</span>
+                          <span className="text-white font-mono text-xs">
+                            {selectedRequest.deliveryZone.coordinates.lat?.toFixed(4)}, {selectedRequest.deliveryZone.coordinates.lng?.toFixed(4)}
+                          </span>
                         </div>
                       )}
                     </div>

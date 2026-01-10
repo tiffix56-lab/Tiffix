@@ -3,7 +3,7 @@ import {
   Search, Filter, Package, Clock, CheckCircle, Truck, 
   Eye, Calendar, User, MapPin, RefreshCw, ChefHat,
   BarChart3, AlertCircle, Play, Send, ChevronLeft, ChevronRight,
-  MoreVertical
+  MoreVertical, Copy, ExternalLink, X, Activity
 } from 'lucide-react';
 import {
   getVendorOrdersApi,
@@ -66,6 +66,12 @@ function Orders() {
     endDate: ''
   });
 
+  const handleCopy = (text, label) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
   const vendorStatuses = [
     { value: 'preparing', label: 'Preparing', color: 'yellow', icon: ChefHat },
     { value: 'out_for_delivery', label: 'Out for Delivery', color: 'purple', icon: Truck }
@@ -117,14 +123,13 @@ function Orders() {
     }
   };
 
-  const fetchOrderDetails = async (orderId) => {
-    try {
-      const data = await getOrderByIdApi(orderId);
-      setSelectedOrder(data.order);
+  const fetchOrderDetails = (orderId) => {
+    const order = orders.find(o => o._id === orderId);
+    if (order) {
+      setSelectedOrder(order);
       setShowDetailsModal(true);
-    } catch (error) {
-      console.error('Error fetching order details:', error);
-      toast.error('Error fetching order details');
+    } else {
+      toast.error('Order details not found');
     }
   };
 
@@ -421,16 +426,25 @@ function Orders() {
                       </td>
                       <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
                       <td className="px-6 py-4 text-right">
-                        {getNextStatus(order.status) && (
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => updateOrderStatus(order._id, getNextStatus(order.status))}
-                            disabled={updatingStatus === order._id}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => fetchOrderDetails(order._id)}
+                            className="p-1.5 text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                            title="View Details"
                           >
-                            {updatingStatus === order._id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-                            Mark as {getNextStatus(order.status)?.replace('_', ' ')}
+                            <Eye className="w-4 h-4" />
                           </button>
-                        )}
+                          {getNextStatus(order.status) && (
+                            <button
+                              onClick={() => updateOrderStatus(order._id, getNextStatus(order.status))}
+                              disabled={updatingStatus === order._id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {updatingStatus === order._id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                              Mark as {getNextStatus(order.status)?.replace('_', ' ')}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -511,18 +525,25 @@ function Orders() {
                   </div>
 
                   {/* Card Actions */}
-                  {getNextStatus(order.status) && (
-                    <div className="pl-8 flex justify-end">
+                  <div className="pl-8 flex justify-end gap-3 mt-4 pt-3 border-t border-gray-700/50">
+                    <button
+                      onClick={() => fetchOrderDetails(order._id)}
+                      className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-medium bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Details
+                    </button>
+                    {getNextStatus(order.status) && (
                       <button
                         onClick={() => updateOrderStatus(order._id, getNextStatus(order.status))}
                         disabled={updatingStatus === order._id}
-                        className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                       >
                         {updatingStatus === order._id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                         Mark as {getNextStatus(order.status)?.replace('_', ' ')}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -548,6 +569,312 @@ function Orders() {
           </div>
         )}
       </div>
+      {/* Order Details Modal */}
+      {showDetailsModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1E2938] rounded-xl w-full max-w-4xl border border-orange-500/30 max-h-[90vh] overflow-y-auto scrollbar-hide">
+            <div className="sticky top-0 bg-[#1E2938] px-6 py-4 border-b border-orange-500/30 flex items-center justify-between z-10">
+              <h3 className="text-lg font-semibold text-white">Order Details</h3>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="p-2 hover:bg-orange-500/10 rounded-full text-orange-300 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-8">
+              {/* Order Header */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-[#1E2938] p-4 rounded-lg border border-orange-500/10">
+                  <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-1">Order Number</p>
+                  <p className="text-white font-mono font-medium">
+                    {selectedOrder.orderNumber || `#${selectedOrder._id?.slice(-8)}`}
+                  </p>
+                </div>
+                <div className="bg-[#1E2938] p-4 rounded-lg border border-orange-500/10">
+                  <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-2">Status</p>
+                  {getStatusBadge(selectedOrder.status)}
+                </div>
+                <div className="bg-[#1E2938] p-4 rounded-lg border border-orange-500/10">
+                  <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold mb-1">Credits Used</p>
+                  <p className="text-white font-medium text-lg">{selectedOrder.creditsUsed || 0}</p>
+                </div>
+              </div>
+
+              {/* Customer Information */}
+              <div>
+                <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                  <User className="w-5 h-5 text-orange-400" />
+                  Customer Information
+                </h4>
+                <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg space-y-4">
+                  
+                  {/* User Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">User ID</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-mono text-sm bg-black/20 px-2 py-1 rounded">
+                          {selectedOrder.userId?._id || selectedOrder.userId || 'N/A'}
+                        </span>
+                        <button
+                          onClick={() => handleCopy(selectedOrder.userId?._id || selectedOrder.userId, 'User ID')}
+                          className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                          title="Copy User ID"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">Full Name</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">
+                          {selectedOrder.userId?.name || 'N/A'}
+                        </span>
+                        {selectedOrder.userId?.name && (
+                          <button
+                            onClick={() => handleCopy(selectedOrder.userId.name, 'Name')}
+                            className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                            title="Copy Name"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">Phone Number</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-mono text-sm">
+                          {selectedOrder.userId?.phoneNumber?.internationalNumber || 'N/A'}
+                        </span>
+                        {selectedOrder.userId?.phoneNumber?.internationalNumber && (
+                          <button
+                            onClick={() => handleCopy(selectedOrder.userId.phoneNumber.internationalNumber, 'Phone Number')}
+                            className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                            title="Copy Phone"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold">Email Address</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white text-sm">
+                          {selectedOrder.userId?.emailAddress || 'N/A'}
+                        </span>
+                        {selectedOrder.userId?.emailAddress && (
+                          <button
+                            onClick={() => handleCopy(selectedOrder.userId.emailAddress, 'Email')}
+                            className="p-1 hover:bg-orange-500/10 rounded-md text-orange-300/70 hover:text-orange-300 transition-colors"
+                            title="Copy Email"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delivery Address Section */}
+                  <div className="pt-4 border-t border-orange-500/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-semibold flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5" />
+                        Delivery Address
+                      </p>
+                      <button
+                        onClick={() => {
+                          const addr = selectedOrder.deliveryAddress;
+                          if (addr) handleCopy(`${addr.street}, ${addr.city}, ${addr.state} ${addr.zipCode}`, 'Address');
+                        }}
+                        className="flex items-center gap-1.5 px-2 py-1 text-xs bg-orange-500/10 text-orange-300 rounded hover:bg-orange-500/20 transition-colors"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy Address
+                      </button>
+                    </div>
+                    
+                    <div className="text-white space-y-1 bg-black/20 p-3 rounded-lg border border-orange-500/10">
+                      <p className="font-medium leading-relaxed">{selectedOrder.deliveryAddress?.street}</p>
+                      <p className="text-sm text-gray-300">{selectedOrder.deliveryAddress?.city}, {selectedOrder.deliveryAddress?.state}</p>
+                      <p className="text-sm text-gray-400">{selectedOrder.deliveryAddress?.zipCode}</p>
+                      
+                      {selectedOrder.deliveryAddress?.landmark && (
+                        <div className="mt-2 pt-2 border-t border-white/10">
+                          <span className="text-orange-300 text-xs font-semibold mr-2">LANDMARK:</span>
+                          <span className="text-white text-sm">{selectedOrder.deliveryAddress.landmark}</span>
+                        </div>
+                      )}
+
+                      {/* Map Coordinates Integration */}
+                      {selectedOrder.deliveryAddress?.coordinates?.coordinates && (
+                        <div className="flex flex-wrap gap-2 pt-3 mt-1">
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${selectedOrder.deliveryAddress.coordinates.coordinates[1]},${selectedOrder.deliveryAddress.coordinates.coordinates[0]}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-md hover:bg-blue-600/30 transition-colors text-xs font-medium"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            View on Map
+                          </a>
+                          <button
+                            onClick={() => {
+                              const coords = selectedOrder.deliveryAddress.coordinates.coordinates;
+                              handleCopy(`https://www.google.com/maps/search/?api=1&query=${coords[1]},${coords[0]}`, 'Map Link');
+                            }}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 text-gray-300 border border-gray-600 rounded-md hover:bg-gray-700 transition-colors text-xs font-medium"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            Copy Map Link
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu Items */}
+              {selectedOrder.selectedMenus?.length > 0 && (
+                <div>
+                  <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                    <ChefHat className="w-5 h-5 text-orange-400" />
+                    Menu Items ({selectedOrder.mealType?.replace('_', ' ')?.toUpperCase()})
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedOrder.selectedMenus.map((menu, index) => (
+                      <div key={menu._id || index} className="flex flex-col sm:flex-row items-start gap-4 p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
+                        {menu.foodImage && (
+                          <img 
+                            src={menu.foodImage} 
+                            alt={menu.foodTitle}
+                            className="w-full sm:w-24 h-48 sm:h-24 rounded-lg object-cover border border-orange-500/20"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                            }}
+                          />
+                        )}
+                        <div className="flex-1 w-full">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                            <div>
+                              <p className="text-white font-semibold text-lg">{menu.foodTitle}</p>
+                              <p className="text-orange-400 font-bold">₹{menu.price}</p>
+                            </div>
+                            <span className="text-orange-300/50 text-xs font-mono bg-black/20 px-2 py-1 rounded">ID: {menu._id}</span>
+                          </div>
+                          <p className="text-gray-300 text-sm mb-3 leading-relaxed">{menu.description?.short}</p>
+                          {menu.detailedItemList && (
+                            <div className="bg-black/20 p-2 rounded text-xs">
+                              <span className="text-orange-300 font-semibold mr-2">ITEMS:</span>
+                              <span className="text-gray-400">{menu.detailedItemList}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Delivery Information */}
+              <div>
+                <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                  <Truck className="w-5 h-5 text-orange-400" />
+                  Delivery Information
+                </h4>
+                <div className="bg-[#1E2938] border border-orange-500/20 p-5 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-orange-500/50" />
+                      <div>
+                        <p className="text-orange-300 text-xs uppercase font-bold">Delivery Date</p>
+                        <p className="text-white font-medium">{formatDate(selectedOrder.deliveryDate)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-orange-500/50" />
+                      <div>
+                        <p className="text-orange-300 text-xs uppercase font-bold">Delivery Time</p>
+                        <p className="text-white font-medium">{selectedOrder.deliveryTime || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Activity className="w-5 h-5 text-orange-500/50" />
+                      <div>
+                        <p className="text-orange-300 text-xs uppercase font-bold">Created At</p>
+                        <p className="text-white font-medium">{selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString('en-IN') : 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Delivery Photos */}
+                  {selectedOrder.deliveryConfirmation?.deliveryPhotos?.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-orange-500/20">
+                      <p className="text-orange-300 text-xs uppercase tracking-wider font-bold mb-4 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Delivery Evidence
+                      </p>
+                      <div className="flex flex-wrap gap-4">
+                        {selectedOrder.deliveryConfirmation.deliveryPhotos.map((photo, index) => (
+                          <div key={index} className="relative group">
+                            <img 
+                              src={photo} 
+                              alt={`Delivery evidence ${index + 1}`}
+                              className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-orange-500/20 hover:border-orange-500 transition-all cursor-zoom-in"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                              <Eye className="w-6 h-6 text-white" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status History */}
+              {selectedOrder.statusHistory?.length > 0 && (
+                <div>
+                  <h4 className="text-white font-medium mb-4 flex items-center gap-2 text-lg">
+                    <Activity className="w-5 h-5 text-orange-400" />
+                    Status Timeline
+                  </h4>
+                  <div className="bg-[#1E2938] border border-orange-500/20 p-6 rounded-lg space-y-6 relative before:absolute before:left-8 before:top-8 before:bottom-8 before:w-0.5 before:bg-orange-500/20">
+                    {selectedOrder.statusHistory.map((history, index) => (
+                      <div key={index} className="relative pl-10">
+                        <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-orange-500 bg-[#1E2938] z-10"></div>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                          <span className="text-orange-400 font-bold uppercase text-sm tracking-wide">
+                            {history.status?.replace('_', ' ')}
+                          </span>
+                          <span className="text-xs text-gray-500 font-medium">
+                            {history.updatedAt ? new Date(history.updatedAt).toLocaleString('en-IN') : 'N/A'}
+                          </span>
+                        </div>
+                        {history.notes && (
+                          <p className="text-gray-300 text-sm bg-black/20 p-3 rounded-lg border border-orange-500/5 leading-relaxed">
+                            {history.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
