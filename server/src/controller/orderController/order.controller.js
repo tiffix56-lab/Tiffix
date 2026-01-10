@@ -106,7 +106,7 @@ export default {
                 ])
             } else {
                 orders = await Order.find(query)
-                    .populate('selectedMenus', 'foodTitle foodImage price')
+                    .populate('selectedMenus', 'foodTitle foodImage price description')
                     .populate('vendorDetails.vendorId', 'businessInfo.businessName')
                     .populate('userSubscriptionId', 'subscriptionId mealTiming skipCreditAvailable')
                     .populate({
@@ -187,7 +187,7 @@ export default {
             await order.skipOrder(skipReason, userId);
             await userSubscription.skipMeal();
 
-            const updatedOrder = await Order.findById(orderId).populate('selectedMenus', 'foodTitle');
+            const updatedOrder = await Order.findById(orderId).populate('selectedMenus', 'foodTitle foodImage description');
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 order: updatedOrder,
@@ -246,7 +246,7 @@ export default {
             userSubscription.creditsUsed += 1;
             await userSubscription.save();
 
-            const updatedOrder = await Order.findById(orderId).populate('selectedMenus', 'foodTitle');
+            const updatedOrder = await Order.findById(orderId).populate('selectedMenus', 'foodTitle foodImage description');
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 order: updatedOrder,
