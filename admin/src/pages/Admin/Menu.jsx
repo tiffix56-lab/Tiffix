@@ -64,15 +64,15 @@ const Menu = () => {
 
   const [formData, setFormData] = useState({
     foodImage: '',
-    foodSubImages: [''],
+    foodSubImages: [],
     foodTitle: '',
-    price: '',
-    description: { short: '', long: '' },
-    detailedItemList: '',
+    price: '150',
+    description: { short: '', long: 'Delicious home-cooked meal prepared with fresh ingredients and authentic spices.' },
+    detailedItemList: 'Rice, Dal, Seasonal Vegetable, 2 Rotis, Salad',
     vendorCategory: 'home_chef',
-    cuisine: '',
-    prepTime: '',
-    calories: '',
+    cuisine: 'Indian',
+    prepTime: '45',
+    calories: '500',
     dietaryOptions: '',
     tags: ''
   });
@@ -105,36 +105,18 @@ const Menu = () => {
     }
   };
 
-  const handleSubImagesChange = (index, value) => {
-    const newSubImages = [...formData.foodSubImages];
-    newSubImages[index] = value;
-    setFormData(prev => ({ ...prev, foodSubImages: newSubImages }));
-  };
-
-  const addSubImageField = () => {
-    setFormData(prev => ({
-      ...prev,
-      foodSubImages: [...prev.foodSubImages, '']
-    }));
-  };
-
-  const removeSubImageField = (index) => {
-    const newSubImages = formData.foodSubImages.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, foodSubImages: newSubImages }));
-  };
-
   const resetForm = () => {
     setFormData({
       foodImage: '',
-      foodSubImages: [''],
+      foodSubImages: [],
       foodTitle: '',
-      price: '',
-      description: { short: '', long: '' },
-      detailedItemList: '',
+      price: '150',
+      description: { short: '', long: 'Delicious home-cooked meal prepared with fresh ingredients and authentic spices.' },
+      detailedItemList: 'Rice, Dal, Seasonal Vegetable, 2 Rotis, Salad',
       vendorCategory: 'home_chef',
-      cuisine: '',
-      prepTime: '',
-      calories: '',
+      cuisine: 'Indian',
+      prepTime: '45',
+      calories: '500',
       dietaryOptions: '',
       tags: ''
     });
@@ -550,15 +532,6 @@ const Menu = () => {
               />
 
               <Input
-                label="Price (₹)"
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-              />
-
-              <Input
                 label="Main Image URL"
                 type="url"
                 name="foodImage"
@@ -567,40 +540,6 @@ const Menu = () => {
                 placeholder="https://example.com/image.jpg"
                 required
               />
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Sub Images</label>
-                {formData.foodSubImages.map((url, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <Input
-                      type="url"
-                      value={url}
-                      onChange={(e) => handleSubImagesChange(index, e.target.value)}
-                      placeholder="https://example.com/sub-image.jpg"
-                      containerClassName="flex-1"
-                    />
-                    {formData.foodSubImages.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeSubImageField(index)}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={addSubImageField}
-                  icon={Plus}
-                >
-                  Add Sub Image
-                </Button>
-              </div>
             </div>
 
             {/* Details */}
@@ -616,26 +555,7 @@ const Menu = () => {
                 required
               />
 
-              <Input.TextArea
-                label="Long Description"
-                name="description.long"
-                value={formData.description.long}
-                onChange={handleInputChange}
-                rows={3}
-                required
-              />
-
-              <Input.TextArea
-                label="Detailed Item List"
-                name="detailedItemList"
-                value={formData.detailedItemList}
-                onChange={handleInputChange}
-                placeholder="Ingredient 1, Ingredient 2, Ingredient 3..."
-                rows={2}
-                required
-              />
-
-              <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Input.Select
                   label="Vendor Category"
                   name="vendorCategory"
@@ -647,60 +567,7 @@ const Menu = () => {
                   ]}
                   required
                 />
-                
-                <Input
-                  label="Cuisine"
-                  name="cuisine"
-                  value={formData.cuisine}
-                  onChange={handleInputChange}
-                  required
-                />
               </div>
-            </div>
-          </div>
-
-          {/* Additional Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-white mb-4">Food Info</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Prep Time (min)"
-                  type="number"
-                  name="prepTime"
-                  value={formData.prepTime}
-                  onChange={handleInputChange}
-                  required
-                />
-                
-                <Input
-                  label="Calories"
-                  type="number"
-                  name="calories"
-                  value={formData.calories}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-white mb-4">Tags & Options</h3>
-              
-              <Input
-                label="Dietary Options"
-                value={formData.dietaryOptions}
-                onChange={(e) => setFormData({ ...formData, dietaryOptions: e.target.value })}
-                placeholder="vegetarian, vegan, gluten-free..."
-              />
-
-              <Input
-                label="Tags"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                placeholder="spicy, traditional, aromatic..."
-              />
             </div>
           </div>
 
