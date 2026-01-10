@@ -1,17 +1,27 @@
 /**
  * Indian Timezone Utility Functions
- * Handles all date/time operations in Indian Standard Time (IST)
+ * Handles all date/time operations in Indian Standard Time (IST) using Day.js
  */
+
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc.js'
+import timezone from 'dayjs/plugin/timezone.js'
+import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+
+// Load required plugins
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.extend(customParseFormat)
 
 const INDIAN_TIMEZONE = 'Asia/Kolkata'
 
 class TimezoneUtil {
     /**
-     * Get current IST date
-     * @returns {Date} Current date in IST
+     * Get current IST date object
+     * @returns {Date} Current date in IST (as JS Date object)
      */
     static now() {
-        return new Date()
+        return dayjs().tz(INDIAN_TIMEZONE).toDate()
     }
 
     /**
@@ -20,8 +30,7 @@ class TimezoneUtil {
      * @returns {Date} Date in IST
      */
     static toIST(date) {
-        const inputDate = new Date(date)
-        return new Date(inputDate.toLocaleString('en-US', { timeZone: INDIAN_TIMEZONE }))
+        return dayjs(date).tz(INDIAN_TIMEZONE).toDate()
     }
 
     /**
@@ -30,16 +39,8 @@ class TimezoneUtil {
      * @returns {Date} Start of day in IST
      */
     static startOfDay(date = null) {
-    const d = date ? new Date(date) : new Date()
-    return new Date(
-        Date.UTC(
-            d.getUTCFullYear(),
-            d.getUTCMonth(),
-            d.getUTCDate() - (INDIAN_TIMEZONE === 'Asia/Kolkata' ? 1 : 0),
-            18, 30, 0, 0
-        )
-    )
-}
+        return dayjs(date || undefined).tz(INDIAN_TIMEZONE).startOf('day').toDate()
+    }
 
     /**
      * Get end of day in IST
@@ -47,8 +48,7 @@ class TimezoneUtil {
      * @returns {Date} End of day in IST
      */
     static endOfDay(date = null) {
-        const start = this.startOfDay(date)
-        return new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1)
+        return dayjs(date || undefined).tz(INDIAN_TIMEZONE).endOf('day').toDate()
     }
 
     /**
@@ -58,9 +58,7 @@ class TimezoneUtil {
      * @returns {Date} New date in IST
      */
     static addDays(days, date = null) {
-        const istDate = date ? this.toIST(date) : this.now()
-        istDate.setDate(istDate.getDate() + days)
-        return istDate
+        return dayjs(date || undefined).tz(INDIAN_TIMEZONE).add(days, 'day').toDate()
     }
 
     /**
@@ -70,9 +68,7 @@ class TimezoneUtil {
      * @returns {Date} New date in IST
      */
     static addMonths(months, date = null) {
-        const istDate = date ? this.toIST(date) : this.now()
-        istDate.setMonth(istDate.getMonth() + months)
-        return istDate
+        return dayjs(date || undefined).tz(INDIAN_TIMEZONE).add(months, 'month').toDate()
     }
 
     /**
@@ -82,36 +78,18 @@ class TimezoneUtil {
      * @returns {string} Formatted date string
      */
     static format(date, format = 'datetime') {
-        const istDate = this.toIST(date)
+        const d = dayjs(date).tz(INDIAN_TIMEZONE)
         
-        const options = {
-            timeZone: INDIAN_TIMEZONE,
-            hour12: false // Always use 24-hour format
-        }
-
         switch (format) {
             case 'date':
-                options.year = 'numeric'
-                options.month = '2-digit'
-                options.day = '2-digit'
-                break
+                return d.format('DD/MM/YYYY')
             case 'time':
             case 'time24':
-                options.hour = '2-digit'
-                options.minute = '2-digit'
-                options.second = '2-digit'
-                break
+                return d.format('HH:mm:ss')
             case 'datetime':
             default:
-                options.year = 'numeric'
-                options.month = '2-digit'
-                options.day = '2-digit'
-                options.hour = '2-digit'
-                options.minute = '2-digit'
-                options.second = '2-digit'
+                return d.format('DD/MM/YYYY, HH:mm:ss')
         }
-
-        return new Intl.DateTimeFormat('en-IN', options).format(istDate)
     }
 
     /**
@@ -120,10 +98,7 @@ class TimezoneUtil {
      * @returns {string} Time in HH:MM format
      */
     static getTimeString(date = null) {
-        const istDate = date ? this.toIST(date) : this.now()
-        const hours = istDate.getHours().toString().padStart(2, '0')
-        const minutes = istDate.getMinutes().toString().padStart(2, '0')
-        return `${hours}:${minutes}`
+        return dayjs(date || undefined).tz(INDIAN_TIMEZONE).format('HH:mm')
     }
 
     /**
@@ -134,9 +109,13 @@ class TimezoneUtil {
      */
     static parseTimeString(timeString, baseDate = null) {
         const [hours, minutes] = timeString.split(':').map(Number)
-        const istDate = baseDate ? this.toIST(baseDate) : this.now()
-        istDate.setHours(hours, minutes, 0, 0)
-        return istDate
+        return dayjs(baseDate || undefined)
+            .tz(INDIAN_TIMEZONE)
+            .hour(hours)
+            .minute(minutes)
+            .second(0)
+            .millisecond(0)
+            .toDate()
     }
 
     /**
@@ -176,32 +155,36 @@ class TimezoneUtil {
      * @returns {Object} {startDate, endDate}
      */
     static getDateRange(period) {
-        const now = this.now()
+        const now = dayjs().tz(INDIAN_TIMEZONE)
         let startDate, endDate
 
         switch (period) {
             case 'today':
-                startDate = this.startOfDay()
-                endDate = this.endOfDay()
+                startDate = now.startOf('day')
+                endDate = now.endOf('day')
                 break
             case 'week':
-                startDate = this.startOfDay(this.addDays(-6))
-                endDate = this.endOfDay()
+                // Last 7 days
+                startDate = now.subtract(6, 'day').startOf('day')
+                endDate = now.endOf('day')
                 break
             case 'month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+                startDate = now.startOf('month')
+                endDate = now.endOf('month')
                 break
             case 'year':
-                startDate = new Date(now.getFullYear(), 0, 1)
-                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999)
+                startDate = now.startOf('year')
+                endDate = now.endOf('year')
                 break
             default:
-                startDate = this.startOfDay()
-                endDate = this.endOfDay()
+                startDate = now.startOf('day')
+                endDate = now.endOf('day')
         }
 
-        return { startDate, endDate }
+        return { 
+            startDate: startDate.toDate(), 
+            endDate: endDate.toDate() 
+        }
     }
 
     /**
@@ -210,8 +193,7 @@ class TimezoneUtil {
      * @returns {boolean} True if in business hours
      */
     static isBusinessHours(date = null) {
-        const istDate = date ? this.toIST(date) : this.now()
-        const hour = istDate.getHours()
+        const hour = dayjs(date || undefined).tz(INDIAN_TIMEZONE).hour()
         return hour >= 9 && hour < 18
     }
 
@@ -221,14 +203,14 @@ class TimezoneUtil {
      * @returns {Date} Next business day
      */
     static nextBusinessDay(date = null) {
-        let nextDay = this.addDays(1, date)
+        let d = dayjs(date || undefined).tz(INDIAN_TIMEZONE).add(1, 'day')
         
-        // Skip weekends (Saturday = 6, Sunday = 0)
-        while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
-            nextDay = this.addDays(1, nextDay)
+        // 0 is Sunday, 6 is Saturday
+        while (d.day() === 0 || d.day() === 6) {
+            d = d.add(1, 'day')
         }
         
-        return nextDay
+        return d.toDate()
     }
 
     /**
@@ -237,10 +219,9 @@ class TimezoneUtil {
      * @returns {number} Age in days
      */
     static ageInDays(date) {
-        const startDate = this.toIST(date)
-        const currentDate = this.now()
-        const diffTime = Math.abs(currentDate - startDate)
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const start = dayjs(date).tz(INDIAN_TIMEZONE)
+        const now = dayjs().tz(INDIAN_TIMEZONE)
+        return Math.ceil(now.diff(start, 'day', true))
     }
 
     /**
@@ -249,21 +230,25 @@ class TimezoneUtil {
      * @returns {Object} {startDate, endDate, year}
      */
     static getFinancialYear(year = null) {
-        const currentDate = this.now()
-        const currentYear = currentDate.getFullYear()
-        const currentMonth = currentDate.getMonth()
+        const now = dayjs().tz(INDIAN_TIMEZONE)
+        const currentMonth = now.month() // 0-11
         
         // Determine financial year
         let fyYear
         if (year) {
             fyYear = year
         } else {
-            fyYear = currentMonth >= 3 ? currentYear : currentYear - 1
+            // If current month is Jan(0), Feb(1), Mar(2), current FY started previous year
+            fyYear = currentMonth >= 3 ? now.year() : now.year() - 1
         }
         
+        // Create dates in IST directly to avoid UTC shifts
+        const startDate = dayjs.tz(`${fyYear}-04-01`, INDIAN_TIMEZONE).startOf('day')
+        const endDate = dayjs.tz(`${fyYear + 1}-03-31`, INDIAN_TIMEZONE).endOf('day')
+        
         return {
-            startDate: new Date(fyYear, 3, 1), // April 1
-            endDate: new Date(fyYear + 1, 2, 31, 23, 59, 59, 999), // March 31
+            startDate: startDate.toDate(),
+            endDate: endDate.toDate(),
             year: fyYear
         }
     }

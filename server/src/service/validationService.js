@@ -572,10 +572,7 @@ export const ValidateInitiatePurchase = Joi.object({
             })
         }).required()
     }).required(),
-    startDate: Joi.date().min('now').optional().messages({
-        'date.min': 'Start date cannot be in the past (IST timezone)',
-        'date.base': 'Start date must be a valid date'
-    })
+    startDate: Joi.date().optional()
 });
 
 export const ValidateVerifyPayment = Joi.object({
