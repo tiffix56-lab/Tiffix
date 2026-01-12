@@ -101,7 +101,7 @@ const subscriptionSchema = new mongoose.Schema(
         features: [String],
         terms: {
             type: String,
-            maxlength: 1000
+            maxlength: 5000
         },
         isActive: {
             type: Boolean,

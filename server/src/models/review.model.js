@@ -189,10 +189,12 @@ reviewSchema.statics.getAverageRating = function(targetId, reviewType) {
     const matchField = reviewType === EReviewType.SUBSCRIPTION ? 'subscriptionId' :
                       reviewType === EReviewType.VENDOR ? 'vendorId' : 'orderId'
     
+    const targetObjectId = new mongoose.Types.ObjectId(targetId);
+
     return this.aggregate([
         {
             $match: {
-                [matchField]: targetId,
+                [matchField]: targetObjectId,
                 reviewType: reviewType,
                 status: EReviewStatus.ACTIVE
             }
@@ -210,7 +212,7 @@ reviewSchema.statics.getAverageRating = function(targetId, reviewType) {
         {
             $project: {
                 _id: 0,
-                averageRating: { $round: ['$averageRating', 2] },
+                avgRating: { $round: ['$averageRating', 1] },
                 totalReviews: 1,
                 ratingDistribution: 1
             }

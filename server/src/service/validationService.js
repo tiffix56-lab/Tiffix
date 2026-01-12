@@ -133,7 +133,7 @@ export const ValidateCreateSubscription = Joi.object({
     freeDelivery: Joi.boolean().default(false),
     description: Joi.string().max(3000).trim().optional(),
     features: Joi.array().items(Joi.string()).optional(),
-    terms: Joi.string().max(1000).optional(),
+    terms: Joi.string().max(5000).optional(),
     tags: Joi.array().items(Joi.string()).optional(),
     planMenus: Joi.array().items(Joi.string().hex().length(24)).optional()
 });
@@ -163,7 +163,7 @@ export const ValidateUpdateSubscription = Joi.object({
     freeDelivery: Joi.boolean().optional(),
     description: Joi.string().max(3000).trim().optional(),
     features: Joi.array().items(Joi.string()).optional(),
-    terms: Joi.string().max(1000).optional(),
+    terms: Joi.string().max(5000).optional(),
     tags: Joi.array().items(Joi.string()).optional(),
     planMenus: Joi.array().items(Joi.string().hex().length(24)).optional(),
     isActive: Joi.boolean().optional()

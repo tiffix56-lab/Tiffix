@@ -108,7 +108,7 @@ export default {
             }
 
             const reviewStats = await Review.getAverageRating(subscriptionId, EReviewType.SUBSCRIPTION);
-            const stats = reviewStats[0] || { averageRating: 0, totalReviews: 0 };
+            const stats = reviewStats[0] || { avgRating: 0, totalReviews: 0 };
 
             const recentReviews = await Review.findForSubscription(subscriptionId, {
                 status: EReviewStatus.ACTIVE,
@@ -119,7 +119,7 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 subscription: {
                     ...subscription.toObject(),
-                    avgRating: stats.averageRating,
+                    avgRating: stats.avgRating,
                     totalReviews: stats.totalReviews,
                     recentReviews
                 }
@@ -182,6 +182,19 @@ export default {
             });
 
             await newSubscription.save();
+
+            // Create a random initial review
+            if (req.authenticatedUser && req.authenticatedUser.userId) {
+                const randomRating = Number((Math.random() * (4.9 - 4.5) + 4.5).toFixed(1));
+                await Review.create({
+                    reviewType: EReviewType.SUBSCRIPTION,
+                    userId: req.authenticatedUser.userId,
+                    subscriptionId: newSubscription._id,
+                    rating: randomRating,
+                    reviewText: 'Excellent subscription plan! Highly recommended for daily meals.',
+                    isVerifiedPurchase: false
+                });
+            }
 
             httpResponse(req, res, 201, responseMessage.customMessage("Subscription Created"), {
                 subscription: newSubscription
@@ -310,7 +323,7 @@ export default {
             }
 
             const reviewStats = await Review.getAverageRating(subscriptionId, EReviewType.SUBSCRIPTION);
-            const stats = reviewStats[0] || { averageRating: 0, totalReviews: 0 };
+            const stats = reviewStats[0] || { avgRating: 0, totalReviews: 0 };
 
             const recentReviews = await Review.findForSubscription(subscriptionId, {
                 status: EReviewStatus.ACTIVE,
@@ -320,7 +333,7 @@ export default {
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 subscription: {
                     ...subscription.toObject(),
-                    avgRating: stats.averageRating,
+                    avgRating: stats.avgRating,
                     totalReviews: stats.totalReviews,
                     recentReviews
                 }

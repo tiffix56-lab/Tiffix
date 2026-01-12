@@ -258,7 +258,7 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 reviews,
-                stats: averageStats[0] || { averageRating: 0, totalReviews: 0 },
+                stats: averageStats[0] || { avgRating: 0, totalReviews: 0 },
                 pagination: {
                     current: parseInt(page),
                     limit: parseInt(limit),
@@ -424,7 +424,7 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 reviews,
-                stats: averageStats[0] || { averageRating: 0, totalReviews: 0 },
+                stats: averageStats[0] || { avgRating: 0, totalReviews: 0 },
                 pagination: {
                     current: parseInt(page),
                     limit: parseInt(limit),
@@ -461,7 +461,7 @@ export default {
 
             httpResponse(req, res, 200, responseMessage.SUCCESS, {
                 reviews,
-                stats: averageStats[0] || { averageRating: 0, totalReviews: 0 },
+                stats: averageStats[0] || { avgRating: 0, totalReviews: 0 },
                 pagination: {
                     current: parseInt(page),
                     limit: parseInt(limit),
