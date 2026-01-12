@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "Tiffix",
     slug: "tiffix-mobile",
-    version: "1.2.0",
+    version: "1.2.5",
     scheme: "tiffix",
     web: {
       favicon: "./src/assets/favicon.png",
@@ -16,6 +16,7 @@ export default {
       "expo-router",
       "expo-apple-authentication",
       "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       [
         "expo-build-properties",
         {
@@ -53,11 +54,15 @@ export default {
       supportsTablet: false,
       bundleIdentifier: "com.rutwik187.tiffix",
       googleServicesFile: "./GoogleService-Info.plist",
+      entitlements: {
+        "aps-environment": "production",
+      },
       config: {
         googleMapsApiKey: "",
       },
       associatedDomains: ["applinks:tiffix.in"],
       infoPlist: {
+        UIBackgroundModes: ["remote-notification"],
         CFBundleURLTypes: [
           {
             CFBundleURLName: "com.rutwik187.tiffix",

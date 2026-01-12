@@ -42,6 +42,10 @@ interface Order {
     foodTitle: string;
     foodImage?: string;
     price: number;
+    description?: {
+      short: string;
+      long?: string;
+    };
   }>;
   vendorDetails?: {
     vendorId: {
@@ -107,28 +111,18 @@ const Subscription = () => {
   }, []);
 
   const fetchData = async () => {
-    console.log('🚀 [SUBSCRIPTION_TAB] Starting fetchData...');
-    
     try {
       setLoading(true);
-      console.log('📊 [SUBSCRIPTION_TAB] Loading state set to true');
-      
+
       // Fetch subscriptions only (like profile page)
-      console.log('📡 [SUBSCRIPTION_TAB] Fetching subscriptions...');
       const response = await subscriptionService.getUserSubscriptions();
-      console.log('📡 [SUBSCRIPTION_TAB] Subscription service response received:', response);
-      
+
       if (response.success && response.data) {
         const subscriptions = response.data.subscriptions || [];
-        console.log('✅ [SUBSCRIPTION_TAB] Successfully received subscriptions:', {
-          count: subscriptions.length,
-          subscriptions: subscriptions
-        });
         setSubscriptions(subscriptions);
-        
+
         // Now fetch orders if subscriptions were loaded successfully
         if (subscriptions.length > 0) {
-          console.log('📡 [SUBSCRIPTION_TAB] Fetching orders...');
           try {
             // Try to get more comprehensive order data
             const ordersResponse = await orderService.getUserOrders({
@@ -136,63 +130,30 @@ const Subscription = () => {
               limit: 100, // Get more orders
               days: 30    // Get orders from last 30 days (API limit)
             });
-            console.log('📡 [SUBSCRIPTION_TAB] Orders response:', ordersResponse);
-            
+
             if (ordersResponse.success && ordersResponse.data) {
               const ordersList = ordersResponse.data.orders || [];
-              console.log('✅ [SUBSCRIPTION_TAB] Setting orders:', {
-                count: ordersList.length,
-                orders: ordersList
-              });
-              
-              // Log first order for debugging structure
-              if (ordersList.length > 0) {
-                console.log('🔍 [SUBSCRIPTION_TAB] Sample order structure:', ordersList[0]);
-              }
-              
+
               setOrders(ordersList);
-              
+
               // Auto-select first active subscription for orders display
               if (!selectedSubscriptionId && subscriptions.length > 0) {
                 const activeSubscription = subscriptions.find(sub => sub.status === 'active') || subscriptions[0];
                 setSelectedSubscriptionId(activeSubscription._id);
-                console.log('🎯 [SUBSCRIPTION_TAB] Auto-selected subscription for orders:', activeSubscription._id);
               }
             } else {
-              console.log('❌ [SUBSCRIPTION_TAB] Orders fetch failed:', ordersResponse.message);
               setOrders([]);
             }
           } catch (orderError) {
-            console.error('❌ [SUBSCRIPTION_TAB] Orders fetch error:', orderError);
             setOrders([]);
           }
         }
       } else {
-        console.log('❌ [SUBSCRIPTION_TAB] Failed to get subscriptions:', {
-          success: response.success,
-          data: response.data,
-          message: response.message,
-          error: response.error
-        });
-        
-        // Handle specific error cases (same as profile page)
-        if (response.error?.code === 'AUTH_ERROR') {
-          console.log('🔐 [SUBSCRIPTION_TAB] Authentication error - user needs to login');
-        } else if (response.error?.code === 'NETWORK_ERROR') {
-          console.log('🌐 [SUBSCRIPTION_TAB] Network error - show network error message');
-        }
-        
         setOrders([]); // Clear orders if subscriptions failed
       }
-      
+
     } catch (error) {
-      console.error('❌ [SUBSCRIPTION_TAB] Exception in fetchData:', error);
-      console.error('❌ [SUBSCRIPTION_TAB] Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : 'No stack trace'
-      });
     } finally {
-      console.log('📊 [SUBSCRIPTION_TAB] Setting loading to false and refreshing to false');
       setLoading(false);
       setRefreshing(false);
     }
@@ -208,14 +169,12 @@ const Subscription = () => {
           text: 'Skip',
           style: 'destructive',
           onPress: async () => {
-            console.log('🔄 [SUBSCRIPTION_TAB] Skipping order:', orderId);
             try {
               const response = await orderService.skipOrder(orderId, 'User requested skip from subscription tab');
-              console.log('📡 [SUBSCRIPTION_TAB] Skip order response:', response);
-              
+
               if (response.success) {
                 Alert.alert(
-                  'Order Skipped', 
+                  'Order Skipped',
                   'Your order has been skipped successfully. A skip credit has been used.',
                   [{ text: 'OK', onPress: () => fetchData() }]
                 );
@@ -223,7 +182,6 @@ const Subscription = () => {
                 Alert.alert('Skip Failed', response.message || 'Failed to skip order. Please try again.');
               }
             } catch (error) {
-              console.error('❌ [SUBSCRIPTION_TAB] Skip order error:', error);
               Alert.alert('Error', 'Failed to skip order. Please check your connection and try again.');
             }
           },
@@ -242,14 +200,12 @@ const Subscription = () => {
           text: 'Yes, Cancel',
           style: 'destructive',
           onPress: async () => {
-            console.log('❌ [SUBSCRIPTION_TAB] Cancelling order:', orderId);
             try {
               const response = await orderService.cancelOrder(orderId, 'User requested cancellation from subscription tab');
-              console.log('📡 [SUBSCRIPTION_TAB] Cancel order response:', response);
-              
+
               if (response.success) {
                 Alert.alert(
-                  'Order Cancelled', 
+                  'Order Cancelled',
                   'Your order has been cancelled successfully.',
                   [{ text: 'OK', onPress: () => fetchData() }]
                 );
@@ -257,7 +213,6 @@ const Subscription = () => {
                 Alert.alert('Cancellation Failed', response.message || 'Failed to cancel order. Please try again.');
               }
             } catch (error) {
-              console.error('❌ [SUBSCRIPTION_TAB] Cancel order error:', error);
               Alert.alert('Error', 'Failed to cancel order. Please check your connection and try again.');
             }
           },
@@ -294,7 +249,6 @@ const Subscription = () => {
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to cancel subscription');
-      console.error('Error cancelling subscription:', error);
     } finally {
       setCancelling(false);
       setSubscriptionToCancel(null);
@@ -302,7 +256,6 @@ const Subscription = () => {
   };
 
   const handleViewOrders = async (subscriptionId: string) => {
-    console.log('📋 [SUBSCRIPTION_TAB] View orders clicked for subscription:', subscriptionId);
     setSelectedSubscriptionId(subscriptionId);
     setShowOrdersSheet(true);
 
@@ -317,44 +270,25 @@ const Subscription = () => {
 
       if (ordersResponse.success && ordersResponse.data) {
         const allOrders = ordersResponse.data.orders || [];
-        console.log('📦 [SUBSCRIPTION_TAB] All orders for filtering:', allOrders.length);
 
         // Filter orders by the selected subscription using correct property names
         const filteredOrders = allOrders.filter(order => {
-          // Debug logging for each order
-          const userSubId = order.userSubscriptionId?._id;
-          console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}:`, {
-            userSubscriptionId: userSubId || 'undefined',
-            selectedId: subscriptionId
-          });
-
           // Use the correct property from backend response
-          const matches = userSubId === subscriptionId;
-
-          console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}: userSubscriptionId=${userSubId || 'undefined'}, selectedId=${subscriptionId}, match=${matches}`);
-
+          const matches = order.userSubscriptionId?._id === subscriptionId;
           return matches;
         });
 
-        console.log('🎯 [SUBSCRIPTION_TAB] Filtered orders for subscription:', filteredOrders.length);
         setOrders(filteredOrders);
 
         // If no filtered orders found, show debug info
         if (filteredOrders.length === 0) {
-          console.log('🔍 [SUBSCRIPTION_TAB] No orders found for subscription:', subscriptionId);
-          if (allOrders.length > 0) {
-            console.log('🔍 [SUBSCRIPTION_TAB] Sample order fields:', Object.keys(allOrders[0]));
-            console.log('🔍 [SUBSCRIPTION_TAB] Sample order:', allOrders[0]);
-          }
           // For debugging, show all orders if none are filtered
           setOrders(allOrders);
         }
       } else {
-        console.log('❌ [SUBSCRIPTION_TAB] Failed to fetch orders:', ordersResponse.message);
         setOrders([]);
       }
     } catch (error) {
-      console.error('❌ [SUBSCRIPTION_TAB] Error fetching orders:', error);
       setOrders([]);
     } finally {
       setLoadingOrders(false);
@@ -370,7 +304,7 @@ const Subscription = () => {
     }
 
     const currentCategory = subscription.subscriptionId.category;
-    
+
     // Simple switching based on current category
     if (currentCategory === 'home_chef') {
       Alert.alert(
@@ -401,16 +335,14 @@ const Subscription = () => {
 
   const requestVendorSwitch = async (subscriptionId: string, targetCategory: string) => {
     try {
-      console.log('🔄 [SUBSCRIPTION_TAB] Requesting vendor switch:', { subscriptionId, targetCategory });
-      
       const response = await subscriptionService.requestVendorSwitch(
-        subscriptionId, 
+        subscriptionId,
         `User requested switch to ${targetCategory.replace('_', ' ')}`
       );
-      
+
       if (response.success) {
         Alert.alert(
-          'Switch Request Submitted', 
+          'Switch Request Submitted',
           'Your vendor switch request has been submitted. You will be notified once it is processed.',
           [{ text: 'OK', onPress: () => fetchData() }]
         );
@@ -418,15 +350,9 @@ const Subscription = () => {
         Alert.alert('Switch Request Failed', response.message || 'Failed to submit switch request. Please try again.');
       }
     } catch (error) {
-      console.error('❌ [SUBSCRIPTION_TAB] Error requesting vendor switch:', error);
       Alert.alert('Error', 'Failed to submit switch request. Please try again.');
     }
   };
-
-  console.log('🔍 [SUBSCRIPTION_TAB] Starting data filtering...');
-  console.log('🔍 [SUBSCRIPTION_TAB] Raw subscriptions data:', subscriptions);
-  console.log('🔍 [SUBSCRIPTION_TAB] Raw orders data:', orders);
-  console.log('🔍 [SUBSCRIPTION_TAB] Selected subscription ID:', selectedSubscriptionId);
 
   // Use same filtering logic as profile page
   const getCurrentSubscriptions = () => {
@@ -451,61 +377,37 @@ const Subscription = () => {
 
   const upcomingSubscriptions = getCurrentSubscriptions();
   const pastSubscriptions = getPastSubscriptions();
-  
-  console.log('🔍 [SUBSCRIPTION_TAB] Filtered subscriptions:', {
-    upcoming: upcomingSubscriptions.length,
-    past: pastSubscriptions.length,
-    upcomingItems: upcomingSubscriptions,
-    pastItems: pastSubscriptions
-  });
-  
+
   // Filter orders by selected subscription using correct backend property
-  const subscriptionOrders = selectedSubscriptionId 
+  const subscriptionOrders = selectedSubscriptionId
     ? orders.filter(order => {
-        const userSubId = order.userSubscriptionId?._id;
-        const matches = userSubId === selectedSubscriptionId;
-        
-        console.log(`🔍 [SUBSCRIPTION_TAB] Filtering order ${order._id}: userSubscriptionId=${userSubId || 'undefined'}, selectedId=${selectedSubscriptionId}, match=${matches}`);
-        return matches;
-      })
+      const userSubId = order.userSubscriptionId?._id;
+      const matches = userSubId === selectedSubscriptionId;
+
+      return matches;
+    })
     : orders;
-    
-  console.log('🔍 [SUBSCRIPTION_TAB] Order filtering results:', {
-    totalOrders: orders.length,
-    selectedSubscriptionId: selectedSubscriptionId,
-    filteredOrders: subscriptionOrders.length,
-    filteredOrdersList: subscriptionOrders
-  });
-    
+
   const upcomingOrders = subscriptionOrders.filter(order => {
     const isUpcoming = ['upcoming', 'preparing', 'out_for_delivery'].includes(order.status);
-    console.log(`🔍 [SUBSCRIPTION_TAB] Order ${order._id} status: ${order.status}, isUpcoming: ${isUpcoming}`);
     return isUpcoming;
   });
-  
-  const deliveredOrders = subscriptionOrders.filter(order => 
+
+  const deliveredOrders = subscriptionOrders.filter(order =>
     ['delivered', 'skipped', 'cancelled'].includes(order.status)
   );
-  
-  console.log('🔍 [SUBSCRIPTION_TAB] Final order counts:', {
-    upcoming: upcomingOrders.length,
-    delivered: deliveredOrders.length,
-    upcomingOrdersList: upcomingOrders,
-    deliveredOrdersList: deliveredOrders
-  });
 
   const formatDate = (dateString: string) => {
-    console.log(dateString, "Date");
     const dates = new Date(dateString);
     const istDate = new Date(dates.getTime() + 5.5 * 60 * 60 * 1000);
-    const date =  new Date(istDate).toLocaleDateString('en-IN', {
+    const date = new Date(istDate).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
 
     return date
-    
+
   };
 
   const formatCurrency = (amount: number) => {
@@ -517,10 +419,10 @@ const Subscription = () => {
       <View className="flex-row overflow-hidden">
         {/* Subscription Image - Full Height */}
         <View className="mr-2">
-          <Image 
-            source={subscription.subscriptionId.category === 'food_vendor' ? require('@/assets/category-1.png') : require('@/assets/category-2.png')} 
-            className="h-52 w-36 rounded-lg" 
-            resizeMode="cover" 
+          <Image
+            source={subscription.subscriptionId.category === 'food_vendor' ? require('@/assets/category-1.png') : require('@/assets/category-2.png')}
+            className="h-52 w-36 rounded-lg"
+            resizeMode="cover"
           />
         </View>
 
@@ -532,17 +434,15 @@ const Subscription = () => {
               style={{ fontFamily: 'Poppins_600SemiBold' }}>
               {subscription.subscriptionId.planName}
             </Text>
-            <View className={`mb-4 rounded-md border px-2 py-1 ${
-              subscription.status === 'active' 
-                ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                : 'border-gray-500 bg-gray-50 dark:bg-gray-900/20'
-            }`}>
+            <View className={`mb-4 rounded-md border px-2 py-1 ${subscription.status === 'active'
+              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+              : 'border-gray-500 bg-gray-50 dark:bg-gray-900/20'
+              }`}>
               <Text
-                className={`text-xs font-medium ${
-                  subscription.status === 'active' 
-                    ? 'text-green-700 dark:text-green-400' 
-                    : 'text-gray-700 dark:text-gray-400'
-                }`}
+                className={`text-xs font-medium ${subscription.status === 'active'
+                  ? 'text-green-700 dark:text-green-400'
+                  : 'text-gray-700 dark:text-gray-400'
+                  }`}
                 style={{ fontFamily: 'Poppins_500Medium' }}>
                 {subscription.status.toUpperCase()}
               </Text>
@@ -550,125 +450,105 @@ const Subscription = () => {
           </View>
 
           <Text
-            className="mb-4 text-sm text-gray-600 dark:text-gray-300"
+            className="mb-3 text-sm text-gray-600 dark:text-gray-300"
             style={{ fontFamily: 'Poppins_400Regular' }}>
             {subscription.subscriptionId.category.replace('_', ' ').toUpperCase()} • {subscription.subscriptionId.durationDays} days
           </Text>
 
-          <View className="mb-0">
+          <View className="mb-2">
             <View className="flex-row items-center">
               <Feather
                 name="calendar"
-                size={16}
+                size={14}
                 color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
               />
               <Text
                 className="ml-2 text-sm font-semibold text-gray-600 dark:text-gray-300"
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
                 Valid until {formatDate(subscription.endDate)}
+                {subscription.analytics?.remainingDays !== undefined && subscription.analytics.remainingDays > 0 &&
+                  `\n ${subscription.analytics.remainingDays - 1} Days Left`
+                }
+              </Text>
+
+            </View>
+
+            <View className="flex-row items-center mt-1">
+              <Feather
+                name="skip-forward"
+                size={14}
+                color={colorScheme === 'dark' ? '#3B82F6' : '#2563EB'}
+              />
+              <Text
+                className="ml-2 text-sm text-blue-600 dark:text-blue-400"
+                style={{ fontFamily: 'Poppins_500Medium' }}>
+                {subscription.skipCreditAvailable} skips • Credits: {subscription.analytics?.remainingCredits || (subscription.creditsGranted - subscription.creditsUsed)}/{subscription.creditsGranted}
               </Text>
             </View>
 
             {isActive && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="flex-row items-center mt-2"
                 onPress={() => onSwitch(subscription._id)}>
                 <Feather
                   name="refresh-cw"
-                  size={16}
+                  size={14}
                   color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'}
                 />
                 <Text
                   className="ml-2 text-sm font-semibold text-gray-600 dark:text-gray-300"
                   style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                  Switch
+                  Switch Vendor
                 </Text>
               </TouchableOpacity>
             )}
           </View>
-          {subscription.analytics?.remainingDays !== undefined && subscription.analytics.remainingDays > 0 && (
-            <View className="flex-row items-center mt-1">
-              <Feather
-                name="skip-forward"
-                size={16}
-                color={colorScheme === 'dark' ? '#3B82F6' : '#2563EB'}
-              />
-              <Text
-                className="ml-2 text-sm text-blue-600 dark:text-blue-400"
-                style={{ fontFamily: 'Poppins_500Medium' }}>
-                {subscription.skipCreditAvailable} skip available
-              </Text>
-            </View>
-          )}
-          {subscription.analytics?.remainingDays !== undefined && subscription.analytics.remainingDays > 0 && (
-            <View className="flex-row items-center mt-1">
-              <Feather
-                name="clock"
-                size={16}
-                color={colorScheme === 'dark' ? '#3B82F6' : '#2563EB'}
-              />
-              <Text
-                className="ml-2 text-sm text-blue-600 dark:text-blue-400"
-                style={{ fontFamily: 'Poppins_500Medium' }}>
-                {subscription.analytics.remainingDays - 1} Days Left
-              </Text>
-            </View>
-          )}
 
-          {/* Credits Info */}
-          <View className="mb-3">
-            <Text
-              className="text-sm text-gray-600 dark:text-gray-300"
-              style={{ fontFamily: 'Poppins_400Regular' }}>
-              Credits: {subscription.analytics?.remainingCredits || (subscription.creditsGranted - subscription.creditsUsed)}/{subscription.creditsGranted} • {formatCurrency(subscription.subscriptionId?.discountedPrice || subscription.finalPrice)}
-            </Text>
-          </View>
-          
-                                    {/* Progress Bar */}
-                                    {subscription.analytics && (
-                                      <View className="mb-4">
-                                        <View className="mb-2 flex-row items-center justify-between">
-                                          <Text
-                                            className="text-xs text-gray-600 dark:text-gray-400"
-                                            style={{ fontFamily: 'Poppins_400Regular' }}>
-                                            Meals Used
-                                          </Text>
-                                          <Text
-                                            className="text-xs text-gray-600 dark:text-gray-400"
-                                            style={{ fontFamily: 'Poppins_500Medium' }}>
-                                            {Math.round(subscription.analytics.creditsUsedPercentage)}%
-                                          </Text>
-                                        </View>
-                                        <View className="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
-                                          <View 
-                                            className="h-2 rounded-full bg-green-500"
-                                            style={{ 
-                                              width: `${Math.min(100, Math.max(0, subscription.analytics.creditsUsedPercentage))}%` 
-                                            }}
-                                          />
-                                        </View>
-                                      </View>
-                                    )}
+          {/* Progress Bar */}
+          {subscription.analytics && (
+            <View className="mb-3">
+              <View className="mb-1 flex-row items-center justify-between">
+                <Text
+                  className="text-xs text-gray-600 dark:text-gray-400"
+                  style={{ fontFamily: 'Poppins_400Regular' }}>
+                  Meals Used
+                </Text>
+                <Text
+                  className="text-xs text-gray-600 dark:text-gray-400"
+                  style={{ fontFamily: 'Poppins_500Medium' }}>
+                  {Math.round(subscription.analytics.creditsUsedPercentage)}%
+                </Text>
+              </View>
+              <View className="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+                <View
+                  className="h-2 rounded-full bg-green-500"
+                  style={{
+                    width: `${Math.min(100, Math.max(0, subscription.analytics.creditsUsedPercentage))}%`
+                  }}
+                />
+              </View>
+            </View>
+          )}
 
           {/* Action Buttons */}
           {isActive && (
             <View className="flex-row gap-3">
-              <TouchableOpacity 
-                className="flex-1 rounded-lg bg-red-500 py-4"
+              <TouchableOpacity
+                className="flex-1 rounded-lg bg-red-500 py-3"
                 onPress={() => onCancel(subscription._id)}>
                 <Text
                   className="text-center text-sm font-medium text-white"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
-                  Cancel Plan
+                  Cancel
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                className="flex-1 rounded-lg bg-black py-4 dark:bg-white"
+              <TouchableOpacity
+                className="flex-1 rounded-lg bg-black py-3 dark:bg-white"
                 onPress={() => onViewOrders(subscription._id)}>
                 <Text
-                  className="text-center text-base font-medium text-white dark:text-black"
+                  className="text-center text-sm font-medium text-white dark:text-black"
                   style={{ fontFamily: 'Poppins_500Medium' }}>
-                  View Orders
+                  Orders
                 </Text>
               </TouchableOpacity>
             </View>
@@ -684,7 +564,7 @@ const Subscription = () => {
       const istDate = new Date(date.getTime() + 5.5 * 60 * 60 * 1000);
       return istDate.toLocaleDateString('en-US', {
         weekday: 'short',
-        month: 'short', 
+        month: 'short',
         day: 'numeric'
       });
     };
@@ -717,9 +597,9 @@ const Subscription = () => {
     };
 
     return (
-      <View className="mb-4 overflow-hidden rounded-2xl bg-white shadow-lg dark:bg-neutral-800" 
-            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
-        
+      <View className="mb-4 overflow-hidden rounded-2xl bg-white shadow-lg dark:bg-neutral-800"
+        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
+
         {/* Order Header */}
         <View className="flex-row items-center justify-between px-4 pt-4 pb-2">
           <View className="flex-row items-center">
@@ -739,9 +619,9 @@ const Subscription = () => {
           {/* Meal Image - Responsive */}
           <View className="mr-4">
             <View className="overflow-hidden rounded-xl">
-              <Image 
-                source={order.selectedMenus?.[0]?.foodImage ? { uri: order.selectedMenus[0].foodImage } : require('@/assets/category-2.png')} 
-                className="h-24 w-24" 
+              <Image
+                source={order.selectedMenus?.[0]?.foodImage ? { uri: order.selectedMenus[0].foodImage } : require('@/assets/category-2.png')}
+                className="h-24 w-24"
                 style={{ aspectRatio: 1 }}
                 resizeMode="cover"
               />
@@ -752,11 +632,21 @@ const Subscription = () => {
           <View className="flex-1">
             {/* Meal Title */}
             <Text
-              className="mb-2 text-lg font-bold text-black dark:text-white"
+              className="mb-1 text-lg font-bold text-black dark:text-white"
               style={{ fontFamily: 'Poppins_700Bold' }}
-              numberOfLines={2}>
+              numberOfLines={1}>
               {order.selectedMenus?.[0]?.foodTitle || 'Delicious Meal'}
             </Text>
+
+            {/* Meal Description */}
+            {order.selectedMenus?.[0]?.description?.short && (
+              <Text
+                className="mb-2 text-xs text-gray-500 text-wrap dark:text-gray-400"
+                style={{ fontFamily: 'Poppins_400Regular' }}
+              >
+                {order.selectedMenus[0].description.short}
+              </Text>
+            )}
 
             {/* Meal Type Badge */}
             <View className="mb-2 self-start rounded-lg bg-amber-50 px-3 py-1 dark:bg-amber-900/20">
@@ -845,8 +735,8 @@ const Subscription = () => {
             <TouchableOpacity
               className="w-full items-center justify-center py-4"
               onPress={() => {
-                if(order.userSubscriptionId && order.userSubscriptionId.subscriptionId && order.userSubscriptionId.vendorDetails && order.userSubscriptionId.vendorDetails.currentVendor)
-                onReview(order._id, order.userSubscriptionId?.subscriptionId?._id, order.userSubscriptionId.vendorDetails.currentVendor.vendorId);
+                if (order.userSubscriptionId && order.userSubscriptionId.subscriptionId && order.userSubscriptionId.vendorDetails && order.userSubscriptionId.vendorDetails.currentVendor)
+                  onReview(order._id, order.userSubscriptionId?.subscriptionId?._id, order.userSubscriptionId.vendorDetails.currentVendor.vendorId);
               }}
               activeOpacity={0.7}>
               <View className="flex-row items-center">
@@ -924,11 +814,10 @@ const Subscription = () => {
                   activeOpacity={0.8}
                   style={{ zIndex: 2 }}>
                   <Text
-                    className={`text-center text-base font-semibold ${
-                      activeTab === 'upcoming'
-                        ? 'text-black dark:text-white'
-                        : 'text-gray-600 dark:text-gray-900'
-                    }`}
+                    className={`text-center text-base font-semibold ${activeTab === 'upcoming'
+                      ? 'text-black dark:text-white'
+                      : 'text-gray-600 dark:text-gray-900'
+                      }`}
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
                     Active
                   </Text>
@@ -939,11 +828,10 @@ const Subscription = () => {
                   activeOpacity={0.8}
                   style={{ zIndex: 2 }}>
                   <Text
-                    className={`text-center text-base font-semibold ${
-                      activeTab === 'delivered'
-                        ? 'text-black dark:text-white'
-                        : 'text-gray-600 dark:text-gray-900'
-                    }`}
+                    className={`text-center text-base font-semibold ${activeTab === 'delivered'
+                      ? 'text-black dark:text-white'
+                      : 'text-gray-600 dark:text-gray-900'
+                      }`}
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
                     Inactive
                   </Text>
@@ -962,10 +850,10 @@ const Subscription = () => {
             <View>
               {upcomingSubscriptions.length > 0 ? (
                 upcomingSubscriptions.map((subscription) => (
-                  <SubscriptionCard 
-                    key={subscription._id} 
-                    subscription={subscription} 
-                    isActive={true} 
+                  <SubscriptionCard
+                    key={subscription._id}
+                    subscription={subscription}
+                    isActive={true}
                     onCancel={handleCancelSubscription}
                     onViewOrders={handleViewOrders}
                     onSwitch={handleSwitchVendor}
@@ -979,12 +867,12 @@ const Subscription = () => {
                     loop
                     style={{ width: 300, height: 300, marginTop: 20 }}
                   />
-                  <Text 
+                  <Text
                     className="mt-4 text-center text-lg font-medium text-gray-600 dark:text-gray-300"
                     style={{ fontFamily: 'Poppins_500Medium' }}>
                     No Active Subscriptions
                   </Text>
-                  <Text 
+                  <Text
                     className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400"
                     style={{ fontFamily: 'Poppins_400Regular' }}>
                     Start your meal journey by choosing a subscription plan
@@ -1022,10 +910,10 @@ const Subscription = () => {
             <View>
               {pastSubscriptions.length > 0 ? (
                 pastSubscriptions.map((subscription) => (
-                  <SubscriptionCard 
-                    key={subscription._id} 
-                    subscription={subscription} 
-                    isActive={false} 
+                  <SubscriptionCard
+                    key={subscription._id}
+                    subscription={subscription}
+                    isActive={false}
                     onCancel={handleCancelSubscription}
                     onViewOrders={handleViewOrders}
                     onSwitch={handleSwitchVendor}
@@ -1034,12 +922,12 @@ const Subscription = () => {
               ) : (
                 <View className="py-20 items-center px-6">
                   <Feather name="clock" size={48} color={colorScheme === 'dark' ? '#6B7280' : '#9CA3AF'} />
-                  <Text 
+                  <Text
                     className="mt-4 text-center text-lg font-medium text-gray-600 dark:text-gray-300"
                     style={{ fontFamily: 'Poppins_500Medium' }}>
                     No Past Subscriptions
                   </Text>
-                  <Text 
+                  <Text
                     className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400"
                     style={{ fontFamily: 'Poppins_400Regular' }}>
                     Your completed subscription history will appear here
@@ -1198,7 +1086,7 @@ const Subscription = () => {
             <Text
               className="mb-6 text-center text-base leading-relaxed text-gray-600 dark:text-gray-300"
               style={{ fontFamily: 'Poppins_400Regular' }}>
-              Are you sure you want to cancel this subscription? 
+              Are you sure you want to cancel this subscription?
             </Text>
 
             {/* Action Buttons */}

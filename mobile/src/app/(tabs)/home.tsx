@@ -23,21 +23,17 @@ const Home = () => {
   useEffect(() => {
     const requestPermission = async () => {
       const enabled = await notificationService.requestUserPermission();
-      if (enabled) {
-        console.log('Notification permission granted.');
-        const fcmToken = await notificationService.getFCMToken();
-        if (fcmToken) {
-          const res = await notificationService.sendTokenToServer(fcmToken);
-          console.log(res);
-          
-        }
-      } else {
-        console.log('Notification permission denied.');
+      if (!enabled) return;
+
+      const fcmToken = await notificationService.getFCMToken();
+      if (fcmToken) {
+        await notificationService.sendTokenToServer(fcmToken);
       }
     };
 
     requestPermission();
   }, []);
+
 
   // Log when home screen renders
   useEffect(() => {

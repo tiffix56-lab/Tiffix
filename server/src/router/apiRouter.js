@@ -211,6 +211,7 @@ router.route('/admin/vendor-assignments/pending').get(authentication, authorizat
 router.route('/admin/vendor-assignments/initial-assignments').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getPendingInitialAssignments)
 router.route('/admin/vendor-assignments/vendor-switches').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getPendingVendorSwitches)
 router.route('/admin/vendor-assignments/urgent').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getUrgentRequests)
+router.route('/admin/vendor-assignments/export').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.exportAssignmentsCSV)
 router.route('/admin/vendor-assignments/stats').get(authentication, authorization([EUserRole.ADMIN]), vendorAssignmentController.getAssignmentStats)
 
 // Individual request management

@@ -339,6 +339,14 @@ export const getVendorAssignmentStatsApi = async (params) => {
     return response.data;
 }
 
+export const exportVendorAssignmentsApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/vendor-assignments/export', {
+        params,
+        responseType: 'blob'
+    });
+    return response;
+}
+
 
 // SUBSCRIPTION PURCHASES
 

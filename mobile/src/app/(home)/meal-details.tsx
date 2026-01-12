@@ -37,33 +37,32 @@ const MealDetails = () => {
   const fetchItemDetails = async (itemId: string) => {
     try {
       setLoading(true);
-      
+
       // First try to fetch as a menu item
       try {
         const menuResponse = await menuService.getMenuById(itemId);
         if (menuResponse.success && menuResponse.data) {
-          console.log(menuResponse, "sdfgsdgf");
-          
+
           setMenu(menuResponse.data.menu);
           return;
         }
       } catch (menuError) {
         console.log('Item is not a menu item, trying subscription...');
       }
-      
+
       // If menu fetch fails, try as subscription
       try {
         const subscriptionResponse = await subscriptionService.getSubscriptionById(itemId);
         if (subscriptionResponse.success && subscriptionResponse.data) {
           console.log(subscriptionResponse, 'sdafa');
-          
+
           setSubscription(subscriptionResponse.data.subscription);
           return;
         }
       } catch (subscriptionError) {
         console.log('Item is not a subscription either');
       }
-      
+
       setError('Item not found');
     } catch (err) {
       setError('Failed to load item details');
@@ -107,7 +106,7 @@ const MealDetails = () => {
         <Text className="mt-4 text-center text-lg font-medium text-zinc-600 dark:text-zinc-300">
           {error || 'Item not found'}
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.back()}
           className="mt-4 rounded-xl bg-black px-6 py-3 dark:bg-white"
         >
@@ -120,7 +119,7 @@ const MealDetails = () => {
   // Handle both menu and subscription data
   const currentItem = menu || subscription;
   const mealComponents = menu ? parseMealComponents(menu.detailedItemList) : [];
-  const isVegetarian = menu 
+  const isVegetarian = menu
     ? menu.dietaryOptions?.includes('vegetarian')
     : subscription?.tags?.includes('vegetarian');
 
@@ -183,13 +182,13 @@ const MealDetails = () => {
                   <Text
                     className="text-base font-semibold text-yellow-600 dark:text-yellow-400"
                     style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                    {subscription?.avgRating?.toFixed(1) || '4.5'}
+                    {subscription?.avgRating !== undefined ? subscription.avgRating.toFixed(1) : '0.0'}
                   </Text>
                 </View>
                 <Text
                   className="text-base text-gray-500 dark:text-gray-400"
                   style={{ fontFamily: 'Poppins_400Regular' }}>
-                  ({subscription?.totalRatings || 0} reviews)
+                  ({subscription?.totalReviews || 0} reviews)
                 </Text>
               </View>
 
@@ -201,23 +200,24 @@ const MealDetails = () => {
                     style={{ fontFamily: 'Poppins_700Bold' }}>
                     {formatCurrency(menu?.price || subscription?.discountedPrice || 0)}
                     {subscription && (
-                      <Text className="text-lg text-gray-500 font-normal">/month</Text>
+                      <Text className="text-lg text-gray-500 font-normal">
+                        {' '}
+                        / {subscription?.duration}
+                      </Text>
                     )}
                   </Text>
                 </View>
-                
+
                 {(isVegetarian !== undefined) && (
-                  <View className={`rounded-full px-4 py-2 ${
-                    isVegetarian 
-                      ? 'bg-green-100 dark:bg-green-900/20' 
-                      : 'bg-red-100 dark:bg-red-900/20'
-                  }`}>
+                  <View className={`rounded-full px-4 py-2 ${isVegetarian
+                    ? 'bg-green-100 dark:bg-green-900/20'
+                    : 'bg-red-100 dark:bg-red-900/20'
+                    }`}>
                     <Text
-                      className={`text-sm font-medium ${
-                        isVegetarian 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
-                      }`}
+                      className={`text-sm font-medium ${isVegetarian
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-600 dark:text-red-400'
+                        }`}
                       style={{ fontFamily: 'Poppins_500Medium' }}>
                       {isVegetarian ? 'VEG' : 'NON-VEG'}
                     </Text>
@@ -238,7 +238,7 @@ const MealDetails = () => {
 
             {/* Meal Components or Features */}
             <View className="mb-6">
-              { (menu || subscription?.features && subscription?.features.length > 0) && <Text
+              {(menu || subscription?.features && subscription?.features.length > 0) && <Text
                 className="mb-4 text-xl font-semibold text-black dark:text-white"
                 style={{ fontFamily: 'Poppins_600SemiBold' }}>
                 {menu ? "What's Included" : "Plan Features"}
@@ -281,7 +281,7 @@ const MealDetails = () => {
                   </View>
                 </View>
               ))}
-              
+
               {/* Subscription Features */}
               {subscription && subscription.features && (
                 <View className="gap-1">
@@ -306,6 +306,22 @@ const MealDetails = () => {
                       </View>
                     </View>
                   ))}
+                </View>
+              )}
+
+              {/* Subscription Terms */}
+              {subscription && subscription.terms && (
+                <View className="mt-6">
+                  <Text
+                    className="mb-4 text-xl font-semibold text-black dark:text-white"
+                    style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                    Terms & Conditions
+                  </Text>
+                  <Text
+                    className="text-base leading-6 text-gray-700 dark:text-gray-300"
+                    style={{ fontFamily: 'Poppins_400Regular' }}>
+                    {subscription.terms}
+                  </Text>
                 </View>
               )}
             </View>

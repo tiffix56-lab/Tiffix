@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, Alert, Clipboard } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { transactionService, Transaction } from '@/services/transaction.service';
+import Toast from 'react-native-toast-message';
 
 const PaymentHistory = () => {
   const { colorScheme } = useColorScheme();
@@ -19,7 +20,6 @@ const PaymentHistory = () => {
     try {
       setLoading(true);
       const response = await transactionService.getUserTransactions();
-      console.log(response.data?.transactions);
       
       if (response.success && response.data) {
         setTransactions(response.data.transactions);
@@ -32,6 +32,16 @@ const PaymentHistory = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopyTxnId = (txnId: string) => {
+    Clipboard.setString(txnId);
+    Toast.show({
+      type: 'success',
+      text1: 'Copied',
+      text2: 'Transaction ID copied to clipboard',
+      position: 'bottom',
+    });
   };
 
   const formatCurrency = (amount: number) => {
@@ -175,11 +185,19 @@ const PaymentHistory = () => {
                         <View key={transaction._id} className="rounded-lg border border-zinc-100 p-4 dark:border-zinc-800">
                           <View className="flex-row items-center justify-between">
                             <View className="flex-1">
-                              <Text
-                                className="mb-1 text-base font-semibold text-black dark:text-white"
-                                style={{ fontFamily: 'Poppins_600SemiBold' }}>
-                                Txn Id: {transaction.transactionId}
-                              </Text>
+                              <View className="flex-row items-center mb-1">
+                                <Text
+                                  className="text-base font-semibold text-black dark:text-white"
+                                  style={{ fontFamily: 'Poppins_600SemiBold' }}>
+                                  Txn Id: {transaction.transactionId}
+                                </Text>
+                                <TouchableOpacity 
+                                  onPress={() => handleCopyTxnId(transaction.transactionId)}
+                                  className="ml-2 p-1"
+                                >
+                                  <Feather name="copy" size={14} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                                </TouchableOpacity>
+                              </View>
                               <Text
                                 className="mb-1 text-base font-semibold text-black dark:text-white"
                                 style={{ fontFamily: 'Poppins_600SemiBold' }}>

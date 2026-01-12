@@ -126,39 +126,28 @@ const Calendar = () => {
         // Priority: deliveryDate > deliveryTime (if full datetime) > orderDate
         if (order.deliveryDate) {
           // Use deliveryDate (most accurate for calendar display)
-          // Parse the date and extract local date part without timezone conversion
-          if (order.deliveryDate.includes('T') || order.deliveryDate.includes('Z')) {
-            // Full datetime ISO string - extract just the date part before 'T'
-            orderDateStr = order.deliveryDate.split('T')[0];
-          } else if (order.deliveryDate.includes('-')) {
-            // Already in YYYY-MM-DD format
-            orderDateStr = order.deliveryDate;
+          const deliveryDate = new Date(order.deliveryDate);
+          
+          if (!isNaN(deliveryDate.getTime())) {
+            // Convert to local date string using getFullYear/getMonth/getDate
+            // This handles the timezone conversion from UTC to local
+            const localYear = deliveryDate.getFullYear();
+            const localMonth = deliveryDate.getMonth() + 1;
+            const localDay = deliveryDate.getDate();
+            orderDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
           } else {
-            // Try parsing as date
-            const deliveryDate = new Date(order.deliveryDate);
-            if (!isNaN(deliveryDate.getTime())) {
-              // Convert to local date string
-              const localYear = deliveryDate.getFullYear();
-              const localMonth = deliveryDate.getMonth() + 1;
-              const localDay = deliveryDate.getDate();
-              orderDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
-            }
+            // Fallback for string format
+            orderDateStr = order.deliveryDate.split('T')[0];
           }
         } else if (order.deliveryTime) {
           // deliveryTime might be just time (e.g., "20:00") or full datetime
-          if (order.deliveryTime.includes('T') || order.deliveryTime.includes('-')) {
-            // Full datetime - extract date part
-            if (order.deliveryTime.includes('T')) {
-              orderDateStr = order.deliveryTime.split('T')[0];
-            } else {
-              const orderDate = new Date(order.deliveryTime);
-              if (!isNaN(orderDate.getTime())) {
-                const localYear = orderDate.getFullYear();
-                const localMonth = orderDate.getMonth() + 1;
-                const localDay = orderDate.getDate();
-                orderDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
-              }
-            }
+          const orderDate = new Date(order.deliveryTime);
+          
+          if (!isNaN(orderDate.getTime()) && (order.deliveryTime.includes('T') || order.deliveryTime.includes('-'))) {
+            const localYear = orderDate.getFullYear();
+            const localMonth = orderDate.getMonth() + 1;
+            const localDay = orderDate.getDate();
+            orderDateStr = `${localYear}-${String(localMonth).padStart(2, '0')}-${String(localDay).padStart(2, '0')}`;
           }
           // Note: If deliveryTime is just time without date, we can't determine the date
         }

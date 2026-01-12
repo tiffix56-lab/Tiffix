@@ -1,5 +1,5 @@
 import messaging from '@react-native-firebase/messaging';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import api from '@/lib/axios';
 
@@ -14,12 +14,10 @@ class NotificationService {
         sound: true,
       });
 
-      const enabled =
+      return (
         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-      console.log('[FCM] iOS permission:', enabled);
-      return enabled;
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL
+      );
     }
 
     if (Platform.OS === 'android' && Platform.Version >= 33) {
@@ -29,17 +27,25 @@ class NotificationService {
       return res === PermissionsAndroid.RESULTS.GRANTED;
     }
 
-    // Android < 13 → permission auto-granted
     return true;
   }
 
   async getFCMToken(): Promise<string | null> {
     try {
       await messaging().registerDeviceForRemoteMessages();
+
+      // 🔴 iOS APNs check (required)
+      if (Platform.OS === 'ios') {
+        const apnsToken = await messaging().getAPNSToken();
+        if (!apnsToken) {
+          return null;
+        }
+      }
+
       const token = await messaging().getToken();
+
       return token;
     } catch (error) {
-      console.error('Error getting FCM token:', error);
       return null;
     }
   }
@@ -47,9 +53,7 @@ class NotificationService {
   async sendTokenToServer(token: string): Promise<void> {
     try {
       await api.post('/users/fcm-token', { token });
-    } catch (error) {
-      console.error('Error sending FCM token:', error);
-    }
+    } catch (error) {}
   }
 
   initializeNotificationListeners() {
@@ -57,7 +61,7 @@ class NotificationService {
     this.listenersInitialized = true;
 
     Notifications.setNotificationHandler({
-      handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
+      handleNotification: async () => ({
         shouldShowAlert: true,
         shouldShowBanner: true,
         shouldShowList: true,
@@ -66,7 +70,6 @@ class NotificationService {
       }),
     });
 
-    // 🔹 Foreground messages
     messaging().onMessage(async (remoteMessage) => {
       Notifications.scheduleNotificationAsync({
         content: {
@@ -78,19 +81,8 @@ class NotificationService {
       });
     });
 
-    // 🔹 App opened from background
-    messaging().onNotificationOpenedApp((remoteMessage) => {
-      console.log('Opened from background:', remoteMessage.notification);
-    });
-
-    // 🔹 App opened from quit state
-    messaging()
-      .getInitialNotification()
-      .then((remoteMessage) => {
-        if (remoteMessage) {
-          console.log('Opened from quit:', remoteMessage.notification);
-        }
-      });
+    messaging().onNotificationOpenedApp(() => {});
+    messaging().getInitialNotification();
   }
 }
 
