@@ -74,7 +74,8 @@ const config = {
         templates: {
             verificationSubject: 'Verify your email address',
             passwordResetSubject: 'Reset your password',
-        }
+        },
+        resendApiKey: process.env.RESEND_API_KEY
     },
     razorpay: {
         keyId: process.env.RAZORPAY_KEY_ID || "",

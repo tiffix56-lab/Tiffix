@@ -1,26 +1,26 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import config from '../config/config.js';
 import logger from '../util/logger.js';
 import { EApplicationEnvironment } from '../constant/application.js';
 
-const transporter = nodemailer.createTransport(config.email.smtp);
+const resend = new Resend(config.email.resendApiKey);
 
 const sendEmail = async (to, subject, text, html) => {
-    if (config.env !== EApplicationEnvironment.PRODUCTION) {
-        logger.info(`[DEV] Mock Email sent to ${to}: ${subject}`);
-        return { messageId: 'mock-id' };
+    if (!config.email.resendApiKey) {
+        logger.error('[Email Service] Resend API Key is missing');
+        return null;
     }
 
     try {
-        const info = await transporter.sendMail({
+        const data = await resend.emails.send({
             from: config.email.from,
             to,
             subject,
             text,
             html
         });
-        logger.info(`Email sent: ${info.messageId}`);
-        return info;
+        logger.info(`Email sent: ${data.data?.id}`);
+        return data;
     } catch (error) {
         logger.error(`Error sending email: ${error.message}`);
         return null;
@@ -32,17 +32,17 @@ export default {
         const subject = 'Purchase Confirmation - Tiffix';
         const text = `Hello ${userName},
 
-Your subscription for ${planName} has been successfully activated.
+        Your subscription for ${planName} has been successfully activated.
 
-Details:
-Plan: ${planName}
-Amount Paid: ₹${amount}
-Transaction ID: ${transactionId}
-Start Date: ${startDate}
-End Date: ${endDate}
+        Details:
+        Plan: ${planName}
+        Amount Paid: ₹${amount}
+        Transaction ID: ${transactionId}
+        Start Date: ${startDate}
+        End Date: ${endDate}
 
-Thank you for choosing Tiffix!`;
-        
+        Thank you for choosing Tiffix!`;
+
         const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #4CAF50;">Purchase Successful!</h2>
@@ -59,7 +59,7 @@ Thank you for choosing Tiffix!`;
                 <p>Thank you for choosing Tiffix!</p>
             </div>
         `;
-        
+
         return sendEmail(to, subject, text, html);
     }
 };
