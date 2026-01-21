@@ -4,6 +4,8 @@ import httpError from '../../util/httpError.js';
 import { validateJoiSchema, ValidateSetTodayMeal, ValidateDateRangeQuery, ValidateUpdateDailyMeal } from '../../service/validationService.js';
 import DailyMeal from '../../models/dailyMeal.model.js';
 import Subscription from '../../models/subscription.model.js';
+import UserSubscription from '../../models/userSubscription.model.js';
+import Order from '../../models/order.model.js';
 import Menu from '../../models/menu.model.js';
 import TimezoneUtil from '../../util/timezone.js';
 import { EUserRole } from '../../constant/application.js';
@@ -33,7 +35,7 @@ export default {
 
             const allMenuIds = [...lunchMenuIds, ...dinnerMenuIds];
             if (allMenuIds.length > 0) {
-                // Remove duplicates to handle cases where same menu is used for lunch and dinner
+
                 const uniqueMenuIds = [...new Set(allMenuIds)];
 
                 const validMenus = await Menu.find({
@@ -95,6 +97,47 @@ export default {
         }
     },
 
+    refreshTodayMealOrders: async (req, res, next) => {
+        try {
+            const { userId, role } = req.authenticatedUser;
+            const subscriptionId = req.params.subscriptionId || req.body.subscriptionId;
+
+            if (role !== EUserRole.ADMIN) {
+                return httpError(next, new Error(responseMessage.AUTH.FORBIDDEN), req, 403);
+            }
+
+            if (!subscriptionId) {
+                return httpError(next, new Error('Subscription ID is required'), req, 400);
+            }
+
+            const subscription = await Subscription.findById(subscriptionId);
+            if (!subscription) {
+                return httpError(next, new Error(responseMessage.ERROR.NOT_FOUND('Subscription')), req, 404);
+            }
+
+            const today = TimezoneUtil.startOfDay();
+            const dailyMeal = await DailyMeal.findBySubscriptionAndDate(subscriptionId, today);
+
+            if (!dailyMeal) {
+                return httpError(next, new Error('Daily meal not found for today. Please set the meal first.'), req, 404);
+            }
+
+            let orderCreationResult = null;
+            try {
+                orderCreationResult = await orderCreationService.createOrdersForDailyMeal(dailyMeal, userId);
+            } catch (error) {
+                console.error('❌ Error in order creation:', error);
+                return httpError(next, new Error('Error syncing orders: ' + error.message), req, 500);
+            }
+
+            return httpResponse(req, res, 200, 'Orders synced successfully.', orderCreationResult);
+
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
     getMeals: async (req, res, next) => {
         try {
             const {
@@ -110,8 +153,6 @@ export default {
             } = req.query;
 
             const query = { isActive };
-            console.log(startDate);
-            
             if (startDate && endDate) {
                 // Date range query
                 query.mealDate = {
@@ -148,7 +189,33 @@ export default {
                 .populate('createdBy lastModifiedBy', 'name emailAddress')
                 .sort(sortObj)
                 .limit(parseInt(limit))
+                .limit(parseInt(limit))
                 .skip((parseInt(page) - 1) * parseInt(limit));
+
+            // Get active subscriber count for each meal's subscription
+            const mealsWithCounts = await Promise.all(meals.map(async (meal) => {
+                let activeSubscribersCount = 0;
+                let ordersCreatedCount = 0;
+
+                if (meal.subscriptionId && meal.subscriptionId._id) {
+                    activeSubscribersCount = await UserSubscription.countDocuments({
+                        subscriptionId: meal.subscriptionId._id,
+                        status: 'active',
+                        endDate: { $gte: TimezoneUtil.now() }
+                    });
+                }
+
+                ordersCreatedCount = await Order.countDocuments({
+                    dailyMealId: meal._id,
+                    status: { $nin: ['cancelled', 'skipped'] }
+                });
+
+                return {
+                    ...meal.toObject(),
+                    activeSubscribersCount,
+                    ordersCreatedCount
+                };
+            }));
 
             const total = await DailyMeal.countDocuments(query);
 
@@ -156,7 +223,7 @@ export default {
             const isDateRange = startDate || endDate;
 
             const responseData = {
-                meals,
+                meals: mealsWithCounts,
                 total,
                 pagination: {
                     current: parseInt(page),

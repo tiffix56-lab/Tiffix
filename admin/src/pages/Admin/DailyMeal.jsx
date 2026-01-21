@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  Calendar, Clock, ChefHat, Users, Filter,
+  Calendar, Clock, ChefHat, Users, ShoppingBag, Filter,
   Eye, Plus, RefreshCw, AlertCircle, Utensils,
   RotateCcw, FileText, Activity, Leaf, ChevronLeft, ChevronRight, CheckCircle, XCircle
 } from 'lucide-react'
@@ -11,7 +11,8 @@ import {
   getOrderCreationLogsApi,
   retryFailedOrderCreationApi,
   getSubscriptionsApi,
-  getMenusApi
+  getMenusApi,
+  refreshTodayMealOrdersApi
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
@@ -297,6 +298,21 @@ function DailyMeal() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleRefreshOrders = async (subscriptionId) => {
+      try {
+          const promise = refreshTodayMealOrdersApi({ subscriptionId });
+          toast.promise(promise, {
+              loading: 'Syncing orders...',
+              success: 'Orders synced successfully!',
+              error: (err) => err.response?.data?.message || 'Error syncing orders'
+          });
+          await promise;
+          fetchOrderLogs(); // Refresh logs to show new activity if any
+      } catch (error) {
+          console.error('Error refreshing orders:', error);
+      }
   }
 
   const handleRetryFailedOrder = async (logId, attemptIndex) => {
@@ -695,6 +711,13 @@ function DailyMeal() {
                           <Eye className="w-4 h-4" />
                           View Details
                         </button>
+                        <button 
+                          onClick={() => handleRefreshOrders(meal.subscriptionId?._id)}
+                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 bg-gray-800 rounded-lg text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium border border-gray-600"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Sync Orders
+                        </button>
                     </div>
                   ))}
                 </div>
@@ -706,6 +729,8 @@ function DailyMeal() {
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subscription</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Subscribers</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Orders</th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Vendor</th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Lunch Menus</th>
                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Dinner Menus</th>
@@ -730,6 +755,18 @@ function DailyMeal() {
                               <div className="text-xs text-gray-400 capitalize">
                                 {meal.subscriptionId?.category?.replace('_', ' ') || ''}
                               </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-white flex items-center gap-1">
+                                <Users className="w-4 h-4 text-blue-400" />
+                                {meal.activeSubscribersCount || 0}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-white flex items-center gap-1">
+                                <ShoppingBag className="w-4 h-4 text-green-400" />
+                                {meal.ordersCreatedCount || 0}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -806,7 +843,14 @@ function DailyMeal() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                          </td>
+                            <button 
+                              onClick={() => handleRefreshOrders(meal.subscriptionId?._id)}
+                              className="text-blue-400 hover:text-blue-300 transition-colors ml-4"
+                              title="Sync Orders"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                            </td>
                         </tr>
                       ))}
                     </tbody>

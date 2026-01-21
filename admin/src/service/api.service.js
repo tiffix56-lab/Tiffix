@@ -439,6 +439,11 @@ export const getAvailableMenusForSubscriptionApi = async (subscriptionId) => {
     return response.data;
 }
 
+export const refreshTodayMealOrdersApi = async (body) => {
+    const response = await servicesAxiosInstance.post('/admin/daily-meals/refresh', body);
+    return response.data;
+}
+
 
 // ORDER CREATION LOGS
 

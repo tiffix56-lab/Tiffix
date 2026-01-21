@@ -23,7 +23,7 @@ const VendorFood = () => {
           category: 'food_vendor'
         }
       );
-      
+
       if (response.success && response.data) {
         setPlans(response.data.subscriptions || []);
       } else {
@@ -66,7 +66,7 @@ const VendorFood = () => {
 
       {/* Main Content */}
       <View className="flex-1 rounded-t-3xl bg-white dark:bg-black">
-        
+
         {loading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#FFFFFF' : '#000000'} />
@@ -95,7 +95,7 @@ const VendorFood = () => {
             {plans.map((plan) => {
               const isVegetarian = plan.tags?.includes('vegetarian');
               const isNonVeg = plan.tags?.includes('non-vegetarian');
-              
+
               return (
                 <View key={plan._id} className="mb-4 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-900">
                   <View className="flex-row">
@@ -121,7 +121,7 @@ const VendorFood = () => {
                           <Text
                             className="text-base text-black dark:text-white"
                             style={{ fontFamily: 'Poppins_500Medium' }}>
-                            ₹{plan.discountedPrice}/month
+                            ₹{plan.discountedPrice}/{plan.duration}
                           </Text>
                           <View className="mt-1 flex-row items-center">
                             <Text className="text-yellow-500">★</Text>
@@ -141,17 +141,15 @@ const VendorFood = () => {
 
                         {/* Dietary Indicator */}
                         {(isVegetarian || isNonVeg) && (
-                          <View className={`rounded-md border px-2 py-1 ${
-                            isVegetarian 
-                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                          <View className={`rounded-md border px-2 py-1 ${isVegetarian
+                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                               : 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                          }`}>
+                            }`}>
                             <Text
-                              className={`text-xs font-medium ${
-                                isVegetarian 
-                                  ? 'text-green-700 dark:text-green-400' 
+                              className={`text-xs font-medium ${isVegetarian
+                                  ? 'text-green-700 dark:text-green-400'
                                   : 'text-red-700 dark:text-red-400'
-                              }`}
+                                }`}
                               style={{ fontFamily: 'Poppins_500Medium' }}>
                               {isVegetarian ? 'VEG' : 'NON-VEG'}
                             </Text>

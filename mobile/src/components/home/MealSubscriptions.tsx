@@ -118,10 +118,10 @@ const MealSubscriptions = () => {
               <TouchableOpacity
                 className="items-center"
                 onPress={() => {
-                  if (!selectedAddress) {
-                    // Prompt to select address first
-                    return;
-                  }
+                  // if (!selectedAddress) {
+                  //   // Prompt to select address first
+                  //   return;
+                  // }
                   router.push({
                     pathname: '/(home)/subscription',
                     params: { menuId: plan._id },

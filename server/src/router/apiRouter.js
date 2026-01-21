@@ -242,6 +242,7 @@ router.route('/admin/users/:id/toggle-status').put(authentication, authorization
 // ############### DAILY MEAL MANAGEMENT ROUTES (ADMIN ONLY) ####################
 // Admin daily meal management - for setting daily menus for subscriptions
 router.route('/admin/daily-meals/set-today').post(authentication, authorization([EUserRole.ADMIN]), dailyMealController.setTodayMeal)
+router.route('/admin/daily-meals/refresh').post(authentication, authorization([EUserRole.ADMIN]), dailyMealController.refreshTodayMealOrders)
 router.route('/admin/daily-meals').get(authentication, authorization([EUserRole.ADMIN]), dailyMealController.getMeals)
 router.route('/admin/daily-meals/subscription/:subscriptionId/menus').get(authentication, authorization([EUserRole.ADMIN]), dailyMealController.getAvailableMenusForSubscription)
 
