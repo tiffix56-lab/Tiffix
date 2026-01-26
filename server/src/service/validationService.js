@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EOrderStatus } from '../models/order.model.js'; 
+import { EOrderStatus } from '../models/order.model.js';
 
 /**
  * ************ AUTHENTICATION VALIDATION ***********************
@@ -111,7 +111,7 @@ export const ValidateLocationQuery = Joi.object({
 export const ValidateCreateSubscription = Joi.object({
     planName: Joi.string().min(3).max(100).trim().required(),
     image: Joi.string().uri().optional(),
-    duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom').required(),
+    duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom', 'one-day', 'three-day').required(),
     durationDays: Joi.number().positive().required(),
     mealTimings: Joi.object({
         isLunchAvailable: Joi.boolean().default(false),
@@ -141,7 +141,7 @@ export const ValidateCreateSubscription = Joi.object({
 export const ValidateUpdateSubscription = Joi.object({
     planName: Joi.string().min(3).max(100).trim().optional(),
     image: Joi.string().uri().optional(),
-    duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom').optional(),
+    duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom', 'one-day', 'three-day').optional(),
     durationDays: Joi.number().positive().optional(),
     mealTimings: Joi.object({
         isLunchAvailable: Joi.boolean().optional(),
@@ -174,7 +174,7 @@ export const ValidateSubscriptionQuery = Joi.object({
     limit: Joi.number().positive().max(100).optional(),
     category: Joi.string().valid('home_chef', 'food_vendor').optional(),
     isActive: Joi.string().valid('true', 'false').optional(),
-    duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom').optional(),
+    duration: Joi.string().valid('weekly', 'monthly', 'yearly', 'custom', 'one-day', 'three-day').optional(),
     minPrice: Joi.number().positive().optional(),
     maxPrice: Joi.number().positive().optional(),
     search: Joi.string().trim().optional(),

@@ -180,3 +180,13 @@ Authorization: Bearer {{accessToke}}
   "reson": "testing",
   "password": "{{password}}"
 }
+
+### Test Twilio SMS
+POST {{baseURL}}/admin/test/twilio
+Content-Type: application/json
+Authorization: Bearer {{accessToke}}
+
+{
+  "phoneNumber": "{{phoneNumber}}",
+  "message": "Test Message from Tiffix API"
+}

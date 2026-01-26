@@ -7,7 +7,7 @@ import { EApplicationEnvironment, EAuthProvider, EUserRole } from '../../constan
 import userModel from '../../models/user.model.js';
 import userProfileModel from '../../models/userProfile.model.js';
 import quicker from '../../util/quicker.js';
-import whatsappService from '../../service/whatsappService.js';
+import whatsappService, { sendTwilioMessage } from '../../service/whatsappService.js';
 import TimezoneUtil from '../../util/timezone.js';
 import { OAuth2Client } from 'google-auth-library';
 import appleSignin from 'apple-signin-auth';
@@ -901,6 +901,30 @@ export default {
             httpError(next, new Error(errorMessage), req, 500);
         }
     },
+
+    testTwilio: async (req, res, next) => {
+        try {
+
+            const phoneNumber = "+919653092873";
+            const message = "Hello from Tiffix!";
+
+
+            const result = await sendTwilioMessage(phoneNumber, message);
+
+            if (result) {
+                httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                    message: 'Twilio message sent successfully',
+                    sid: result.sid
+                });
+            } else {
+                httpError(next, new Error('Failed to send Twilio message. Check logs/credentials.'), req, 500);
+            }
+        } catch (err) {
+            const errorMessage = err.message || 'Internal server error';
+            httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
 
     appleMobileAuth: async (req, res, next) => {
         try {

@@ -234,6 +234,14 @@ export const deleteUserApi = async (userId) => {
     return response.data;
 }
 
+export const exportUsersApi = async (params) => {
+    const response = await servicesAxiosInstance.get('/admin/users/export', {
+        params,
+        responseType: 'blob'
+    });
+    return response;
+}
+
 export const getUserActivityStatsApi = async (params) => {
     const response = await servicesAxiosInstance.get('/admin/users/activity-stats', {
         params

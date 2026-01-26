@@ -388,5 +388,81 @@ export default {
         }
     },
 
+    // Export users to CSV (Streamed)
+    exportUsers: async (req, res, next) => {
+        try {
+            const { query } = req
 
+            const {
+                role,
+                status,
+                search,
+                userType,
+                hasSubscription,
+                sortBy = 'createdAt',
+                sortOrder = 'desc'
+            } = query
+
+            const filters = {
+                role,
+                status,
+                search,
+                userType,
+                hasSubscription
+            }
+
+            const options = {
+                sortBy,
+                sortOrder,
+                ignorePagination: true
+            }
+
+            // Get aggregation pipeline and run it as a cursor
+            const cursor = User.findWithFilters(filters, options).cursor()
+
+            res.setHeader('Content-Type', 'text/csv')
+            res.setHeader('Content-Disposition', 'attachment; filename=users_export.csv')
+
+            // Write Headers
+            res.write('User ID,Name,Email,Phone,Role,Status,Joined Date,Address\n')
+
+            for await (const user of cursor) {
+                // Format Address from UserProfile default address
+                let addressStr = 'N/A'
+                if (user.defaultAddressObj) {
+                    const { street, city, state, zipCode } = user.defaultAddressObj
+                    addressStr = [street, city, state, zipCode].filter(Boolean).join(', ')
+                } else if (user.location?.address) {
+                    // Fallback to old location address if available
+                    addressStr = user.location.address
+                }
+
+                const row = [
+                    user._id,
+                    `"${(user.name || '').replace(/"/g, '""')}"`,
+                    `"${(user.emailAddress || '').replace(/"/g, '""')}"`,
+                    `"${(user.phoneNumber?.internationalNumber || 'N/A').replace(/"/g, '""')}"`,
+                    user.role,
+                    user.isBanned ? 'Banned' : (user.isActive ? 'Active' : 'Inactive'),
+                    user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : 'N/A',
+                    `"${addressStr.replace(/"/g, '""')}"`
+                ].join(',')
+
+                res.write(row + '\n')
+            }
+
+            res.end()
+
+        } catch (err) {
+            console.error('Export error:', err)
+            // If headers haven't sent, we can send error
+            if (!res.headersSent) {
+                const errorMessage = err.message || 'Internal server error';
+                httpError(next, new Error(errorMessage), req, 500);
+            } else {
+                // Connection likely closed or partial response sent
+                res.end()
+            }
+        }
+    }
 }

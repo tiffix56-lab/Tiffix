@@ -34,6 +34,25 @@ import {
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
+const getDurationLabel = (duration) => {
+    switch (duration) {
+        case 'one-day':
+            return 'Single Day'
+        case 'three-day':
+            return '3 Days'
+        case 'weekly':
+            return 'Weekly'
+        case 'monthly':
+            return 'Monthly'
+        case 'yearly':
+            return 'Yearly'
+        case 'custom':
+            return 'Custom'
+        default:
+            return duration?.charAt(0).toUpperCase() + duration?.slice(1) || duration
+    }
+}
+
 function Subscription() {
     const [subscriptions, setSubscriptions] = useState([])
     const [stats, setStats] = useState(null)
@@ -124,6 +143,23 @@ function Subscription() {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target
+        
+        if (name === 'duration') {
+            let days = formData.durationDays
+            if (value === 'weekly') days = 7
+            else if (value === 'monthly') days = 30
+            else if (value === 'yearly') days = 365
+            else if (value === 'one-day') days = 1
+            else if (value === 'three-day') days = 3
+            
+            setFormData(prev => ({
+                ...prev,
+                duration: value,
+                durationDays: days
+            }))
+            return
+        }
+
         if (name.includes('.')) {
             const [parent, child, grandchild] = name.split('.')
             setFormData((prev) => ({
@@ -445,6 +481,16 @@ function Subscription() {
                                         className="bg-gray-800">
                                         Yearly
                                     </option>
+                                    <option
+                                        value="one-day"
+                                        className="bg-gray-800">
+                                        Single Day
+                                    </option>
+                                    <option
+                                        value="three-day"
+                                        className="bg-gray-800">
+                                        3 Days
+                                    </option>
                                 </select>
 
                                 {/* Status Filter */}
@@ -618,7 +664,7 @@ function Subscription() {
                                         <div className="flex items-center gap-2">
                                             <Calendar className="w-4 h-4 text-orange-400" />
                                             <span className="text-gray-300">
-                                                {subscription.duration} ({subscription.durationDays || 30} days)
+                                                {getDurationLabel(subscription.duration)} ({subscription.durationDays || 30} days)
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -818,19 +864,29 @@ function Subscription() {
                                         onChange={handleInputChange}
                                         className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white w-full">
                                         <option
-                                            value="monthly"
-                                            className="bg-gray-800">
-                                            Monthly
-                                        </option>
-                                        <option
                                             value="weekly"
                                             className="bg-gray-800">
                                             Weekly
                                         </option>
                                         <option
+                                            value="monthly"
+                                            className="bg-gray-800">
+                                            Monthly
+                                        </option>
+                                        <option
                                             value="yearly"
                                             className="bg-gray-800">
                                             Yearly
+                                        </option>
+                                        <option
+                                            value="one-day"
+                                            className="bg-gray-800">
+                                            Single Day
+                                        </option>
+                                        <option
+                                            value="three-day"
+                                            className="bg-gray-800">
+                                            3 Days
                                         </option>
                                     </select>
                                 </div>

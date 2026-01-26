@@ -13,16 +13,18 @@ import {
   Clock,
   CreditCard,
   Package,
-  Phone
+  Phone,
+  Copy,
+  ExternalLink,
+  Map
 } from 'lucide-react';
 import { getVendorCustomersApi, getVendorCustomerAnalyticsApi } from '../../service/api.service';
 import { toast } from 'react-hot-toast';
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   // Filters and Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,7 +35,6 @@ function Customers() {
   const [amountRange, setAmountRange] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [analyticsPeriod, setAnalyticsPeriod] = useState('30d');
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,13 +58,6 @@ function Customers() {
     { value: 'finalPrice', label: 'Amount' }
   ];
 
-  const analyticsOptions = [
-    { value: '7d', label: '7 Days' },
-    { value: '30d', label: '30 Days' },
-    { value: '90d', label: '90 Days' },
-    { value: '1y', label: '1 Year' },
-    { value: 'all', label: 'All Time' }
-  ];
 
   const fetchCustomers = async () => {
     setLoading(true);
@@ -82,9 +76,12 @@ function Customers() {
       };
 
       const response = await getVendorCustomersApi(params);
-      setCustomers(response.data.customers || response.data || []);
-      setTotalPages(response.data.totalPages || 1);
-      setTotalCustomers(response.data.totalCount || 0);
+      const { customers, pagination, summary } = response.data || {};
+      
+      setCustomers(customers || []);
+      setSummary(summary || null);
+      setTotalPages(pagination?.totalPages || 1);
+      setTotalCustomers(pagination?.totalCustomers || 0);
     } catch (error) {
       toast.error('Failed to fetch customers');
       console.error('Error fetching customers:', error);
@@ -93,27 +90,9 @@ function Customers() {
     }
   };
 
-  const fetchAnalytics = async () => {
-    setAnalyticsLoading(true);
-    try {
-      const params = { period: analyticsPeriod };
-      const response = await getVendorCustomerAnalyticsApi(params);
-      setAnalytics(response.data);
-    } catch (error) {
-      toast.error('Failed to fetch analytics');
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchCustomers();
   }, [currentPage, statusFilter, sortBy, sortOrder]);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [analyticsPeriod]);
 
   const handleSearch = () => {
     setCurrentPage(1);
@@ -169,6 +148,45 @@ function Customers() {
     });
   };
 
+  const getFullAddress = (address) => {
+    if (!address) return '';
+    return [address.street, address.city, address.state, address.zipCode]
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  const copyToClipboard = (text, label) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  const openMap = (address) => {
+    let mapLink;
+    if (address?.coordinates?.coordinates && address.coordinates.coordinates.length === 2) {
+      const [lng, lat] = address.coordinates.coordinates;
+      mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    } else {
+      const fullAddress = getFullAddress(address);
+      if (!fullAddress) return;
+      mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+    }
+    window.open(mapLink, '_blank');
+  };
+
+  const copyMapLink = (address) => {
+    let mapLink;
+    if (address?.coordinates?.coordinates && address.coordinates.coordinates.length === 2) {
+      const [lng, lat] = address.coordinates.coordinates;
+      mapLink = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    } else {
+      const fullAddress = getFullAddress(address);
+      if (!fullAddress) return;
+      mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+    }
+    copyToClipboard(mapLink, 'Map link');
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
@@ -187,13 +205,13 @@ function Customers() {
       </div>
 
       {/* Analytics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
         <div className="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
           <div className="flex items-center justify-between mb-2">
             <p className="text-gray-400 text-xs md:text-sm">Total Customers</p>
             <Users className="w-5 h-5 md:w-8 md:h-8 text-green-400" />
           </div>
-          <p className="text-xl md:text-2xl font-bold text-white">{totalCustomers}</p>
+          <p className="text-xl md:text-2xl font-bold text-white">{summary?.totalCustomers || 0}</p>
         </div>
 
         <div className="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
@@ -202,7 +220,7 @@ function Customers() {
             <TrendingUp className="w-5 h-5 md:w-8 md:h-8 text-blue-400" />
           </div>
           <p className="text-xl md:text-2xl font-bold text-white">
-            {analytics?.activeSubscriptions || 0}
+            {summary?.activeCustomers || 0}
           </p>
         </div>
 
@@ -212,26 +230,8 @@ function Customers() {
             <DollarSign className="w-5 h-5 md:w-8 md:h-8 text-yellow-400" />
           </div>
           <p className="text-xl md:text-2xl font-bold text-white">
-            {analytics?.totalRevenue ? formatCurrency(analytics.totalRevenue) : '₹0'}
+            {summary?.totalRevenue ? formatCurrency(summary.totalRevenue) : '₹0'}
           </p>
-        </div>
-
-        <div className="bg-gray-800 p-4 md:p-6 rounded-xl border border-gray-700">
-          <div className="flex items-center justify-between mb-2 md:mb-4">
-            <p className="text-gray-400 text-xs md:text-sm">Period</p>
-            <Calendar className="w-5 h-5 md:w-8 md:h-8 text-purple-400" />
-          </div>
-          <select
-            value={analyticsPeriod}
-            onChange={(e) => setAnalyticsPeriod(e.target.value)}
-            className="w-full bg-gray-700 text-white rounded px-2 py-1 text-sm border border-gray-600 focus:ring-1 focus:ring-green-500"
-          >
-            {analyticsOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -473,14 +473,35 @@ function Customers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-300">
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-1 text-gray-500" />
-                            <div>
-                              <div className="text-white text-xs truncate max-w-[200px]">{customer.deliveryAddress?.street || 'No street'}</div>
-                              <div className="text-gray-400 text-xs">
-                                {customer.deliveryAddress?.city}, {customer.deliveryAddress?.state}
-                              </div>
-                              <div className="text-gray-500 text-xs">{customer.deliveryAddress?.zipCode}</div>
+                          <div className="flex items-start">
+                            <MapPin className="w-4 h-4 mr-2 mt-1 text-gray-500 shrink-0" />
+                            <div className="flex-1">
+                              <div className="text-white text-xs whitespace-normal mb-1">{getFullAddress(customer.deliveryAddress) || 'No address'}</div>
+                              {customer.deliveryAddress && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <button
+                                    onClick={() => copyToClipboard(getFullAddress(customer.deliveryAddress), 'Address')}
+                                    className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                                    title="Copy Address"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => openMap(customer.deliveryAddress)}
+                                    className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-blue-400 transition-colors"
+                                    title="View on Map"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => copyMapLink(customer.deliveryAddress)}
+                                    className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-green-400 transition-colors"
+                                    title="Copy Map Link"
+                                  >
+                                    <Map className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -585,9 +606,36 @@ function Customers() {
                     {/* Address */}
                     <div className="flex items-start gap-2 text-xs text-gray-400">
                       <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <span>
-                        {customer.deliveryAddress?.street}, {customer.deliveryAddress?.city}
-                      </span>
+                      <div className="flex-1">
+                        <span className="block mb-2 text-white">
+                          {getFullAddress(customer.deliveryAddress) || 'No address'}
+                        </span>
+                        {customer.deliveryAddress && (
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => copyToClipboard(getFullAddress(customer.deliveryAddress), 'Address')}
+                              className="flex items-center gap-1 text-gray-500 hover:text-white transition-colors"
+                            >
+                              <Copy className="w-3 h-3" />
+                              <span className="text-[10px]">Copy</span>
+                            </button>
+                            <button
+                              onClick={() => openMap(customer.deliveryAddress)}
+                              className="flex items-center gap-1 text-gray-500 hover:text-blue-400 transition-colors"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              <span className="text-[10px]">Map</span>
+                            </button>
+                            <button
+                              onClick={() => copyMapLink(customer.deliveryAddress)}
+                              className="flex items-center gap-1 text-gray-500 hover:text-green-400 transition-colors"
+                            >
+                              <Map className="w-3 h-3" />
+                              <span className="text-[10px]">Link</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Meal Timings */}

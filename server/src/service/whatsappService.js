@@ -1,4 +1,5 @@
 import axios from 'axios';
+import twilio from 'twilio';
 import config from '../config/config.js';
 import logger from '../util/logger.js';
 import { EApplicationEnvironment } from '../constant/application.js';
@@ -55,6 +56,28 @@ const sendWhatsAppMessage = async (destination, userName, otpCode, campaignName 
     }
 };
 
+export const sendTwilioMessage = async (destination, body) => {
+    try {
+        if (!config.twilio.accountSid || !config.twilio.authToken || !config.twilio.phoneNumber) {
+            logger.warn('Twilio credentials missing, skipping Twilio message');
+            return null;
+        }
+
+        const client = twilio(config.twilio.accountSid, config.twilio.authToken);
+        const message = await client.messages.create({
+            body: body,
+            from: config.twilio.phoneNumber,
+            to: destination.startsWith('+') ? destination : `+${destination}`
+        });
+
+        logger.info(`Twilio message sent: ${message.sid}`);
+        return message;
+    } catch (error) {
+        logger.error('Twilio API error:', error.message);
+        return null;
+    }
+};
+
 const sendPurchaseMessage = async (destination, userName, planName, amount, startDate, endDate, transactionId) => {
     try {
         const payload = {
@@ -105,6 +128,9 @@ class WhatsAppService {
         }
 
         try {
+            const twilioBody = `Your Tiffix verification code is: ${otp}`;
+            await sendTwilioMessage(phoneNumber, twilioBody);
+
             const result = await sendWhatsAppMessage(phoneNumber, name, otp, config.aisensy.campaignName);
 
             logger.info(`Verification WhatsApp sent to ${phoneNumber}`, { result });
@@ -127,6 +153,10 @@ class WhatsAppService {
         }
 
         try {
+            // Sending via Twilio SMS for OTP
+            const twilioBody = `Your Tiffix password reset code is: ${otp}`;
+            await sendTwilioMessage(phoneNumber, twilioBody);
+
             const result = await sendWhatsAppMessage(phoneNumber, name, otp, config.aisensy.campaignName);
 
             logger.info(`Password reset WhatsApp sent to ${phoneNumber}`, { result });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Search, Filter, Users, Ban, UserCheck, UserX, Trash2, 
   Eye, Activity, Calendar, Crown, Shield, RefreshCw,
-  TrendingUp, TrendingDown, BarChart3, PieChart, ChevronLeft, ChevronRight
+  TrendingUp, TrendingDown, BarChart3, PieChart, ChevronLeft, ChevronRight, Download
 } from 'lucide-react'
 import {
   getUserOverviewApi,
@@ -13,7 +13,8 @@ import {
   toggleUserStatusApi,
   deleteUserApi,
   getUserActivityStatsApi,
-  searchUsersApi
+  searchUsersApi,
+  exportUsersApi
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
@@ -56,6 +57,7 @@ function UserManagement() {
   const [overview, setOverview] = useState(null)
   const [activityStats, setActivityStats] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [showBanModal, setShowBanModal] = useState(false)
   const [banningUser, setBanningUser] = useState(null)
   const [banReason, setBanReason] = useState('')
@@ -144,6 +146,31 @@ function UserManagement() {
     } catch (error) {
       console.error('Error unbanning user:', error)
       toast.error(error.response?.data?.message || 'Error unbanning user')
+    }
+  }
+
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => value !== '')
+      )
+      const response = await exportUsersApi(cleanFilters)
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      toast.success('Users exported successfully')
+    } catch (error) {
+      console.error('Error exporting users:', error)
+      toast.error('Error exporting users')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -321,13 +348,27 @@ function UserManagement() {
                 </select>
               </div>
 
-              <button
-                onClick={clearFilters}
-                className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 border border-gray-600 hover:border-gray-500"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Clear Filters
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={clearFilters}
+                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 border border-gray-600 hover:border-gray-500"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Clear Filters
+                </button>
+                 <button
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 border border-green-600 hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {exporting ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  {exporting ? 'Exporting...' : 'Export CSV'}
+                </button>
+              </div>
             </div>
 
             {/* Sort Options */}

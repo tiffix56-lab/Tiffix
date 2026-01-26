@@ -15,7 +15,7 @@ const subscriptionSchema = new mongoose.Schema(
         },
         duration: {
             type: String,
-            enum: ['weekly', 'monthly', 'yearly', 'custom'],
+            enum: ['weekly', 'monthly', 'yearly', 'custom', 'one-day', 'three-day'],
             required: true
         },
         planMenus: [

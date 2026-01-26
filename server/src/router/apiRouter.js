@@ -231,6 +231,7 @@ router.route('/admin/users/activity-stats').get(authentication, authorization([E
 
 // Admin user management
 router.route('/admin/users').get(authentication, authorization([EUserRole.ADMIN]), userAdminController.getAllUsers)
+router.route('/admin/users/export').get(authentication, authorization([EUserRole.ADMIN]), userAdminController.exportUsers)
 router.route('/admin/users/:id').get(authentication, authorization([EUserRole.ADMIN]), userAdminController.getUserById)
 router.route('/admin/users/:id').delete(authentication, authorization([EUserRole.ADMIN]), userAdminController.deleteUser)
 router.route('/admin/users/:id/ban').post(authentication, authorization([EUserRole.ADMIN]), userAdminController.banUser)
@@ -299,6 +300,9 @@ router.route('/admin/analytics/orders').get(authentication, authorization([EUser
 router.route('/admin/analytics/revenue').get(authentication, authorization([EUserRole.ADMIN]), adminController.getRevenueAnalytics)
 router.route('/admin/analytics/vendors').get(authentication, authorization([EUserRole.ADMIN]), adminController.getVendorAnalytics)
 router.route('/admin/analytics/zones').get(authentication, authorization([EUserRole.ADMIN]), adminController.getZoneAnalytics)
+
+// ############### TEST ROUTES ####################
+router.route('/admin/test/twilio').post(authController.testTwilio)
 
 // ############### MAPS & LOCATION SERVICES ROUTES ####################
 // Ola Maps API proxy routes - authenticated to prevent abuse

@@ -535,6 +535,16 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
         }
     })
 
+    // Lookup User Profile for Address
+    pipeline.push({
+        $lookup: {
+            from: 'userprofiles',
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'profile'
+        }
+    })
+
     pipeline.push({
         $addFields: {
             subscriptionCount: { $size: '$subscriptions' },
@@ -550,6 +560,34 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
                     },
                     0
                 ]
+            },
+            // Extract default address
+            defaultAddressObj: {
+                $let: {
+                    vars: {
+                        profileObj: { $arrayElemAt: ['$profile', 0] }
+                    },
+                    in: {
+                        $let: {
+                            vars: {
+                                defaultAddr: {
+                                    $filter: {
+                                        input: { $ifNull: ['$$profileObj.addresses', []] },
+                                        as: 'addr',
+                                        cond: { $eq: ['$$addr.isDefault', true] }
+                                    }
+                                }
+                            },
+                            in: {
+                                $cond: {
+                                    if: { $gt: [{ $size: '$$defaultAddr' }, 0] },
+                                    then: { $arrayElemAt: ['$$defaultAddr', 0] },
+                                    else: { $arrayElemAt: [{ $ifNull: ['$$profileObj.addresses', []] }, 0] }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     })
@@ -558,9 +596,11 @@ userSchema.statics.findWithFilters = function (filters = {}, options = {}) {
     sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1
     pipeline.push({ $sort: sortObj })
 
-    const skip = (page - 1) * limit
-    pipeline.push({ $skip: skip })
-    pipeline.push({ $limit: parseInt(limit) })
+    if (options.ignorePagination !== true) {
+        const skip = (page - 1) * limit
+        pipeline.push({ $skip: skip })
+        pipeline.push({ $limit: parseInt(limit) })
+    }
 
     return this.aggregate(pipeline)
 }
