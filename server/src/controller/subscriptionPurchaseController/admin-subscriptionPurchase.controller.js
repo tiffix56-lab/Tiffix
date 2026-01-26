@@ -11,6 +11,7 @@ import {
 } from '../../service/validationService.js'
 import VendorAssignmentRequest from '../../models/vendorSwitchRequest.model.js'
 import LocationZone from '../../models/locationZone.model.js'
+import paymentService from '../../service/paymentService.js'
 export default {
     getAllPurchaseSubscriptions: async (req, res, next) => {
         try {
@@ -38,14 +39,14 @@ export default {
 
             const skip = (page - 1) * limit;
             const query = {};
-            
+
             if (endingSoon === 'true') {
                 const now = TimezoneUtil.now();
                 query.status = 'active';
                 query.endDate = { $gte: now };
                 // Override sort to show closest ending first
                 req.query.sortBy = 'endDate';
-                sortOrder = 'asc'; 
+                sortOrder = 'asc';
             }
 
             if (search) {
@@ -560,6 +561,69 @@ export default {
 
 
             const errorMessage = error.message || 'Internal server error while processing admin request';
+            return httpError(next, new Error(errorMessage), req, 500);
+        }
+    },
+
+    // Verify payment status with Razorpay and update local status if paid
+    verifyPaymentStatus: async (req, res, next) => {
+        try {
+            const { transactionId } = req.params;
+
+            const transaction = await Transaction.findById(transactionId)
+                .populate('subscriptionId')
+                .populate('userId');
+
+            if (!transaction) {
+                return httpError(next, new Error('Transaction not found'), req, 404);
+            }
+
+            if (transaction.status === 'success') {
+                return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                    verified: true,
+                    status: 'success',
+                    message: 'Transaction is already marked as success'
+                });
+            }
+
+            // Check if we have razorpay order ID to verify
+            const razorpayOrderId = transaction.razorpayOrderId || transaction.gatewayOrderId || transaction.transactionId;
+
+            if (!razorpayOrderId) {
+                return httpError(next, new Error('No Razorpay Order ID found for this transaction'), req, 400);
+            }
+
+            console.log(razorpayOrderId);
+
+            const payments = await paymentService.razorpay.orders.fetchPayments(razorpayOrderId);
+
+            const successfulPayment = payments.items.find(p => p.status === 'captured');
+
+            if (successfulPayment) {
+                // Payment found and captured! Process it.
+                const result = await paymentService.processSuccessfulPayment(transaction.transactionId, {
+                    razorpay_order_id: razorpayOrderId,
+                    razorpay_payment_id: successfulPayment.id,
+                    razorpay_signature: 'manual_admin_verification' // Special signature for manual verification
+                });
+
+                return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                    verified: true,
+                    status: 'success',
+                    message: 'Payment verified and transaction updated successfully',
+                    data: result
+                });
+            } else {
+                return httpResponse(req, res, 200, responseMessage.SUCCESS, {
+                    verified: false,
+                    status: transaction.status,
+                    message: 'No captured payment found for this transaction on Razorpay'
+                });
+            }
+
+        } catch (error) {
+            console.error('Manual payment verification error:', error);
+            const errorMessage = error.message || 'Internal server error while verifying payment';
             return httpError(next, new Error(errorMessage), req, 500);
         }
     }

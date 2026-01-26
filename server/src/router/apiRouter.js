@@ -185,6 +185,7 @@ router.route('/my-subscriptions/:subscriptionId/request-vendor-switch').post(aut
 router.route('/admin/subscription-purchases').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getAllPurchaseSubscriptions)
 router.route('/admin/subscription-purchases/stats').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getPurchaseSubscriptionStats)
 router.route('/admin/subscription-purchases/:subscriptionId').get(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.getPurchaseSubscriptionById)
+router.route('/admin/subscription-purchases/:transactionId/verify-payment').post(authentication, authorization([EUserRole.ADMIN]), adminSubscriptionPurchaseController.verifyPaymentStatus)
 
 // ############### VENDOR CUSTOMER MANAGEMENT ROUTES ####################
 // Vendor customer management - view and manage assigned customers

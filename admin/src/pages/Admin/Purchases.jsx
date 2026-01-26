@@ -7,7 +7,8 @@ import {
 import { 
   getSubscriptionPurchasesApi, 
   getSubscriptionPurchaseByIdApi, 
-  getSubscriptionPurchaseStatsApi 
+  getSubscriptionPurchaseStatsApi,
+  verifyPaymentApi
 } from '../../service/api.service'
 import toast from 'react-hot-toast'
 
@@ -18,6 +19,7 @@ function Purchases() {
   const [selectedPurchase, setSelectedPurchase] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [verifyingPayment, setVerifyingPayment] = useState(false)
   const [filters, setFilters] = useState({
     page: 1,
     limit: 20,
@@ -94,6 +96,35 @@ function Purchases() {
 
   const handlePageChange = (page) => {
     setFilters(prev => ({ ...prev, page }))
+  }
+
+  const handleVerifyPayment = async (transactionId) => {
+    if (!window.confirm('Are you sure you want to manually verify this payment with Razorpay?')) {
+        return
+    }
+    
+    setVerifyingPayment(true)
+    try {
+        const response = await verifyPaymentApi(transactionId)
+        if (response.success) {
+            toast.success(response.message || 'Payment verified successfully')
+            // Refresh purchase details if modal is open
+            if (selectedPurchase && (selectedPurchase.transactionId._id === transactionId || selectedPurchase.transactionDetails?._id === transactionId)) {
+                // If the selected purchase ID is the user description ID, we need to re-fetch it.
+                // But transactionId argument here is likely the transaction ID string or _id.
+                 fetchPurchaseDetails(selectedPurchase._id || selectedPurchase.subscription._id)
+            }
+            fetchPurchases()
+            fetchStats()
+        } else {
+            toast.error(response.message || 'Verification failed')
+        }
+    } catch (error) {
+        console.error('Payment verification error:', error)
+        toast.error(error.response?.data?.message || 'Error verifying payment')
+    } finally {
+        setVerifyingPayment(false)
+    }
   }
 
   return (
@@ -584,6 +615,50 @@ function Purchases() {
                 </div>
               </div>
 
+              {/* Delivery Address */}
+              {selectedPurchase.deliveryAddress && (
+                <div>
+                  <h4 className="text-white font-medium mb-3">Delivery Address</h4>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <p className="text-gray-400 text-sm">Street Address</p>
+                        <p className="text-white">{selectedPurchase.deliveryAddress.street || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">City</p>
+                        <p className="text-white">{selectedPurchase.deliveryAddress.city || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">State</p>
+                        <p className="text-white">{selectedPurchase.deliveryAddress.state || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Country</p>
+                        <p className="text-white">{selectedPurchase.deliveryAddress.country || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Zip Code</p>
+                        <p className="text-white">{selectedPurchase.deliveryAddress.zipCode || 'N/A'}</p>
+                      </div>
+                       {selectedPurchase.deliveryAddress.coordinates && (
+                        <div className="md:col-span-2 mt-2">
+                            <a 
+                                href={`https://www.google.com/maps/search/?api=1&query=${selectedPurchase.deliveryAddress.coordinates.coordinates[1]},${selectedPurchase.deliveryAddress.coordinates.coordinates[0]}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors text-sm"
+                            >
+                                <MapPin className="w-4 h-4" />
+                                View on Map
+                            </a>
+                        </div>
+                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Subscription Details */}
               <div>
                 <h4 className="text-white font-medium mb-3">Subscription Details</h4>
@@ -698,28 +773,48 @@ function Purchases() {
               </div>
 
               {/* Payment Details */}
-              {selectedPurchase.paymentDetails && (
+              {(selectedPurchase.paymentDetails || selectedPurchase.transactionId) && (
                 <div>
                   <h4 className="text-white font-medium mb-3">Payment Information</h4>
                   <div className="bg-gray-700 p-4 rounded-lg">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-gray-400 text-sm">Payment Method</p>
-                        <p className="text-white">{selectedPurchase.paymentDetails.method || 'N/A'}</p>
+                        <p className="text-white">{selectedPurchase.paymentDetails?.method || selectedPurchase.transactionId?.paymentGateway || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-gray-400 text-sm">Transaction ID</p>
-                        <p className="text-white text-xs">{selectedPurchase.paymentDetails.transactionId || 'N/A'}</p>
+                        <p className="text-white text-xs">
+                            {selectedPurchase.paymentDetails?.transactionId || selectedPurchase.transactionId?.transactionId || 'N/A'}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Payment Status</p>
-                        <p className="text-white">{selectedPurchase.paymentDetails.status || 'N/A'}</p>
+                        <div className="flex items-center gap-2">
+                            <div>
+                                <p className="text-gray-400 text-sm">Payment Status</p>
+                                <p className="text-white">
+                                    {selectedPurchase.paymentDetails?.status || selectedPurchase.transactionId?.status || 'N/A'}
+                                </p>
+                            </div>
+                            {/* Show Verify Button if status is pending */}
+                            {(selectedPurchase.status === 'pending' || 
+                              selectedPurchase.transactionId?.status === 'pending' || 
+                              selectedPurchase.paymentDetails?.status === 'pending') && (
+                                <button
+                                    onClick={() => handleVerifyPayment(selectedPurchase.transactionId?._id || selectedPurchase.transactionId)} 
+                                    disabled={verifyingPayment}
+                                    className="ml-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors disabled:opacity-50"
+                                >
+                                    {verifyingPayment ? 'Verifying...' : 'Verify Payment'}
+                                </button>
+                            )}
+                        </div>
                       </div>
                       <div>
                         <p className="text-gray-400 text-sm">Payment Date</p>
                         <p className="text-white">
-                          {selectedPurchase.paymentDetails.paidAt
-                            ? new Date(selectedPurchase.paymentDetails.paidAt).toLocaleString()
+                          {(selectedPurchase.paymentDetails?.paidAt || selectedPurchase.transactionId?.completedAt)
+                            ? new Date(selectedPurchase.paymentDetails?.paidAt || selectedPurchase.transactionId?.completedAt).toLocaleString()
                             : 'N/A'
                           }
                         </p>

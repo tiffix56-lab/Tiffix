@@ -370,6 +370,11 @@ export const getSubscriptionPurchaseByIdApi = async (purchaseId) => {
     return response.data;
 }
 
+export const verifyPaymentApi = async (transactionId) => {
+    const response = await servicesAxiosInstance.post(`/admin/subscription-purchases/${transactionId}/verify-payment`);
+    return response.data;
+}
+
 export const getSubscriptionPurchaseStatsApi = async (params) => {
     const response = await servicesAxiosInstance.get('/admin/subscription-purchases/stats', {
         params
