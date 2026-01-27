@@ -474,7 +474,6 @@ export default {
     deleteAccount: async (req, res, next) => {
         try {
             const { userId } = req.authenticatedUser;
-            const { reason, password } = req.body;
 
             const user = await userModel.findById(userId);
             if (!user) {
@@ -490,7 +489,7 @@ export default {
             }
 
 
-            await user.softDelete(reason || 'User requested account deletion');
+            await user.softDelete('User requested account deletion');
 
             res.clearCookie('accessToken');
 
