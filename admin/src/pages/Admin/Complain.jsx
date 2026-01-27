@@ -227,7 +227,7 @@ function Complain() {
                               <td className="px-6 py-4 text-sm text-gray-300">
                                 <div className="flex items-start gap-2 max-w-md">
                                   <MessageSquare className="w-4 h-4 text-gray-500 mt-1 shrink-0" />
-                                  <span className="line-clamp-2" title={complain.reason}>
+                                  <span className="whitespace-pre-wrap" title={complain.reason}>
                                     {complain.reason}
                                   </span>
                                 </div>

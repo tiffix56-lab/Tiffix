@@ -489,19 +489,6 @@ export default {
                 return httpError(next, new Error(responseMessage.customMessage("Your Account Is Suspended")), req, 401)
             }
 
-            // For LOCAL users, password verification is required
-            if (user.provider === 'LOCAL') {
-                if (!password) {
-                    return httpError(next, new Error('Password is required to delete account'), req, 400);
-                }
-
-                const isPasswordValid = await user.comparePassword(password);
-                if (!isPasswordValid) {
-                    return httpError(next, new Error('Invalid password'), req, 401);
-                }
-            }
-            // For OAuth users (GOOGLE, FACEBOOK, etc.), no password verification needed
-            // since they're already authenticated via the authentication middleware
 
             await user.softDelete(reason || 'User requested account deletion');
 
