@@ -4,10 +4,10 @@ import OrderCreationLog from '../models/orderCreationLog.model.js'
 import TimezoneUtil from '../util/timezone.js'
 
 class OrderCreationService {
-    
+
     async createOrdersForDailyMeal(dailyMeal, adminUserId) {
         console.log(`🍽️ Starting order creation for daily meal: ${dailyMeal._id}`)
-        
+
         // Create log entry
         const log = new OrderCreationLog({
             dailyMealId: dailyMeal._id,
@@ -23,6 +23,7 @@ class OrderCreationService {
             const activeUserSubscriptions = await UserSubscription.find({
                 subscriptionId: dailyMeal.subscriptionId,
                 status: 'active',
+                startDate: { $lte: TimezoneUtil.endOfDay(dailyMeal.mealDate) },
                 endDate: { $gte: TimezoneUtil.startOfDay(dailyMeal.mealDate) },
                 'vendorDetails.isVendorAssigned': true,
                 isExpired: false
@@ -65,7 +66,7 @@ class OrderCreationService {
             log.status = 'failed'
             log.completedAt = TimezoneUtil.now()
             await log.save()
-            
+
             throw error
         }
     }
@@ -78,9 +79,9 @@ class OrderCreationService {
             // Validate subscription is still active and has credits
             if (!userSubscription.isActive()) {
                 await log.addFailedOrder(
-                    userId, 
-                    userSubscription._id, 
-                    'general', 
+                    userId,
+                    userSubscription._id,
+                    'general',
                     'SUBSCRIPTION_INACTIVE',
                     'Subscription is not active',
                     false
@@ -90,9 +91,9 @@ class OrderCreationService {
 
             if (userSubscription.CheckisExpired()) {
                 await log.addFailedOrder(
-                    userId, 
-                    userSubscription._id, 
-                    'general', 
+                    userId,
+                    userSubscription._id,
+                    'general',
                     'SUBSCRIPTION_EXPIRED',
                     'Subscription has expired',
                     false
@@ -104,9 +105,9 @@ class OrderCreationService {
             const dailyMealCount = userSubscription.getDailyMealCount()
             if (!userSubscription.canUseCredits(dailyMealCount)) {
                 await log.addFailedOrder(
-                    userId, 
-                    userSubscription._id, 
-                    'general', 
+                    userId,
+                    userSubscription._id,
+                    'general',
                     'INSUFFICIENT_CREDITS',
                     `Credits available: ${userSubscription.getRemainingCredits()}, Required: ${dailyMealCount}`,
                     false
@@ -200,7 +201,7 @@ class OrderCreationService {
 
         // Create the order
         console.log(`🚀 Creating ${mealType} order for user ${userSubscription.userId.name}...`)
-        
+
         const orderData = {
             userId,
             userSubscriptionId: userSubscription._id,
@@ -236,7 +237,7 @@ class OrderCreationService {
         if (!orderData.deliveryDate) throw new Error('deliveryDate is required')
         if (!orderData.mealType) throw new Error('mealType is required')
         if (!orderData.deliveryTime) throw new Error('deliveryTime is required')
-        
+
         // Validate deliveryTime format (HH:MM)
         const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
         if (!timeRegex.test(orderData.deliveryTime)) {
@@ -245,17 +246,17 @@ class OrderCreationService {
         if (!orderData.selectedMenus || orderData.selectedMenus.length === 0) throw new Error('selectedMenus is required')
         if (!orderData.vendorDetails?.vendorId) throw new Error('vendorDetails.vendorId is required')
         if (!orderData.deliveryAddress) throw new Error('deliveryAddress is required')
-        
+
         // Validate deliveryAddress required fields
         if (!orderData.deliveryAddress.street) throw new Error('deliveryAddress.street is required')
-        if (!orderData.deliveryAddress.city) throw new Error('deliveryAddress.city is required') 
+        if (!orderData.deliveryAddress.city) throw new Error('deliveryAddress.city is required')
         if (!orderData.deliveryAddress.zipCode) throw new Error('deliveryAddress.zipCode is required')
-        
+
         // Set default country if not provided
         if (!orderData.deliveryAddress.country) {
             orderData.deliveryAddress.country = 'India'
         }
-        
+
         // Ensure coordinates exist with default values if not provided
         if (!orderData.deliveryAddress.coordinates) {
             orderData.deliveryAddress.coordinates = {
@@ -294,7 +295,7 @@ class OrderCreationService {
             }
 
             const failedOrder = log.failedOrders[failedOrderIndex]
-            
+
             if (!failedOrder.canRetry) {
                 throw new Error('This order cannot be retried')
             }
@@ -330,9 +331,9 @@ class OrderCreationService {
 
     async getOrderCreationLogs(options = {}) {
         const { page = 1, limit = 20, status, subscriptionId, startDate, endDate } = options
-        
+
         const query = {}
-        
+
         if (status) query.status = status
         if (subscriptionId) query.subscriptionId = subscriptionId
         if (startDate || endDate) {

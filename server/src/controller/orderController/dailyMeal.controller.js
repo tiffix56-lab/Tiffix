@@ -201,7 +201,10 @@ export default {
                     activeSubscribersCount = await UserSubscription.countDocuments({
                         subscriptionId: meal.subscriptionId._id,
                         status: 'active',
-                        endDate: { $gte: TimezoneUtil.now() }
+                        startDate: { $lte: TimezoneUtil.endOfDay(meal.mealDate) },
+                        endDate: { $gte: TimezoneUtil.startOfDay(meal.mealDate) },
+                        'vendorDetails.isVendorAssigned': true,
+                        isExpired: false
                     });
                 }
 
