@@ -332,6 +332,7 @@ function UserManagement() {
                   onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                 >
                   <option value="" className="bg-gray-800">All Status</option>
+                  <option value="inactive" className="bg-gray-800">Inactive</option>
                   <option value="active" className="bg-gray-800">Active</option>
                   <option value="banned" className="bg-gray-800">Banned</option>
                 </select>

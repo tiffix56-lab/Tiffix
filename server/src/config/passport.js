@@ -76,20 +76,29 @@ passport.use(new GoogleStrategy(
     },
     async (accessToken, refreshToken, profile, done) => {
         try {
-            // Check if user already exists with Google ID
             let user = await userModel.findByGoogleId(profile.id);
 
             if (user) {
-                // Update last login
+                if (user.isBanned) {
+                    return done(null, false, { message: 'Your Account Is Suspended' });
+                }
+                if (!user.isActive) {
+                    return done(null, false, { message: 'Account is inactive' });
+                }
                 user.lastLogin = new Date();
                 await user.save();
                 return done(null, user);
             }
 
-            // Check if user exists with same email but different provider
             user = await userModel.findByEmail(profile.emails[0].value);
 
             if (user) {
+                if (user.isBanned) {
+                    return done(null, false, { message: 'Your Account Is Suspended' });
+                }
+                if (!user.isActive) {
+                    return done(null, false, { message: 'Account is inactive' });
+                }
                 user.googleId = profile.id;
                 user.lastLogin = new Date();
                 await user.save();
@@ -148,6 +157,12 @@ passport.use(new FacebookStrategy(
             let user = await userModel.findOne({ facebookId: profile.id });
 
             if (user) {
+                if (user.isBanned) {
+                    return done(null, false, { message: 'Your Account Is Suspended' });
+                }
+                if (!user.isActive) {
+                    return done(null, false, { message: 'Account is inactive' });
+                }
                 user.lastLogin = new Date();
                 await user.save();
                 return done(null, user);
@@ -158,6 +173,12 @@ passport.use(new FacebookStrategy(
                 user = await userModel.findByEmail(email);
 
                 if (user) {
+                    if (user.isBanned) {
+                        return done(null, false, { message: 'Your Account Is Suspended' });
+                    }
+                    if (!user.isActive) {
+                        return done(null, false, { message: 'Account is inactive' });
+                    }
                     user.facebookId = profile.id;
                     user.lastLogin = new Date();
                     await user.save();
@@ -165,7 +186,6 @@ passport.use(new FacebookStrategy(
                 }
             }
 
-            // Create new user
             const newUser = new userModel({
                 name: profile.displayName,
                 emailAddress: email,
@@ -189,7 +209,6 @@ passport.use(new FacebookStrategy(
 
             await newUser.save();
 
-            // Create user profile for OAuth users
             try {
                 const newUserProfile = new userProfileModel({
                     userId: newUser._id
