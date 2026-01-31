@@ -53,9 +53,39 @@ function Analytics() {
         getAdminZoneAnalyticsApi({ period: selectedPeriod })
       ])
 
-      if (users.status === 'fulfilled') setUserAnalytics(users.value?.data || {})
-      if (orders.status === 'fulfilled') setOrderAnalytics(orders.value?.data || {})
-      if (revenue.status === 'fulfilled') setRevenueAnalytics(revenue.value?.data || {})
+      if (users.status === 'fulfilled') {
+        const data = users.value?.data || {}
+        if (data.userGrowth) {
+          data.userGrowth = data.userGrowth.map(item => ({
+            ...item,
+            _id: item._id?.day ? `${item._id.day}/${item._id.month}` : item._id
+          }))
+        }
+        setUserAnalytics(data)
+      }
+
+      if (orders.status === 'fulfilled') {
+        const data = orders.value?.data || {}
+        if (data.orderTrends) {
+          data.orderTrends = data.orderTrends.map(item => ({
+            ...item,
+            _id: item._id?.day ? `${item._id.day}/${item._id.month}` : item._id
+          }))
+        }
+        setOrderAnalytics(data)
+      }
+
+      if (revenue.status === 'fulfilled') {
+        const data = revenue.value?.data || {}
+        if (data.revenueTrends) {
+          data.revenueTrends = data.revenueTrends.map(item => ({
+            ...item,
+            _id: item._id?.day ? `${item._id.day}/${item._id.month}` : item._id
+          }))
+        }
+        setRevenueAnalytics(data)
+      }
+
       if (vendors.status === 'fulfilled') setVendorAnalytics(vendors.value?.data || {})
       if (zones.status === 'fulfilled') setZoneAnalytics(zones.value?.data || {})
 
@@ -221,75 +251,7 @@ function Analytics() {
           </Card>
         </div>
 
-        {/* User Location & Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="p-6">
-            <Card.Header>
-              <Card.Title>Top User Locations</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              {userAnalytics.locationAnalytics?.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={userAnalytics.locationAnalytics.slice(0, 10)}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="_id" stroke="#9ca3af" angle={-45} textAnchor="end" height={80} />
-                    <YAxis stroke="#9ca3af" />
-                    <Tooltip
-                      formatter={(value) => [formatNumber(value), 'Users']}
-                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
-                    />
-                    <Bar dataKey="count" fill="#8b5cf6" />
-                    <Bar dataKey="activeUsers" fill="#06b6d4" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-center py-16 text-gray-400">No location data available</div>
-              )}
-            </Card.Content>
-          </Card>
-
-          <Card className="p-6">
-            <Card.Header>
-              <Card.Title>User Engagement Stats</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              <div className="space-y-6">
-                {userAnalytics.userEngagement && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-gray-700/50 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-400">
-                          {formatNumber(userAnalytics.userEngagement.orderEngagement?.totalUsers || 0)}
-                        </div>
-                        <div className="text-sm text-gray-400">Active Order Users</div>
-                      </div>
-                      <div className="text-center p-4 bg-gray-700/50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-400">
-                          {userAnalytics.userEngagement.orderEngagement?.avgOrdersPerUser?.toFixed(1) || '0.0'}
-                        </div>
-                        <div className="text-sm text-gray-400">Avg Orders/User</div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-gray-700/50 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-400">
-                          {formatNumber(userAnalytics.userEngagement.subscriptionEngagement?.totalUsers || 0)}
-                        </div>
-                        <div className="text-sm text-gray-400">Subscription Users</div>
-                      </div>
-                      <div className="text-center p-4 bg-gray-700/50 rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-400">
-                          {userAnalytics.userEngagement.subscriptionEngagement?.avgSubscriptionsPerUser?.toFixed(1) || '0.0'}
-                        </div>
-                        <div className="text-sm text-gray-400">Avg Subs/User</div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </Card.Content>
-          </Card>
-        </div>
+       
       </div>
 
       {/* Order Analytics */}

@@ -33,6 +33,7 @@ function Order() {
     startDate: '',
     endDate: '',
     days: '',
+    mealType: ''
   })
 
   // Stats
@@ -465,6 +466,15 @@ function Order() {
             <option value="desc">Latest First</option>
             <option value="asc">Oldest First</option>
           </select> */}
+          <select
+            value={filters.mealType}
+            onChange={(e) => handleFilterChange('mealType', e.target.value)}
+            className="px-4 py-2 bg-[#1E2938] border border-orange-500/30 rounded-lg text-white focus:ring-2 focus:ring-orange-500 w-full"
+          >
+            <option value="">All Meals</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+          </select>
         </div>
 
         {/* Active Filters Summary */}
@@ -487,6 +497,14 @@ function Order() {
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
                   Status: {filters.status.replace('_', ' ')}
                   <button onClick={() => handleFilterChange('status', '')} className="text-orange-300 hover:text-orange-400">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {filters.mealType && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-white rounded-full text-xs">
+                  Meal: {filters.mealType.charAt(0).toUpperCase() + filters.mealType.slice(1)}
+                  <button onClick={() => handleFilterChange('mealType', '')} className="text-orange-300 hover:text-orange-400">
                     <X className="w-3 h-3" />
                   </button>
                 </span>

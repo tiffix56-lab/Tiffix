@@ -63,7 +63,8 @@ function Orders() {
     status: '',
     days: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    mealType: ''
   });
 
   const handleCopy = (text, label) => {
@@ -323,6 +324,15 @@ function Orders() {
             <option value="1">Today</option>
             {/* <option value="7">Next 7 Days</option>
             <option value="30">Next 30 Days</option> */}
+          </select>
+          <select
+            value={filters.mealType}
+            onChange={(e) => handleFilterChange('mealType', e.target.value)}
+            className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-orange-500"
+          >
+            <option value="">All Meals</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
           </select>
         </div>
       </div>

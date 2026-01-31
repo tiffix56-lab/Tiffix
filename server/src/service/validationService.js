@@ -804,7 +804,8 @@ export const ValidateOrderQuery = Joi.object({
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
     vendorId: Joi.string().hex().length(24).optional(),
-    days: Joi.number().positive().max(30).optional()
+    days: Joi.number().positive().max(30).optional(),
+    mealType: Joi.string().valid('lunch', 'dinner').optional()
 });
 
 export const ValidateDateRangeQuery = Joi.object({

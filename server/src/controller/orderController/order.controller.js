@@ -279,7 +279,7 @@ export default {
                 return httpError(next, error, req, 422);
             }
 
-            const { status, search, startDate, endDate, page = 1, limit = 20, days } = value;
+            const { status, search, startDate, endDate, page = 1, limit = 20, days, mealType } = value;
 
             const query = { 'vendorDetails.vendorId': vendorProfile._id };
 
@@ -303,6 +303,10 @@ export default {
                     $gte: today,
                     $lte: futureDate
                 };
+            }
+
+            if (mealType) {
+                query.mealType = mealType;
             }
 
             let orders;
@@ -376,7 +380,7 @@ export default {
                     total,
                     pages: Math.ceil(total / parseInt(limit))
                 },
-                filters: { status, search, startDate, endDate, days }
+                filters: { status, search, startDate, endDate, days, mealType }
             });
 
         } catch (err) {
@@ -585,7 +589,7 @@ export default {
                 return httpError(next, error, req, 422);
             }
 
-            const { status, search, startDate, endDate, page = 1, limit = 20, days, vendorId } = value;
+            const { status, search, startDate, endDate, page = 1, limit = 20, days, vendorId, mealType } = value;
 
             const query = {};
 
@@ -613,6 +617,10 @@ export default {
                     $gte: today,
                     $lte: futureDate
                 };
+            }
+
+            if (mealType) {
+                query.mealType = mealType;
             }
 
             let orders;
@@ -705,7 +713,7 @@ export default {
                     total,
                     pages: Math.ceil(total / parseInt(limit))
                 },
-                filters: { status, search, startDate, endDate, days, vendorId }
+                filters: { status, search, startDate, endDate, days, vendorId, mealType }
             });
 
         } catch (err) {
