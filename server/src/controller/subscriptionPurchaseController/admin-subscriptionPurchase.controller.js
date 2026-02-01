@@ -11,6 +11,11 @@ import {
 } from '../../service/validationService.js'
 import VendorAssignmentRequest from '../../models/vendorSwitchRequest.model.js'
 import LocationZone from '../../models/locationZone.model.js'
+import Subscription from '../../models/subscription.model.js'
+import User from '../../models/user.model.js'
+import promoCodeService from '../../service/promoCodeService.js'
+import emailService from '../../service/emailService.js'
+import whatsappService from '../../service/whatsappService.js'
 import paymentService from '../../service/paymentService.js'
 export default {
     getAllPurchaseSubscriptions: async (req, res, next) => {
@@ -597,8 +602,9 @@ export default {
 
             const payments = await paymentService.razorpay.orders.fetchPayments(razorpayOrderId);
 
+            console.log(payments);
             const successfulPayment = payments.items.find(p => p.status === 'captured');
-
+            console.log(successfulPayment);
             if (successfulPayment) {
                 // Payment found and captured! Process it.
                 const result = await paymentService.processSuccessfulPayment(transaction.transactionId, {
@@ -607,11 +613,122 @@ export default {
                     razorpay_signature: 'manual_admin_verification' // Special signature for manual verification
                 });
 
+                // Create Vendor Assignment Request (Same logic as user controller)
+                const userSubscription = result.userSubscription;
+                const userId = transaction.userId._id || transaction.userId; // Handle populated or ID
+
+                // 1. Promo Code Usage
+                if (userSubscription.promoCodeUsed) {
+                    await promoCodeService.usePromoCode(userSubscription.promoCodeUsed, userId);
+                }
+
+                // 2. Referral Logic
+                if (userSubscription.referralDetails && userSubscription.referralDetails.isReferralUsed) {
+                    const user = await User.findById(userId);
+
+                    // Check if user already used referral code in another PAID subscription
+                    if (user.referral.isReferralUsed && user.referral.usedReferralDetails.usedInSubscription) {
+                        // User already used referral in another subscription
+                        // Check if that subscription is paid (status = active/expired)
+                        const previousSubscription = await UserSubscription.findById(
+                            user.referral.usedReferralDetails.usedInSubscription
+                        );
+
+                        if (previousSubscription && (previousSubscription.status === 'active' || previousSubscription.status === 'expired')) {
+                            console.log('Edge case detected: User already used referral in another paid subscription', {
+                                userId,
+                                previousSubscriptionId: previousSubscription._id,
+                                currentSubscriptionId: userSubscription._id
+                            });
+
+                            // Clear referral details from current subscription
+                            userSubscription.referralDetails.isReferralUsed = false;
+                            userSubscription.referralDetails.referralCode = null;
+                            userSubscription.referralDetails.referredBy = null;
+                            await userSubscription.save();
+                        } else {
+                            user.referral.isReferralUsed = true;
+                            user.referral.referralUsedAt = TimezoneUtil.now();
+                            user.referral.usedReferralDetails = {
+                                referralCode: userSubscription.referralDetails.referralCode,
+                                referredBy: userSubscription.referralDetails.referredBy,
+                                usedInSubscription: userSubscription._id
+                            };
+                            await user.save();
+                        }
+                    } else {
+                        // First time using referral code
+                        user.referral.isReferralUsed = true;
+                        user.referral.referralUsedAt = TimezoneUtil.now();
+                        user.referral.usedReferralDetails = {
+                            referralCode: userSubscription.referralDetails.referralCode,
+                            referredBy: userSubscription.referralDetails.referredBy,
+                            usedInSubscription: userSubscription._id
+                        };
+                        await user.save();
+                    }
+                }
+
+                const subscription = await Subscription.findById(userSubscription.subscriptionId);
+                const deliveryZones = await LocationZone.findByPincode(userSubscription.deliveryAddress.zipCode);
+                const zone = deliveryZones && deliveryZones.length > 0 ? deliveryZones[0] : null;
+
+                const vendorAssignmentRequest = new VendorAssignmentRequest({
+                    userSubscriptionId: userSubscription._id,
+                    requestType: 'initial_assignment',
+                    userId: userId,
+                    currentVendorId: null,
+                    reason: 'initial_purchase',
+                    description: `Initial vendor assignment needed for new subscription purchase (Admin Verified)`,
+                    requestedVendorType: subscription ? subscription.category : 'tiffin', // Fallback if sub not found
+                    priority: 'high',
+                    deliveryZone: zone?._id || null,
+                    status: 'pending'
+                });
+
+                await vendorAssignmentRequest.save();
+
+                // 3. Send Notifications
+                try {
+                    const user = await User.findById(userId);
+                    const startDateStr = TimezoneUtil.format(userSubscription.startDate, 'date');
+                    const endDateStr = TimezoneUtil.format(userSubscription.endDate, 'date');
+
+                    // Send Email
+                    if (user.emailAddress) {
+                        await emailService.sendPurchaseSuccessEmail(
+                            user.emailAddress,
+                            user.name,
+                            subscription ? subscription.planName : 'Subscription',
+                            startDateStr,
+                            endDateStr,
+                            transaction.amount,
+                            transaction.transactionId
+                        );
+                    }
+
+                    // Send WhatsApp
+                    if (user.phoneNumber && user.phoneNumber.internationalNumber) {
+                        await whatsappService.sendPurchaseSuccessMessage(
+                            user.phoneNumber.internationalNumber,
+                            user.name,
+                            subscription ? subscription.planName : 'Subscription',
+                            transaction.amount,
+                            startDateStr,
+                            endDateStr,
+                            transaction.transactionId
+                        );
+                    }
+                } catch (notifyError) {
+                    console.error("Notification Error:", notifyError);
+                }
+
                 return httpResponse(req, res, 200, responseMessage.SUCCESS, {
                     verified: true,
                     status: 'success',
-                    message: 'Payment verified and transaction updated successfully',
-                    data: result
+                    message: 'Payment verified, transaction updated, and vendor assignment request created successfully',
+                    data: result,
+                    vendorAssignmentRequestId: vendorAssignmentRequest._id
                 });
             } else {
                 return httpResponse(req, res, 200, responseMessage.SUCCESS, {
