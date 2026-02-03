@@ -81,7 +81,7 @@ class OrderCreationService {
                 await log.addFailedOrder(
                     userId,
                     userSubscription._id,
-                    'general',
+                    'lunch',
                     'SUBSCRIPTION_INACTIVE',
                     'Subscription is not active',
                     false
@@ -93,7 +93,7 @@ class OrderCreationService {
                 await log.addFailedOrder(
                     userId,
                     userSubscription._id,
-                    'general',
+                    'lunch',
                     'SUBSCRIPTION_EXPIRED',
                     'Subscription has expired',
                     false
@@ -107,7 +107,7 @@ class OrderCreationService {
                 await log.addFailedOrder(
                     userId,
                     userSubscription._id,
-                    'general',
+                    'lunch',
                     'INSUFFICIENT_CREDITS',
                     `Credits available: ${userSubscription.getRemainingCredits()}, Required: ${dailyMealCount}`,
                     false
@@ -138,7 +138,7 @@ class OrderCreationService {
             await log.addFailedOrder(
                 userId,
                 userSubscription._id,
-                'general',
+                'lunch',
                 'VALIDATION_ERROR',
                 error.message,
                 true

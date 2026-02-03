@@ -218,7 +218,7 @@ export default {
                 return httpError(next, new Error('Subscription start date cannot be in the past'), req, 400);
             }
 
-            const subscriptionEndDate = TimezoneUtil.addDays(subscription.durationDays, subscriptionStartDate);
+            const subscriptionEndDate = TimezoneUtil.addDays(subscription.durationDays - 1, subscriptionStartDate);
             const finalStartDate = TimezoneUtil.startOfDay(subscriptionStartDate);
             const finalEndDate = TimezoneUtil.endOfDay(subscriptionEndDate);
 

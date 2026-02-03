@@ -166,15 +166,15 @@ class PaymentService {
 
         switch (duration) {
             case 'weekly':
-                return TimezoneUtil.addDays(7, startDate)
+                return TimezoneUtil.addDays(6, startDate)
             case 'monthly':
-                return TimezoneUtil.addMonths(1, startDate)
+                return TimezoneUtil.addDays(-1, TimezoneUtil.addMonths(1, startDate))
             case 'yearly':
-                return TimezoneUtil.addMonths(12, startDate)
+                return TimezoneUtil.addDays(-1, TimezoneUtil.addMonths(12, startDate))
             case 'custom':
-                return TimezoneUtil.addDays(durationDays || 30, startDate)
+                return TimezoneUtil.addDays((durationDays || 30) - 1, startDate)
             default:
-                return TimezoneUtil.addDays(durationDays || 30, startDate)
+                return TimezoneUtil.addDays((durationDays || 30) - 1, startDate)
         }
     }
 

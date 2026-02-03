@@ -49,7 +49,7 @@ export default {
                     query.status = 'active';
                     query.endDate = { $gte: TimezoneUtil.now() };
                 } else if (status === 'expired') {
-                    query.status = 'active';
+                    query.status = 'expired';
                     query.endDate = { $lt: TimezoneUtil.now() };
                 } else {
                     query.status = status;
@@ -178,12 +178,18 @@ export default {
                     'promoCodeUsed.code': 1,
                     'promoCodeUsed.discountValue': 1,
                     daysRemaining: {
-                        $ceil: {
-                            $divide: [
-                                { $subtract: ['$endDate', '$$NOW'] },
-                                86400000 // milliseconds in a day
-                            ]
-                        }
+                        $max: [
+                            0,
+                            {
+                                $ceil: {
+                                    $divide: [
+                                        { $subtract: ['$endDate', '$$NOW'] },
+                                        86400000 // milliseconds in a day
+                                    ]
+                                }
+                            }
+
+                        ]
                     },
                     isActive: {
                         $and: [

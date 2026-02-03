@@ -370,7 +370,7 @@ function Purchases() {
                           <div className="flex items-center gap-2">
                             
                             <span className="text-sm text-gray-300">
-                              {new Date(purchase.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(purchase.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
                           </div>
                         </td>
@@ -378,7 +378,7 @@ function Purchases() {
                           <div className="flex items-center gap-2">
                             
                             <span className="text-sm text-gray-300">
-                              {new Date(purchase.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(purchase.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
                           </div>
                         </td>
@@ -452,7 +452,7 @@ function Purchases() {
 
                       <div className="flex justify-between items-center pt-2 border-t border-gray-600">
                          <div className="text-xs text-gray-400">
-                            {new Date(purchase.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {new Date(purchase.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {new Date(purchase.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - {new Date(purchase.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                          </div>
                          <button
                             onClick={() => fetchPurchaseDetails(purchase._id)}
