@@ -212,10 +212,10 @@ export default {
             // }
 
             // Validate start date
-            const subscriptionStartDate = startDate ? TimezoneUtil.toIST(startDate) : TimezoneUtil.now();
+            const subscriptionStartDate = startDate ? TimezoneUtil.toIST(startDate) : TimezoneUtil.addDays(1, TimezoneUtil.now());
             const today = TimezoneUtil.startOfDay();
-            if (TimezoneUtil.startOfDay(subscriptionStartDate) < today) {
-                return httpError(next, new Error('Subscription start date cannot be in the past'), req, 400);
+            if (TimezoneUtil.startOfDay(subscriptionStartDate) <= today) {
+                return httpError(next, new Error('Subscription start date cannot be today or in the past'), req, 400);
             }
 
             const subscriptionEndDate = TimezoneUtil.addDays(subscription.durationDays - 1, subscriptionStartDate);
